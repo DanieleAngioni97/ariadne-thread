@@ -162,3 +162,83 @@ come export leggibile. `process-trace.md` verrà convertito in quel formato e us
 - Spariscono il daemon, il server MCP separato e la lettura dei transcript come sorgente.
 - React Flow ed ELK escono dal percorso principale (niente DOM nella mod). Tornano solo se un
   giorno servirà un viewer web separato.
+
+## 6. Secondo giro (nodo `m0.10`)
+
+| # | Domanda | Decisione |
+|---|---|---|
+| 1 | Mod come prodotto | Sì, **a condizione** che la UI sia bella e comoda; altrimenti si rivaluta → spike visivo |
+| 2 | Estrazione dei nodi | Da chiarire il fork (sotto); aggiungere i **segnalibri** sui messaggi |
+| 3 | STATE/LOG | Per ora export generato dal grafo; integrazione dopo, se funziona |
+| 4 | Dove vive il grafo | File di progetto ignorato da git (`.ariadne/`) |
+| 5 | Licenza | Da scegliere: l'utente vuole i crediti e sapere chi lo usa (sotto) |
+| 6 | Remote | Repo GitHub privato, niente PR per ora |
+
+### "Fork" non è un fork della conversazione
+
+`$.model.fork` è una **domanda laterale** al modello: rilegge la conversazione così com'è
+(dalla cache, quindi costa poco) e risponde, per esempio "aggiorna il grafo con quello che è
+successo". La chat non cambia, non si crea nessun ramo e il modello principale non vede né la
+domanda né la risposta. Il fork della sessione di Claude Code (riprendere da un punto e andare
+in un'altra direzione) è un'altra cosa e qui non serve.
+
+### Segnalibri
+
+Fattibili con la mod: ogni riga della chat ha un id (`uuid` in `session.append`), la mod può
+disegnare un segno sul messaggio marcato e, a un tuo click, scorrere la chat fino a lì
+(`$.ui.scroll` verso un messaggio, permesso solo in risposta a un tuo input). Un segnalibro
+diventa un nodo del grafo agganciato a un messaggio: `/thread mark "titolo"` o un bottone.
+Da verificare nello spike: il salto al messaggio in terminale.
+
+### Come potrebbe apparire (terminale)
+
+Banda sopra il prompt, sempre visibile:
+
+```
+ 📍 m0.10 Secondo giro di decisioni   ← m0.8, m0.9   ⑂ 3 rami aperti   ★ 2 segnalibri
+```
+
+Pannello affiancato alla chat (layout fullscreen, terminale largo):
+
+```
+╭─ ariadne · M0 Ricerca ──────────────────╮
+│ ✓ p0  Visione del progetto              │
+│ ● m0  M0 Ricerca                        │
+│ ├ ✓ m0.2 Strumenti esistenti            │
+│ │ ├ ✓ b1 Codice di Agent Flow           │
+│ │ └ ○ b2 Layout stabile                 │
+│ ├ ✓ m0.3 Alimentare da Claude Code      │
+│ ├ ✓ m0.5 Sintesi ★                      │
+│ ├ ✓ m0.8 Mod come UI                    │
+│ ├ ✓ m0.9 STATE e LOG                    │
+│ └ ▶ m0.10 Secondo giro   ◀ sei qui      │
+│ ○ m1  Analisi e requisiti               │
+├─────────────────────────────────────────┤
+│ m0.10 · in corso · da m0.8, m0.9        │
+│ In attesa dell'ok su mod, estrazione,   │
+│ STATE/LOG e licenza.  [ Vai al msg ]    │
+╰─────────────────────────────────────────╯
+```
+
+Hover su una riga: card con la frase di contesto. Click: il dettaglio scende nel riquadro in
+basso. Su desktop e VS Code lo stesso pannello può disegnare il grafo 2D in `Svg`.
+
+**Questo non dimostra che sarà bello.** Il giudizio va dato su una cosa che si vede: per questo
+il prossimo passo è uno spike visivo usa e getta (una mod con dati finti presi da questo file,
+fuori dal repo), da guardare prima di confermare la strada.
+
+### Licenza: cosa cambia
+
+- **Crediti**: tutte le licenze open source comuni obbligano chi riusa il codice a conservare
+  il copyright e la licenza. Il nome resta in ogni copia.
+- **MIT**: la più breve; solo l'avviso di copyright.
+- **Apache-2.0**: come MIT, più un file `NOTICE` che chi redistribuisce deve portarsi dietro
+  (crediti più visibili), più una licenza esplicita sui brevetti. Comune nei progetti di tooling.
+- **GPL/AGPL** (copyleft): chi modifica e distribuisce deve pubblicare le modifiche con la
+  stessa licenza. Protegge il codice, ma molte aziende la evitano: meno adozione.
+- **Sapere chi lo usa**: nessuna licenza open source lo impone (sarebbe non-OSI). Si misura con
+  stelle e fork su GitHub, installazioni dal marketplace, issue e discussioni. Una telemetria
+  dentro la mod è possibile solo opt-in e dichiarata, e per un tool che vede la conversazione
+  sarebbe un problema di fiducia.
+
+Proposta: **Apache-2.0** (crediti via `NOTICE`, nessun freno all'adozione).
