@@ -16,7 +16,7 @@ Traccia a mano del processo di questo progetto: il caso d'uso reale e il primo d
 
 ## Grafo
 
-current: m0.7
+current: m0.10
 
 ### p0 — Visione del progetto
 - status: done
@@ -75,31 +75,52 @@ current: m0.7
 - branches:
 
 ### m0.7 — Decisioni dell'utente prima dei requisiti
-- status: active
+- status: done
 - parent: m0.5
-- summary: In attesa delle scelte dell'utente sulle domande aperte della ricerca.
-- detail: Serve un ok su architettura di partenza, perimetro (solo Claude Code o generico), forma della UI e riuso di Agent Flow.
+- summary: Scelte B che evolve in A, focus sugli agenti, aggiornamento automatico; chieste due analisi.
+- detail: L'utente propone una mod di Claude Code come UI e chiede se STATE/LOG/Next vanno integrati nel tool. Tabella in docs/analysis-mod.md.
+- branches: m0.8, m0.9
+
+### m0.8 — Analisi: mod di Claude Code come UI
+- status: done
+- parent: m0.7
+- summary: Una mod vede ogni riga della chat, chiama il modello da sola e disegna banda, pannello, hover e click.
+- detail: Sostituisce daemon, server MCP e lettura dei transcript; su terminale il grafo è testo (albero stile git log --graph). Agent Flow non è una base; Navigator è la mod più vicina, solo come idee.
+- branches: b4
+
+### m0.9 — Analisi: STATE, LOG e Next nel grafo
+- status: done
+- parent: m0.7
+- summary: Il grafo è la fonte; STATE e LOG diventano una sua proiezione versionata, a tappe.
+- detail: Grafo fine locale e non versionato (rumore, privacy); STATE/LOG restano il tracciato grossolano leggibile senza tool. Il markdown della traccia è solo dataset: il formato vero sarà un log di eventi JSON.
+- branches:
+
+### m0.10 — Secondo giro di decisioni
+- status: active
+- parent: m0.8, m0.9
+- summary: In attesa dell'ok dell'utente su mod, modo di estrazione, STATE/LOG come proiezione e licenza.
+- detail: Chiude M0; con queste risposte si passa ai requisiti.
 - branches:
 
 ### m1 — M1 Analisi e requisiti
 - status: todo
-- parent: m0.7
+- parent: m0.10
 - summary: Trasformare visione e ricerca in requisiti verificabili.
-- detail: Fase 2 del meta-processo; parte dopo le decisioni di m0.7.
+- detail: Fase 2 del meta-processo; parte dopo le decisioni di m0.10.
 - branches:
 
 ### b1 — Leggere il codice di Agent Flow
-- status: todo
+- status: done
 - parent: m0.2
-- summary: Capire se il suo modello dati si estende al processo o se conviene solo ispirarsi.
-- detail: Apache-2.0, ingestione via hooks HTTP già pronta; decide tra fork e costruzione da zero.
+- summary: Non è una base: modello dati di tool call e agenti cucito in ingestione, simulazione e canvas.
+- detail: Estensione VS Code + web UI React con d3-force (via DeepWiki); con la strada della mod restano solo le idee di ingestione.
 - branches:
 
 ### b2 — Prototipo di layout stabile
 - status: todo
 - parent: m0.2
 - summary: Verificare che il grafo cresca senza far saltare i nodi già piazzati.
-- detail: ELK e dagre ricalcolano tutto; serve fissare le posizioni esistenti e animare solo i nuovi.
+- detail: Con la mod diventa: albero testuale stabile su terminale; 2D con Svg solo su desktop/VS Code. Verificare se dagre si include nel modulo.
 - branches:
 
 ### b3 — Task tools come sorgente di stato
@@ -107,4 +128,11 @@ current: m0.7
 - parent: m0.3
 - summary: Verificare se TaskCreate/TaskUpdate sono disponibili e utili sui modelli attuali.
 - detail: Sono già un grafo con stato e dipendenze osservabile via hooks, ma la disponibilità per modello non è verificata.
+- branches:
+
+### b4 — Prototipo dell'osservatore e dei suoi costi
+- status: todo
+- parent: m0.8
+- summary: Misurare qualità e costo per turno dell'estrazione automatica dei nodi.
+- detail: Confronto tra $.model.complete con haiku sul turno e $.model.fork sulla sessione intera; decide il default.
 - branches:
