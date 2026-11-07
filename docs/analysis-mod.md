@@ -71,8 +71,9 @@ evidenziato. Un layout DAG 2D a celle è possibile ma è il pezzo più difficile
 - − Vive solo in Claude Code: altri agenti (Codex, Cursor) o un uso del tutto a mano restano fuori.
   Il formato dati resta portabile, quindi un viewer separato si può aggiungere dopo.
 - − Grafo testuale sul terminale; il 2D vero solo su desktop/VS Code.
-- − API giovane: non ho trovato garanzie di stabilità; il file dei tipi è di ~22.000 righe e
-  cambia col build. Da trattare come dipendenza che si muove.
+- − API giovane: l'intestazione dei tipi dice "EARLY ACCESS: this surface may change between
+  releases without notice". Il file è di ~22.000 righe e cambia col build. Da trattare come
+  dipendenza che si muove: test della mod a ogni aggiornamento di Claude Code.
 - − Da verificare: se una libreria di layout (dagre, MIT) si può includere nel modulo (niente
   Node, niente DOM; si importano solo file del plugin).
 
@@ -242,3 +243,21 @@ fuori dal repo), da guardare prima di confermare la strada.
   sarebbe un problema di fiducia.
 
 Proposta: **Apache-2.0** (crediti via `NOTICE`, nessun freno all'adozione).
+
+### Spike visivo (nodo `m0.11`)
+
+Mod usa e getta `ariadne-spike`, fuori dal repo (cartella delle mod di sessione,
+`~/.claude/dev-mods/<sessione>/ariadne-spike/`). Legge `docs/process-trace.md` del progetto
+aperto e si ricarica a fine turno.
+
+- **Banda** sopra il prompt: `◆ <passo corrente>   from <genitori>   N open branches   [ Show thread ]`.
+- **Pannello** `/thread`: albero con il filo rosso dalla radice al passo corrente, glifi di stato
+  (✓ ◐ ○ ×), "you are here"; click su un passo → riquadro di dettaglio (bordo rosso se è il
+  corrente); passando sopra un passo, la sua frase di contesto compare in fondo.
+- Scelte UX: una sola nota forte (il rosso del filo), il resto in toni spenti; nessuna
+  animazione (si guarda decine di volte al giorno); testi in sentence case che dicono cosa fare;
+  stato vuoto che spiega come iniziare.
+- Verifiche: 7 test (`claude plugin test`: parser, banda, pannello su terminal e desktop, stato
+  vuoto), `claude plugin validate`, `tsc` puliti. Non verificati dai test: l'aspetto reale e
+  l'hover, che dipendono dal terminale.
+- Il primo test ha trovato un vincolo reale: un `Button` accetta solo testo, niente gruppi.

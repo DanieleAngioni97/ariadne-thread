@@ -106,7 +106,7 @@ current: m0.11
 - status: active
 - parent: m0.10
 - summary: Una mod usa e getta con dati finti per giudicare se la UI può essere bella e comoda.
-- detail: Condizione dell'utente per confermare la mod; fuori dal repo. Se il risultato non convince si rivalutano le alternative (viewer web separato).
+- detail: Condizione dell'utente per confermare la mod. Costruito (banda + pannello /thread, test verdi); in attesa del giudizio dell'utente. Se non convince si rivaluta un viewer web separato.
 - branches:
 
 ### m1 — M1 Analisi e requisiti
