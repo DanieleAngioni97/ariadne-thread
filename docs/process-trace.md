@@ -16,7 +16,7 @@ Traccia a mano del processo di questo progetto: il caso d'uso reale e il primo d
 
 ## Grafo
 
-current: m0.12
+current: m1.2
 
 ### p0 — Visione del progetto
 - status: done
@@ -110,17 +110,31 @@ current: m0.12
 - branches: m0.12
 
 ### m0.12 — Viewer esterno + mod come sorgente
-- status: active
+- status: done
 - parent: m0.11
-- summary: Proposta: la mod resta per leggere la chat e mostrare la banda; il grafo bello va in una pagina web locale.
-- detail: La mod scrive il grafo in .ariadne/; un viewer nel browser lo legge in diretta. Tornano React Flow e un layout DAG dalla ricerca. In attesa dell'ok dell'utente.
+- summary: Confermato: mod come sorgente e banda nel terminale, grafo in un viewer web nel browser; licenza Apache-2.0.
+- detail: La mod scrive il grafo in .ariadne/; il viewer lo legge in diretta. Tornano React Flow ed ELK (layout annidato). L'utente aggiunge requisiti: livelli espandibili, file e momenti della chat al click, salto alla chat, deviazioni visibili.
 - branches:
 
 ### m1 — M1 Analisi e requisiti
-- status: todo
+- status: active
 - parent: m0.12
 - summary: Trasformare visione e ricerca in requisiti verificabili.
-- detail: Fase 2 del meta-processo; parte dopo la scelta di m0.12.
+- detail: Fase 2 del meta-processo; bozza in docs/requirements-draft.md.
+- branches:
+
+### m1.1 — Bozza dei requisiti
+- status: done
+- parent: m1
+- summary: Requisiti con id su forma, livelli, stato, contesto al click, salto alla chat, aggiornamento.
+- detail: Il salto alla chat passa dalla banda del terminale: Claude Code fa scorrere la chat a una mod solo su un input della persona dentro Claude Code.
+- branches:
+
+### m1.2 — Spike visivo del viewer
+- status: active
+- parent: m1.1
+- summary: Pagina web usa e getta che mostra livelli espandibili, stati, filo, deviazioni e pannello di contesto.
+- detail: Su branch spike/viewer, dati di esempio presi da questa sessione; serve a giudicare l'aspetto prima di fissare i requisiti.
 - branches:
 
 ### b1 — Leggere il codice di Agent Flow
