@@ -16,7 +16,7 @@ Traccia a mano del processo di questo progetto: il caso d'uso reale e il primo d
 
 ## Grafo
 
-current: m0.11
+current: m0.12
 
 ### p0 — Visione del progetto
 - status: done
@@ -103,17 +103,24 @@ current: m0.11
 - branches: b5
 
 ### m0.11 — Spike visivo della mod
-- status: active
+- status: done
 - parent: m0.10
 - summary: Una mod usa e getta con dati finti per giudicare se la UI può essere bella e comoda.
-- detail: Condizione dell'utente per confermare la mod. Costruito (banda + pannello /thread, test verdi); in attesa del giudizio dell'utente. Se non convince si rivaluta un viewer web separato.
+- detail: Banda + pannello /thread costruiti, test verdi. Giudizio dell'utente: carina ma troppo da terminale; la vuole esterna per farla bella.
+- branches: m0.12
+
+### m0.12 — Viewer esterno + mod come sorgente
+- status: active
+- parent: m0.11
+- summary: Proposta: la mod resta per leggere la chat e mostrare la banda; il grafo bello va in una pagina web locale.
+- detail: La mod scrive il grafo in .ariadne/; un viewer nel browser lo legge in diretta. Tornano React Flow e un layout DAG dalla ricerca. In attesa dell'ok dell'utente.
 - branches:
 
 ### m1 — M1 Analisi e requisiti
 - status: todo
-- parent: m0.11
+- parent: m0.12
 - summary: Trasformare visione e ricerca in requisiti verificabili.
-- detail: Fase 2 del meta-processo; parte dopo l'esito dello spike m0.11.
+- detail: Fase 2 del meta-processo; parte dopo la scelta di m0.12.
 - branches:
 
 ### b1 — Leggere il codice di Agent Flow
