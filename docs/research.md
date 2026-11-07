@@ -134,6 +134,9 @@ nell'ingestione, che Agent Flow ha già risolto in modo simile. B è il passo pi
 mette alla prova; A arriva senza riscrivere nulla perché condivide il formato. C da sola
 replicherebbe strumenti esistenti.
 
+> **Aggiornamento (stesso giorno):** dopo le decisioni dell'utente la strada è una mod di
+> Claude Code, che fa da UI e da ingestione insieme. Vedi `docs/analysis-mod.md`.
+
 ## 6. Punti aperti (da verificare in fase 2–3)
 
 - Leggere il codice di Agent Flow: modello dati estendibile? fork o ispirazione?
