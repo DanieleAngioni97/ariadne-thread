@@ -7,3 +7,4 @@
 - 2026-11-07 — Spike visivo `ariadne-spike` (fuori dal repo): banda + pannello `/thread` sulla process trace; 7 test verdi; in attesa del giudizio.
 - 2026-11-07 — Spike mod giudicato "troppo da terminale": proposta di viewer web esterno con la mod come sorgente (nodo m0.12).
 - 2026-11-07 — M0 chiusa: mod come sorgente + viewer web, Apache-2.0. M1: `docs/requirements-draft.md` (livelli, stato, contesto al click, salto alla chat via banda).
+- 2026-11-07 · M0 chiusa, M1 avviata: spike del viewer web pronto per il giudizio · 92ff465
