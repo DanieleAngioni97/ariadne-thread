@@ -134,7 +134,7 @@ current: m1.2
 - status: active
 - parent: m1.1
 - summary: Pagina web usa e getta che mostra livelli espandibili, stati, filo, deviazioni e pannello di contesto.
-- detail: Su branch spike/viewer, dati di esempio presi da questa sessione; serve a giudicare l'aspetto prima di fissare i requisiti.
+- detail: Su branch spike/viewer (spikes/viewer/), dati di esempio presi da questa sessione. Pronto: livelli annidati con ELK, filo rosso, deviazioni in ocra, pannello con perché, file e momenti della chat. In attesa del giudizio dell'utente.
 - branches:
 
 ### b1 — Leggere il codice di Agent Flow
