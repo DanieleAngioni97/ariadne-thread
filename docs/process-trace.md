@@ -16,7 +16,7 @@ Traccia a mano del processo di questo progetto: il caso d'uso reale e il primo d
 
 ## Grafo
 
-current: m0.10
+current: m0.11
 
 ### p0 — Visione del progetto
 - status: done
@@ -96,17 +96,24 @@ current: m0.10
 - branches:
 
 ### m0.10 — Secondo giro di decisioni
-- status: active
+- status: done
 - parent: m0.8, m0.9
-- summary: In attesa dell'ok dell'utente su mod, modo di estrazione, STATE/LOG come proiezione e licenza.
-- detail: Chiude M0; con queste risposte si passa ai requisiti.
+- summary: Mod sì se la UI è bella; STATE/LOG come export; grafo in un file ignorato; remote privato.
+- detail: Chiarito che $.model.fork è una domanda laterale, non un fork della chat; aggiunti i segnalibri; licenza spiegata, proposta Apache-2.0. Dettagli in docs/analysis-mod.md §6.
+- branches: b5
+
+### m0.11 — Spike visivo della mod
+- status: active
+- parent: m0.10
+- summary: Una mod usa e getta con dati finti per giudicare se la UI può essere bella e comoda.
+- detail: Condizione dell'utente per confermare la mod; fuori dal repo. Se il risultato non convince si rivalutano le alternative (viewer web separato).
 - branches:
 
 ### m1 — M1 Analisi e requisiti
 - status: todo
-- parent: m0.10
+- parent: m0.11
 - summary: Trasformare visione e ricerca in requisiti verificabili.
-- detail: Fase 2 del meta-processo; parte dopo le decisioni di m0.10.
+- detail: Fase 2 del meta-processo; parte dopo l'esito dello spike m0.11.
 - branches:
 
 ### b1 — Leggere il codice di Agent Flow
@@ -135,4 +142,11 @@ current: m0.10
 - parent: m0.8
 - summary: Misurare qualità e costo per turno dell'estrazione automatica dei nodi.
 - detail: Confronto tra $.model.complete con haiku sul turno e $.model.fork sulla sessione intera; decide il default.
+- branches:
+
+### b5 — Segnalibri sui messaggi
+- status: todo
+- parent: m0.10
+- summary: Marcare i punti importanti della chat e tornarci con un click.
+- detail: Richiesta dell'utente (visti in VS Code, assenti nel terminale); un segnalibro è un nodo agganciato all'uuid del messaggio; salto con $.ui.scroll.
 - branches:
