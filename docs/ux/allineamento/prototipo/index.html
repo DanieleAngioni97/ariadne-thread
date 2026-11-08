@@ -14,7 +14,13 @@
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; height: 100%; }
-body { display: grid; grid-template-columns: minmax(0, 55fr) minmax(0, 45fr); }
+body { display: grid; grid-template-columns: minmax(0, 55fr) minmax(0, 45fr); grid-template-rows: auto minmax(0, 1fr); }
+/* Prototype guide: not part of the product, it tells the tester what is happening and what to try */
+.guide { grid-column: 1 / -1; display: flex; gap: 14px; align-items: center; padding: 10px 16px; background: #fff6d6;
+  border-bottom: 1px solid #e3cf86; font-size: 14px; line-height: 1.45; }
+.guide strong { flex: none; color: #7a5a00; }
+.guide button { flex: none; margin-left: auto; background: #2459c4; color: #fff; border: 0; border-radius: 6px; padding: 7px 14px; font-weight: 600; }
+.guide button:disabled { background: #a9b4c4; cursor: default; }
 button { font: inherit; color: inherit; cursor: pointer; }
 
 /* Terminal: Claude Code with the band above the prompt */
@@ -39,11 +45,14 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .band .back { color: #9fd0ff; }
 .band .detour { color: #f1b45f; }
 .band .update { color: #8fd19e; }
-.band kbd { background: #454c57; border-radius: 3px; padding: 0 5px; color: #fff; font: inherit; }
+.band button { background: #454c57; border: 1px solid #5b6370; border-radius: 4px; padding: 1px 9px; margin-left: 6px; color: #fff; font: inherit; }
+.band button.yes { background: #2f7d4f; border-color: #3d9a63; }
+.band button.no { background: #8a2f36; border-color: #a93c45; }
 .prompt { display: flex; gap: 8px; padding: 8px 12px 12px; border-top: 1px solid #333840; }
 .prompt span { color: var(--term-muted); }
 .prompt input { flex: 1; background: transparent; border: 0; color: var(--term-ink); font: inherit; outline: none; }
-.legend { padding: 0 12px 10px; color: var(--term-muted); font-size: 12px; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 0 12px 10px; color: var(--term-muted); font-size: 12px; }
+.legend button { background: transparent; border: 1px solid #4b525d; border-radius: 12px; padding: 1px 10px; color: var(--term-ink); font: inherit; }
 
 /* Viewer: read-only, in the browser beside the terminal */
 .viewer { display: grid; grid-template-rows: auto 1fr auto; min-height: 0; border-left: 1px solid var(--line); }
@@ -88,16 +97,19 @@ button { font: inherit; color: inherit; cursor: pointer; }
 </head>
 <body>
 
+<div class="guide" aria-live="polite"><strong>Guida al prototipo</strong><span id="guide"></span><button id="advance">▶ Fai lavorare l'agente</button></div>
+
 <section class="term" aria-label="Terminale di Claude Code (simulato)">
-  <header>
-    <span>claude · checkout-api</span>
-    <button id="advance" title="Simula il lavoro dell'agente fino al prossimo checkpoint">▶ l'agente lavora <kbd>n</kbd></button>
-  </header>
+  <header><span>Claude Code (simulato) · checkout-api</span></header>
   <div class="chat" id="chat" aria-live="polite"></div>
   <div class="band" id="band" aria-live="polite"></div>
   <div>
-    <form class="prompt" id="form"><span>&gt;</span><input id="input" autocomplete="off" placeholder="scrivi in chat, oppure un tasto della banda a prompt vuoto"></form>
-    <div class="legend" id="legend">A prompt vuoto: <kbd>n</kbd> l'agente lavora · <kbd>a</kbd>/<kbd>r</kbd> approva/rifiuta · <kbd>v</kbd> vedi nel viewer · <kbd>t</kbd> torna · <kbd>?</kbd> comandi</div>
+    <form class="prompt" id="form"><span>&gt;</span><input id="input" autocomplete="off" placeholder="scrivi in chat e premi Invio"></form>
+    <div class="legend">Prova a scrivere:
+      <button data-say="/btw perché il provider chiude le connessioni dopo 30 s?">/btw una domanda laterale</button>
+      <button data-say="sposta m2.1b sotto m1">sposta m2.1b sotto m1</button>
+      <button data-say="/clear">/clear</button>
+    </div>
   </div>
 </section>
 
@@ -191,7 +203,8 @@ function start(id) { setStatus(id, 'active'); current = id }
 // ---------- what the agent does at each checkpoint (simulated) ----------
 
 function advance() {
-  if (pending) return say('sys', 'C\'è una proposta in attesa: a approva, r rifiuta, v la mostra nel viewer.')
+  pick = false
+  if (pending) return say('sys', 'C\'è una proposta in attesa: approvala o rifiutala nella banda.')
   const cur = get(current)
   if (cur.kind === 'detour' && cur.status === 'active') {
     note(`${cur.id} chiuso: ${cur.title.toLowerCase()} chiarito. Prova: messaggio in chat. Rientro in ${cur.reentry}.`)
@@ -366,6 +379,8 @@ function goBack() {
   pick = true
   const lines = points().map((p, i) => `  ${p.status === 'done' ? '✓' : p.id === current ? '▶' : '·'} ${i + 1}. ${p.title}`)
   say('agent', `↩ ${list().title} (${decided()}/5 decisi)\n${lines.join('\n')}\nScrivi il numero del punto da discutere.`)
+  render()
+  $('input').focus()
 }
 
 function command(text) {
@@ -394,7 +409,7 @@ function command(text) {
     n.status = 'active'
     n.confirmed = { at: TODAY, ref: 'chat' }
     nodes.splice(nodes.indexOf(get(current)) + 1, 0, n)
-    say('agent', `Apro una deviazione: «${n.title}». Rientro in ${current} quando chiudiamo (t oppure «torna»).`)
+    say('agent', `Apro una deviazione: «${n.title}». Rientro in ${current} quando chiudiamo («Chiudi e torna» nella banda).`)
     current = n.id
     return update('deviazione aperta da te: confermata dalla tua richiesta')
   }
@@ -562,13 +577,29 @@ function renderBand() {
   const nx = next()
   row('where', `${path.join(' › ')} › <b>${short(get(current).title, 44)}</b>${nx ? ` · prossimo: ${short(nx.title, 30)}` : ''}`)
   const cur = get(current)
-  if (cur.kind === 'detour' && cur.status === 'active') row('detour', `⤷ deviazione · rientro: ${short(get(cur.reentry).title)} · <kbd>t</kbd> chiudi e torna`)
-  else if (list()) row('back', `↩ Torna a: ${esc(list().title)} (${decided()}/5 decisi) · <kbd>t</kbd>`)
-  if (pending) row('proposal', `◆ Proposta: ${esc(pending.text)} · <kbd>a</kbd> approva · <kbd>r</kbd> rifiuta · <kbd>v</kbd> vedi`)
+  if (cur.kind === 'detour' && cur.status === 'active') row('detour', `⤷ deviazione · rientro: ${short(get(cur.reentry).title)} <button data-act="back">Chiudi e torna</button>`)
+  else if (list()) row('back', `↩ ${esc(list().title)} (${decided()}/5 decisi) <button data-act="back">Torna alla lista</button>`)
+  if (pending) row('proposal', `◆ Proposta: ${esc(pending.text)} <button class="yes" data-act="yes">Approva</button><button class="no" data-act="no">Rifiuta</button><button data-act="show">Mostra nel grafo</button>`)
   else if (lastUpdate) row('update', `↺ ${esc(lastUpdate)}`)
 }
 
-function render() { renderBand(); renderGraph(); renderDetail() }
+function render() { renderBand(); renderGraph(); renderDetail(); renderGuide() }
+
+/** Plain words for the tester: what just happened and what can be done now. */
+function renderGuide() {
+  const cur = get(current)
+  let text
+  if (pending) text = 'L\'agente propone di cambiare la struttura del grafo: nel grafo a destra la modifica è tratteggiata in grigio. Decidi tu, con i pulsanti verde e rosso nella banda (la riga scura sopra il prompt).'
+  else if (pick) text = 'Qui sopra in chat c\'è l\'indice della lista. Scrivi nel prompt il numero del punto da discutere e premi Invio.'
+  else if (cur.kind === 'detour' && cur.status === 'active') text = 'Sei in una questione laterale (deviazione). Nel grafo è il ramo tratteggiato arancione. Quando hai finito, «Chiudi e torna» nella banda ti riporta al punto da cui eri partito.'
+  else if (stage === 'start') text = 'A sinistra c\'è Claude Code, a destra il grafo nel browser. La riga scura sopra il prompt è la banda: dice dove sei e cosa viene dopo. Premi «Fai lavorare l\'agente» per farlo arrivare al prossimo checkpoint.'
+  else if (stage === 'end') text = 'Scenario finito. Clicca «/clear» sotto il prompt per vedere cosa legge l\'agente quando riparte, oppure «Cosa legge l\'agente» in alto a destra. Ricarica la pagina per rifare il giro.'
+  else if (list()) text = 'Siete dentro una lista di punti da decidere. Puoi far decidere all\'agente il punto corrente (pulsante blu), aprire una questione laterale («/btw» sotto il prompt), o «Torna alla lista» per scegliere un altro punto.'
+  else if (lastUpdate) text = 'L\'agente ha chiuso un passo e aperto il successivo da solo (riga verde nella banda): sono dettagli, non serve la tua conferma. Il grafo a destra si è aggiornato. Premi il pulsante blu per continuare.'
+  else text = 'Premi il pulsante blu per far lavorare l\'agente fino al prossimo checkpoint.'
+  $('guide').textContent = text
+  $('advance').disabled = Boolean(pending) || stage === 'end'
+}
 
 function showInViewer() {
   if (!pending) return say('sys', 'Nessuna proposta da mostrare.')
@@ -583,25 +614,24 @@ $('form').onsubmit = e => {
   $('input').value = ''
   if (v.trim()) command(v)
 }
-$('input').addEventListener('keydown', e => {
-  if ($('input').value !== '' || e.metaKey || e.ctrlKey || e.altKey) return
-  const keys = {
-    n: advance, a: () => answer(true), r: () => answer(false), v: showInViewer, t: goBack,
-    '?': () => say('sys', 'Comandi in chat: «torna», «approvo», «rifiuto», «/btw <domanda>» apre una deviazione, «sposta <id> sotto <id>» corregge un nodo, «/clear» mostra cosa legge l\'agente quando riparte.'),
-  }
-  if (keys[e.key]) { e.preventDefault(); keys[e.key]() }
-})
-$('advance').onclick = () => { advance(); $('input').focus() }
+$('band').onclick = e => {
+  const act = e.target.closest('button')?.dataset.act
+  const actions = { yes: () => answer(true), no: () => answer(false), show: showInViewer, back: goBack }
+  if (act) actions[act]()
+}
+document.querySelector('.legend').onclick = e => {
+  const text = e.target.closest('button')?.dataset.say
+  if (text) command(text)
+}
+$('advance').onclick = () => advance()
 $('toggle-agent').onclick = () => {
   showAgent = !showAgent
   $('toggle-agent').setAttribute('aria-pressed', showAgent)
   render()
 }
 
-say('sys', 'Prototipo del concetto A «Piano prima». Dati finti. Premi n per far lavorare l\'agente fino al prossimo checkpoint; rispondi con i tasti della banda o in chat.')
 say('agent', 'Riprendo da m2.1: devo scrivere un test che riproduca il timeout.')
 render()
-$('input').focus()
 </script>
 </body>
 </html>
