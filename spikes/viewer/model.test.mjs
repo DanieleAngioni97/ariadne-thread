@@ -1,7 +1,9 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { defaultExpanded, threadSet, visibleEdges, visibleNodes } from './model.js'
+import {
+  anomalies, continuationOf, defaultExpanded, deferredCount, origin, threadSet, visibleEdges, visibleNodes,
+} from './model.js'
 
 // root ─ a ─ b(current inside: b1 → b2*) ; a opens branch x ; detour d off a
 const data = {
@@ -71,4 +73,42 @@ test('inside a container on the thread, finished steps join it; detours and open
     ],
   }
   assert.deepEqual([...threadSet(nested)].sort(), ['m', 'm1', 'm2', 'n'])
+})
+
+// m0 is closed: its open steps must be deferred to a task in a later milestone.
+const plan = {
+  current: 'n1',
+  nodes: [
+    { id: 'm', status: 'done' },
+    { id: 'm1', parent: 'm', status: 'done' },
+    { id: 'ok', parent: 'm', status: 'deferred', deferred: { to: 'p1', why: 'later' } },
+    { id: 'lost', parent: 'm', status: 'todo' },
+    { id: 'blank', parent: 'm', status: 'deferred' },
+    { id: 'ghost', parent: 'm', status: 'deferred', deferred: { to: 'nope', why: 'x' } },
+    { id: 'back', parent: 'm', status: 'deferred', deferred: { to: 'm1', why: 'x' } },
+    { id: 'n', status: 'active', after: ['m'] },
+    { id: 'n1', parent: 'n', status: 'active' },
+    { id: 'p', status: 'todo', after: ['n'] },
+    { id: 'p1', parent: 'p', status: 'todo', continues: 'ok' },
+  ],
+}
+
+test('a closed milestone may hold open steps only if they are deferred to a later milestone', () => {
+  assert.deepEqual(anomalies(plan), [
+    { id: 'lost', reason: 'left-behind' },
+    { id: 'blank', reason: 'no-target' },
+    { id: 'ghost', reason: 'unknown-target' },
+    { id: 'back', reason: 'not-later' },
+  ])
+})
+
+test('a milestone counts its deferred steps', () => {
+  assert.equal(deferredCount(plan, 'm'), 4)
+  assert.equal(deferredCount(plan, 'n'), 0)
+})
+
+test('the deferred step and its continuation point at each other', () => {
+  assert.equal(continuationOf(plan, 'ok').id, 'p1')
+  assert.equal(origin(plan, 'p1').id, 'ok')
+  assert.equal(continuationOf(plan, 'lost'), null)
 })

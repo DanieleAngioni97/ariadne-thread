@@ -105,3 +105,64 @@ export function pathTo(data, id) {
   const nodes = byId(data)
   return [...containers(nodes, id).reverse(), id].map(at => nodes.get(at)).filter(Boolean)
 }
+
+/** The outermost container of `id` (its milestone), or `id` itself at the top level. */
+function milestoneOf(nodes, id) {
+  return containers(nodes, id).at(-1) ?? id
+}
+
+/** Whether `later` comes after `earlier`, following `after` back through any number of steps. */
+function comesAfter(nodes, later, earlier) {
+  const seen = new Set()
+  const stack = [...(nodes.get(later)?.after ?? [])]
+  while (stack.length) {
+    const at = stack.pop()
+    if (at === earlier) return true
+    if (seen.has(at)) continue
+    seen.add(at)
+    stack.push(...(nodes.get(at)?.after ?? []))
+  }
+  return false
+}
+
+/**
+ * Open steps a closed container leaves behind must be deferred to a task in a later milestone.
+ * Reasons: left-behind (not deferred), no-target, unknown-target, not-later.
+ */
+export function anomalies(data) {
+  const nodes = byId(data)
+  const out = []
+  for (const node of data.nodes) {
+    if (node.status === 'deferred') {
+      const to = node.deferred?.to
+      if (!to) out.push({ id: node.id, reason: 'no-target' })
+      else if (!nodes.has(to)) out.push({ id: node.id, reason: 'unknown-target' })
+      else if (!comesAfter(nodes, milestoneOf(nodes, to), milestoneOf(nodes, node.id))) {
+        out.push({ id: node.id, reason: 'not-later' })
+      }
+    } else if (node.status === 'todo' || node.status === 'active') {
+      if (containers(nodes, node.id).some(at => nodes.get(at).status === 'done')) {
+        out.push({ id: node.id, reason: 'left-behind' })
+      }
+    }
+  }
+  return out
+}
+
+/** Steps inside `id` (at any depth) that were deferred to later. */
+export function deferredCount(data, id) {
+  const nodes = byId(data)
+  return data.nodes.filter(n => n.status === 'deferred' && containers(nodes, n.id).includes(id)).length
+}
+
+/** The task a deferred step continues in, or null. */
+export function continuationOf(data, id) {
+  const to = byId(data).get(id)?.deferred?.to
+  return (to && byId(data).get(to)) ?? null
+}
+
+/** The deferred step a task picks up, or null. */
+export function origin(data, id) {
+  const from = byId(data).get(id)?.continues
+  return (from && byId(data).get(from)) ?? null
+}
