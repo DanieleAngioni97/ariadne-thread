@@ -137,7 +137,7 @@ current: m1.2
 - status: active
 - parent: m1.1
 - summary: Pagina web usa e getta che mostra livelli espandibili, stati, filo, deviazioni, rinvii e pannello di contesto.
-- detail: Su branch spike/viewer (spikes/viewer/). Primo giudizio dell'utente: verso sinistra→destra ok; tooltip coperto dai nodi, frecce incasinate, tipi poco leggibili da lontano, todo di M0 rimasti lì senza motivo, interfaccia da avere nella lingua dell'utente, pannello da strutturare con tutti i file e il loro perché. Regole nuove: ogni rinvio crea un task in una milestone successiva; il piano va segnato fino in fondo per quanto si sa. Seconda versione pronta, in attesa del secondo giudizio.
+- detail: Su branch spike/viewer (spikes/viewer/). Primo giudizio dell'utente: verso sinistra→destra ok; tooltip coperto dai nodi, frecce incasinate, tipi poco leggibili da lontano, todo di M0 rimasti lì senza motivo, interfaccia da avere nella lingua dell'utente, pannello da strutturare con tutti i file e il loro perché. Regole nuove: ogni rinvio crea un task in una milestone successiva; il piano va segnato fino in fondo per quanto si sa. Seconda versione pronta. Poi: navigando a un altro passo non si capiva dove andava il grafo; ora zooma sul passo scelto e lo fa pulsare. In attesa del secondo giudizio.
 - branches:
 
 ### m1.3 — Rifinire i requisiti
