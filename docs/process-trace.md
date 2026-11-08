@@ -179,7 +179,7 @@ current: m2.2
 - status: active
 - parent: m2
 - summary: Fase 3 di ux:design-flow: 2–3 flussi diversi per scrivere, approvare e leggere il grafo, contro il brief.
-- detail: Include lo schema dei nodi (m2.1) quanto basta per confrontarli. Poi dogfooding (R24): conversione di questa traccia in .ariadne/.
+- detail: docs/ux/allineamento/concetti.md: A piano prima (raccomandato), B diario dopo, C pila di contesti, con lo schema dei nodi (m2.1) quanto basta per confrontarli; in attesa della scelta dell'utente. Poi dogfooding (R24): conversione di questa traccia in .ariadne/.
 - branches:
 
 ### m2.4 — Misurare il costo dell'osservatore
