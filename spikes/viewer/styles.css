@@ -116,7 +116,20 @@ button { font: inherit; color: inherit; }
 
 .holds-current .meta, .is-current .meta { color: var(--thread); font-weight: 600; }
 .is-current { box-shadow: 0 0 0 2px var(--thread), 0 0 0 7px var(--thread-soft); }
-.is-selected { outline: 2px solid var(--ink); outline-offset: 4px; }
+.is-selected { outline: 3px solid var(--ink); outline-offset: 4px; }
+.step.is-selected { box-shadow: 0 8px 24px rgba(24, 32, 43, 0.22); }
+.step.is-current.is-selected { box-shadow: 0 0 0 2px var(--thread), 0 0 0 7px var(--thread-soft), 0 8px 24px rgba(24, 32, 43, 0.22); }
+
+/* Arrival: a ring that grows out of the chosen step twice, so the eye finds it after the zoom */
+.is-arriving::after {
+  content: ''; position: absolute; inset: -4px; border-radius: 14px; pointer-events: none;
+  border: 3px solid var(--ink);
+  animation: arrive 700ms var(--ease-out) 450ms 2 both;
+}
+@keyframes arrive {
+  from { opacity: 0.9; transform: scale(1); }
+  to { opacity: 0; transform: scale(1.18); }
+}
 
 .alert {
   display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%;
@@ -143,6 +156,7 @@ button { font: inherit; color: inherit; }
 
 /* Open containers */
 .group {
+  position: relative;
   width: 100%; height: 100%;
   border: 1px solid var(--line); border-top: 5px solid var(--k); border-radius: 14px;
   background: rgba(247, 248, 250, 0.55);
@@ -255,6 +269,7 @@ button { font: inherit; color: inherit; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0ms !important; }
+  .is-arriving::after { animation: none; opacity: 0; }
 }
 @media (max-width: 900px) {
   .shell { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; }

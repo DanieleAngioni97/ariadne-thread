@@ -45,13 +45,14 @@ function metaOf(node) {
   return deferred ? t.closedWith(deferred) : t.status[node.status]
 }
 
-function classesOf(node, selected) {
+function classesOf(node, selected, arriving) {
   return [
     `k-${kindOf(node)}`,
     thread.has(node.id) && 'is-thread',
     holdsCurrent(data, node.id) && 'holds-current',
     node.id === data.current && 'is-current',
     node.id === selected && 'is-selected',
+    node.id === arriving && 'is-arriving',
     problems.has(node.id) && 'has-anomaly',
   ].filter(Boolean).join(' ')
 }
@@ -163,10 +164,10 @@ const Badge = ({ node }) => html`<span class="badge" aria-hidden="true">${GLYPH[
 const Alert = ({ node }) => problems.has(node.id) && html`<span class="alert" title=${t.anomaly[problems.get(node.id)]}>!</span>`
 
 function Step({ data: { node } }) {
-  const { selected, toggle, hover } = React.useContext(Ctx)
+  const { selected, arriving, toggle, hover } = React.useContext(Ctx)
   const inside = childCount(node.id)
   return html`
-    <div class=${`step ${classesOf(node, selected)}`}
+    <div class=${`step ${classesOf(node, selected, arriving)}`}
       onMouseEnter=${e => hover(node, e.currentTarget)} onMouseLeave=${() => hover(null)}>
       <${Handle} type="target" position=${Position.Left} />
       <${Badge} node=${node} />
@@ -183,9 +184,9 @@ function Step({ data: { node } }) {
 }
 
 function Group({ data: { node } }) {
-  const { selected, toggle, hover } = React.useContext(Ctx)
+  const { selected, arriving, toggle, hover } = React.useContext(Ctx)
   return html`
-    <div class=${`group ${classesOf(node, selected)}`}>
+    <div class=${`group ${classesOf(node, selected, arriving)}`}>
       <${Handle} type="target" position=${Position.Left} />
       <div class="group-head" onMouseEnter=${e => hover(node, e.currentTarget)} onMouseLeave=${() => hover(null)}>
         <${Badge} node=${node} />
@@ -343,6 +344,9 @@ function App() {
   const [toast, setToast] = useState(null)
   const [tip, setTip] = useState(null)
   const tipTimer = useRef(null)
+  // Where to fly after the next layout (a step chosen from the panel or the breadcrumb), and the step just reached.
+  const [flyTo, setFlyTo] = useState(null)
+  const [arriving, setArriving] = useState(null)
   const flow = useReactFlow()
 
   useEffect(() => {
@@ -350,10 +354,20 @@ function App() {
     layout(expanded, focus).then(next => {
       if (!alive) return
       setGraph(next)
-      requestAnimationFrame(() => flow.fitView({ padding: 0.12, duration: 240 }))
+      if (!flyTo) requestAnimationFrame(() => flow.fitView({ padding: 0.12, duration: 240 }))
     })
     return () => { alive = false }
   }, [expanded, focus])
+
+  // Zoom onto the chosen step once it is drawn, then make it pulse so the eye lands on it.
+  useEffect(() => {
+    if (!flyTo || !graph.nodes.some(n => n.id === flyTo)) return
+    requestAnimationFrame(() => flow.fitView({ nodes: [{ id: flyTo }], padding: 0.6, maxZoom: 1.1, duration: 500 }))
+    setArriving(flyTo)
+    setFlyTo(null)
+    const timer = setTimeout(() => setArriving(null), 1600)
+    return () => clearTimeout(timer)
+  }, [graph, flyTo])
 
   useEffect(() => {
     if (!toast) return
@@ -379,8 +393,10 @@ function App() {
 
   const choose = useCallback(id => {
     setSelected(id)
-    // Make sure the step is drawn: open everything that contains it.
-    setExpanded(prev => new Set([...prev, ...pathTo(data, id).slice(0, -1).map(n => n.id)]))
+    setFlyTo(id)
+    // Make sure the step is drawn: open everything that contains it (a new set only if something opens).
+    const holders = pathTo(data, id).slice(0, -1).map(n => n.id)
+    setExpanded(prev => (holders.every(at => prev.has(at)) ? prev : new Set([...prev, ...holders])))
   }, [])
 
   const showLevel = name => {
@@ -390,7 +406,7 @@ function App() {
 
   const path = pathTo(data, data.current)
   const node = byId.get(selected) ?? byId.get(data.current)
-  const ctx = useMemo(() => ({ selected, toggle, hover }), [selected, toggle, hover])
+  const ctx = useMemo(() => ({ selected, arriving, toggle, hover }), [selected, arriving, toggle, hover])
 
   return html`
     <${Ctx.Provider} value=${ctx}>
