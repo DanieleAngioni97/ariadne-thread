@@ -53,13 +53,23 @@ Un'azione = un clic, un tasto, o una frase scritta in chat chiusa da Invio.
 | R1 | Chi scrive: l'agente principale ai checkpoint, con un tool; l'osservatore controlla e segnala, non scrive (Q3) | nessun nodo nel grafo ha come autore l'osservatore | deve |
 | R2 | Dettagli in automatico (stato, file, momenti); struttura (ramo, deviazione, milestone, rinvio, cancellazione) solo dopo la tua conferma (Q4) | ogni nodo strutturale ha una conferma tua con data | deve |
 | R3 | Ogni nodo ha almeno una prova verificabile (messaggio, commit, file); il controllo automatico rifiuta il resto (Q5) | 0 nodi senza prova esistente | deve |
-| R4 | Limiti di leggibilità: di default max 3 rami aperti per livello e 3 nodi nuovi per aggiornamento, regolabili; oltre, si propone di chiudere o rimandare (Q6) | il validatore rifiuta il superamento con una proposta alternativa | deve |
+| R4 | Limiti di leggibilità per livello (profili essenziale 2/2, standard 3/3, esteso 5/5): limitano quanto si vede aperto a un livello, mai quanto si esplora; oltre, i nodi si raggruppano in un sotto-livello (Q6, Q19) | un ramo con 10 aspetti resta leggibile: ≤ N figli aperti per livello, nessuna esplorazione rifiutata | deve |
 | R5 | Un nodo è una decisione o un risultato verificabile, non un turno né un'azione (Q7) | nessun nodo senza decisione o risultato nel campo "cosa" | deve |
 | R6 | Aggiornamento ai checkpoint: commit, passo chiuso, cambio di argomento, tua richiesta (Q8) | nessuna scrittura fuori da un checkpoint | deve |
-| R7 | All'agente, a ogni turno, un riassunto compatto calcolato dal grafo (corrente, percorso, rami aperti, prossimo); il resto su richiesta (Q9) | ≤ 300 token; presente anche dopo la compattazione | deve |
-| R8 | LOG generato dal grafo, poi sostituito del tutto (Q10) | LOG.md coincide con l'export | dovrebbe |
+| R7 | All'agente, a ogni turno, un riassunto calcolato dal codice: il lineage a ritroso del passo corrente (solo le sue dipendenze), i rami che divergono e dovranno rientrare in una riga ciascuno, il prossimo passo, e come chiedere più contesto (Q9, Q26) | ≤ 300 token; 0 token di modello per produrlo; presente anche dopo la compattazione | deve |
+| R8 | LOG append-only dentro `.ariadne/`, una riga per nodo chiuso in ordine di data; STATE.md e LOG.md in radice spariscono (Q10, Q29) | nessun file di stato fuori da `.ariadne/` | dovrebbe |
 | R9 | Il grafo è versionato in git, in un formato leggibile nei diff: una sola fonte di verità (Q11) | STATE.md e Next non scritti più a mano | deve |
 | R10 | Correzioni in chat ("sposta X sotto Y"); il viewer resta di sola lettura (Q16) | una correzione = 1 azione | deve |
+| R11 | Proposte strutturali: la banda avvisa e fa approvare, il viewer le mostra in grigio nel punto dove cadrebbero (Q12) | approvare = 1 azione, senza lasciare il terminale | deve |
+| R12 | Una lista di punti (domande, review) è un nodo con i punti come figli e stato; la banda mostra sempre "↩ Torna a: <lista> (k/n decisi)" (Q18) | tornare all'indice = 1 azione | deve |
+| R13 | Questione laterale: deviazione nel grafo se breve; `/subtask` o `/branch` se lunga, registrati come ramo collegato al punto di partenza (Q20) | ogni `/branch` o `/subtask` ha il suo nodo di origine | dovrebbe |
+| R14 | L'agente emette solo operazioni tipizzate per id (aggiungi, chiudi, rimanda, collega, sostituisce, niente) (Q21) | 0 riscritture del grafo intero | deve |
+| R15 | Mai cancellare: un nodo superato punta al successore ed è nascosto di default (Q22) | ogni nodo "sostituito" ha un successore esistente | deve |
+| R16 | Ogni decisione dice chi l'ha presa (agente / tu) e quando; il viewer le distingue (Q23) | 100% delle decisioni con autore e data | deve |
+| R17 | Un nodo con prova incerta appare attenuato con "?" e il motivo (Q24) | nessun nodo incerto mostrato come verificato | deve |
+| R18 | Ogni commit porta `Thread: <id>`; il rework è un nodo chiuso e poi riaperto (Q25) | 100% dei commit con la riga; rework contabile | deve |
+| R19 | Formato: JSONL, un nodo per riga in ordine stabile, in `.ariadne/` versionato (Q27, Q11) | il diff di un commit mostra solo i nodi cambiati | deve |
+| R20 | L'osservatore, ai checkpoint, confronta gli ultimi turni col grafo e segnala nella banda; rilettura completa solo a richiesta (Q28) | nessuna scrittura dell'osservatore; costo misurato in `m2.4` | deve |
 
 ## Vincoli
 - API delle mod in early access: può cambiare a ogni release.
@@ -92,79 +102,36 @@ di oggi. Prima: STATE.md ~2,7 KB (≈700 token) iniettato a inizio sessione; tra
 | 2026-11-08 | LOG generato dal grafo, poi eliminato; export append-only per data | Q10 | tu |
 | 2026-11-08 | Grafo in git, una sola fonte di verità | Q11 | tu |
 | 2026-11-08 | Compiti e metriche come proposti; correzioni in chat; fuori ambito come proposto | Q13, Q15, Q16, Q17 | tu |
+| 2026-11-08 | Approvazione nella banda, anteprima in grigio nel viewer | Q12 | tu |
+| 2026-11-08 | Le liste sono nodi con "↩ Torna a" | Q18 | tu |
+| 2026-11-08 | I profili limitano la vista per livello, non l'esplorazione | Q19 | tu |
+| 2026-11-08 | Questioni laterali: deviazione, `/subtask` o `/branch` | Q20 | tu |
+| 2026-11-08 | Operazioni tipizzate; idea di uno scribe dedicato da valutare | Q21 | tu |
+| 2026-11-08 | Mai cancellare; decisioni firmate; nodi incerti attenuati; `Thread:` nei commit | Q22–Q25 | tu |
+| 2026-11-08 | Riassunto dal codice con lineage a ritroso e istruzioni per approfondire | Q26 | tu |
+| 2026-11-08 | JSONL in `.ariadne/`; osservatore che segnala; LOG dentro `.ariadne/` | Q27–Q29 | tu |
 
 ## Domande aperte
 
-Round 2 — rispondi sotto ogni «Risposta:» (basta la lettera, o "ok" per la proposta ➡️).
-Nascono dalle tue risposte, da `docs/research.md` §7 e dal metodo spec-driven (nodo `d3`).
-Le più importanti: **Q18, Q19, Q22, Q25**. Q20 ora ha i fatti sugli strumenti nativi.
+Round 3 — l'ultimo prima dei concetti (fase 3). Rispondi sotto ogni «Risposta:».
 
-### Q12 — Dove approvi una proposta strutturale (frontend)
-(a) Nella banda sopra il prompt: "Proposta: nuovo ramo «X» [Sì] [No] [Vedi]" · (b) Nel viewer, in una coda di proposte · (c) La banda avvisa e approva; il viewer mostra la proposta in grigio nel grafo, per vederla nel contesto.
-➡️ (c): approvi senza lasciare il terminale (1 azione), e chi vuole capire dove cade il ramo lo vede nel grafo.
+### Q30 — Lo scribe (da Q21)
+Mi dici dov'è l'agente "task scribe"? Non l'ho trovato in `~/Sviluppo` né nei tuoi repo su GitHub.
+Intanto la scelta: (a) l'agente principale chiama direttamente le operazioni tipizzate · (b) l'agente principale, al checkpoint, scrive una nota di 1–3 righe (cosa, perché, prova) e uno scribe economico (Haiku/Sonnet) la traduce in operazioni, che il validatore controlla · (c) lo scribe legge da solo gli ultimi turni e decide cosa scrivere.
+➡️ (b): il "perché" lo dà chi ha lavorato (R1), la fatica di formattare la fa un modello economico; (c) è l'osservatore che inventa, cioè il rischio da evitare.
 Risposta:
 
-### Q18 — Indice e ritorno: la lista di domande (backend + frontend)
-Il tuo caso: una decina di punti, ne discuti uno, vuoi tornare all'indice senza riscriverlo. (a) Un nodo "lista" i cui punti sono figli con stato (aperto / discusso / deciso); entrare in un punto sposta la posizione lì, e la banda mostra sempre "↩ Torna a: Round 2 (7/12 decisi)" · (b) Solo un segnalibro sul messaggio con la lista · (c) Niente di speciale: si scorre la chat.
-➡️ (a): l'indice vive nel grafo, non nella chat, e il ritorno costa 1 azione; vale anche per le review con 10 punti.
+### Q31 — Rami che devono rientrare (da Q26)
+(a) Quando nasce un ramo si dichiara dove rientra (es. "torna in m1.3"); finché è aperto compare nel riassunto e nella banda come "rientro in sospeso" · (b) Nessun punto di rientro dichiarato: si vede solo che è aperto.
+➡️ (a): "prima o poi dovranno tornare a unirsi" diventa una promessa che il sistema ricorda; è la stessa regola dei rinvii.
 Risposta:
 
-### Q19 — Profili di intensità (da Q6)
-(a) Tre profili per progetto — essenziale (2 rami / 2 nodi), standard (3/3), esteso (5/5) — scelti in un file di configurazione · (b) Numeri liberi · (c) Il sistema li adatta da solo all'uso.
-➡️ (a): facile da scegliere e da confrontare; (c) è opaco e rende il grafo imprevedibile.
+### Q32 — Raggruppare quando un livello si riempie (da Q19)
+Sei al limite del profilo e arriva un nodo nuovo. (a) L'agente propone un nodo contenitore che raccoglie i fratelli affini, e tu confermi (è struttura) · (b) Raggruppa da solo, annullabile · (c) Solo un avviso.
+➡️ (a): coerente con R2 (la struttura è tua) e non blocca nulla.
 Risposta:
 
-### Q20 — Questione laterale che rischia di sporcare la chat
-Il tuo caso: in una review del frontend emerge un dubbio sul backend. (a) Deviazione nel grafo, nella stessa chat, con ritorno esplicito al punto lasciato · (b) Una conversazione separata (fork di Claude Code) registrata come ramo collegato, che a fine discussione porta indietro solo la decisione · (c) Entrambe: deviazione per le cose brevi, fork per quelle lunghe o con molto lavoro.
-Fatti (docs di Claude Code, 2026-11-08): `/btw` risponde senza entrare nella chat ma non usa tool;
-`/subtask` lavora a parte con i tool e porta indietro solo il risultato; `/branch` copia la chat in una
-sessione nuova e si torna con `/resume`; `/fork` fa lo stesso in background. Non esistono segnalibri.
-Una mod non riceve `session.start` su `/branch` (arriva `session.end`), quindi il collegamento va fatto da noi.
-➡️ (c): deviazione nel grafo per le cose brevi; per quelle lunghe `/subtask` (torna solo la decisione) o
-`/branch` (discussione vera, poi `/resume`), registrati come ramo collegato al punto di partenza.
-Risposta:
-
-### Q21 — Cosa scrive l'agente (backend)
-(a) Solo operazioni piccole e tipizzate, per id: aggiungi, chiudi, rimanda, collega, sostituisce, niente · (b) Il grafo intero riscritto.
-➡️ (a): costano meno token, il validatore le controlla una per una e "niente" è un esito valido (docs/research.md §7.2).
-Risposta:
-
-### Q22 — Mai cancellare (backend + frontend)
-Un nodo sbagliato o superato: (a) si marca "sostituito da Y" e il viewer lo nasconde di default, mostrandolo su richiesta · (b) si cancella.
-➡️ (a): la storia resta fedele e spiegabile; il grafo che vedi resta pulito.
-Risposta:
-
-### Q23 — Decisioni firmate
-(a) Ogni decisione registra se l'ha presa l'agente (proposta) o se l'hai confermata tu, con la data, anche quando va contro la raccomandazione; il viewer le distingue · (b) Non serve distinguerle.
-➡️ (a): è la risposta più diretta a "il grafo deve coincidere col processo": si vede chi ha deciso cosa.
-Risposta:
-
-### Q24 — Nodo non ancora verificato (frontend)
-La prova esiste ma il controllo che la sostenga è incerto. (a) Il nodo appare attenuato con un "?" e un motivo nel pannello · (b) Resta nascosto finché non è verificato · (c) Appare come gli altri.
-➡️ (a): non perdi informazione, ma sai di cosa fidarti.
-Risposta:
-
-### Q25 — Il commit come prova (backend)
-(a) Ogni commit porta una riga `Thread: <id del nodo>` nel corpo; il nodo ha così una prova verificabile e si può misurare il rework (un nodo chiuso e poi riaperto) · (b) No.
-➡️ (a): costa una riga; collega codice e processo nei due sensi.
-Risposta:
-
-### Q26 — Il riassunto per l'agente: come si calcola (da Q9)
-(a) Dal codice, senza modello, a ogni turno: il grafo cambia, il riassunto si aggiorna da solo; tetto fisso di 300 token, e se sfora si tagliano prima i rami lontani · (b) Lo scrive un modello a ogni checkpoint.
-➡️ (a): zero token per produrlo, deterministico, sempre allineato al grafo.
-Risposta:
-
-### Q27 — Formato su disco (da Q11)
-(a) Un file JSONL, un nodo per riga in ordine stabile: il diff mostra esattamente quali nodi sono cambiati · (b) Un file markdown per nodo, con intestazione · (c) Un unico markdown come `docs/process-trace.md` oggi.
-➡️ (a): leggibile nei diff, facile da validare, il viewer lo legge com'è; la storia la dà git.
-Risposta:
-
-### Q28 — Cosa controlla l'osservatore (da Q3)
-(a) Ai checkpoint confronta gli ultimi turni con il grafo e segnala nella banda: passo mancante, stato sbagliato, prova che non sostiene il nodo · (b) Rilegge l'intera sessione a ogni checkpoint · (c) Niente osservatore per ora.
-➡️ (a), con costo misurato nel task `m2.4`; (b) solo a richiesta.
-Risposta:
-
-### Q29 — LOG append-only (da Q10)
-(a) Una riga aggiunta a LOG.md ogni volta che un nodo si chiude, in ordine di data · (b) Un blocco a fine milestone.
-➡️ (a): il LOG è sempre aggiornato e nessuno lo scrive a mano.
+### Q33 — Iniziare a usarlo prima che esista la mod
+(a) Subito, a mano: converto `docs/process-trace.md` in `.ariadne/graph.jsonl`, scrivo il validatore come script, e io (l'agente) aggiorno il grafo con le regole del brief a ogni checkpoint; STATE/LOG restano finché il riassunto non li sostituisce · (b) Solo quando c'è la mod (M3).
+➡️ (a): misuriamo da subito token, errori e leggibilità sul caso vero (Q15), e il formato si stabilizza prima di scrivere la mod.
 Risposta:
