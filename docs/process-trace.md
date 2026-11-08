@@ -2,6 +2,9 @@
 
 Traccia a mano del processo di questo progetto: il caso d'uso reale e il primo dataset per il grafo.
 
+> Congelata il 2026-11-08 (m2.8): la fonte ora è `.ariadne/graph.jsonl`, generato da qui con
+> `node scripts/ariadne/convert-trace.mjs`. Non aggiornare più questo file.
+
 ## Formato
 
 - Righe in testa: `current: <id>` (posizione corrente).
