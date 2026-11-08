@@ -51,7 +51,7 @@ Un'azione = un clic, un tasto, o una frase scritta in chat chiusa da Invio.
 | # | Requisito | Criterio verificabile | Priorità |
 |---|---|---|---|
 | R1 | Chi scrive: l'agente principale ai checkpoint, con un tool; l'osservatore controlla e segnala, non scrive (Q3) | nessun nodo nel grafo ha come autore l'osservatore | deve |
-| R2 | Dettagli in automatico (stato, file, momenti); struttura (ramo, deviazione, milestone, rinvio, cancellazione) solo dopo la tua conferma (Q4) | ogni nodo strutturale ha una conferma tua con data | deve |
+| R2 | Dettagli in automatico (stato, file, momenti); struttura (ramo, deviazione, milestone, rinvio, cancellazione) solo dopo la tua conferma (Q4). Dentro il mandato (R25) la struttura entra subito come "da confermare" e la conferma arriva dopo | ogni nodo strutturale ha una conferma tua con data, o è "da confermare" dentro il mandato | deve |
 | R3 | Ogni nodo ha almeno una prova verificabile (messaggio, commit, file); il controllo automatico rifiuta il resto (Q5) | 0 nodi senza prova esistente | deve |
 | R4 | Limiti di leggibilità per livello (profili essenziale 2/2, standard 3/3, esteso 5/5): limitano quanto si vede aperto a un livello, mai quanto si esplora; oltre, i nodi si raggruppano in un sotto-livello (Q6, Q19) | un ramo con 10 aspetti resta leggibile: ≤ N figli aperti per livello, nessuna esplorazione rifiutata | deve |
 | R5 | Un nodo è una decisione o un risultato verificabile, non un turno né un'azione (Q7) | nessun nodo senza decisione o risultato nel campo "cosa" | deve |
@@ -73,6 +73,8 @@ Un'azione = un clic, un tasto, o una frase scritta in chat chiusa da Invio.
 | R22 | Ogni ramo dichiara dove rientra; finché è aperto è un "rientro in sospeso" nel riassunto e nella banda (Q31) | 0 rami aperti senza punto di rientro | deve |
 | R23 | Livello pieno: l'agente propone un contenitore per i fratelli affini e tu confermi (Q32) | nessun livello oltre il profilo senza proposta | deve |
 | R24 | Dogfooding prima della mod: grafo in `.ariadne/`, validatore come script, aggiornato dall'agente a ogni checkpoint (Q33) | STATE/LOG tolti quando il riassunto li sostituisce | deve |
+| R25 | Mandato: quando approvi un piano dici cosa l'agente può fare da solo (default: passi dentro la milestone corrente, deviazioni brevi; mai milestone nuove, rinvii, cambi d'obiettivo). Fuori dal mandato l'agente non applica nulla: sceglie l'opzione prudente, annota "da decidere" e prosegue (Q34) | 0 modifiche fuori mandato applicate senza conferma; il validatore le rifiuta | deve |
+| R26 | Al rientro dopo un'assenza: riepilogo di cosa è successo e coda delle modifiche da confermare e da decidere; un rifiuto rende `replaced` il ramo, che resta tracciato (Q34) | vedere il riepilogo = 1 azione; approvare tutto = 1 azione | deve |
 | R20 | L'osservatore, ai checkpoint, confronta gli ultimi turni col grafo e segnala nella banda; rilettura completa solo a richiesta (Q28) | nessuna scrittura dell'osservatore; costo misurato in `m2.4` | deve |
 
 ## Vincoli
@@ -87,7 +89,7 @@ Altri agenti (Codex, Cursor), più persone sullo stesso grafo, mobile, editing n
 ## Metriche (prima / obiettivo)
 Obiettivo dopo una settimana d'uso (Q15): ≥ 90% dei nodi giusti senza ritocchi; ≤ 1 proposta
 strutturale rifiutata su 5; capisci dove sei in ≤ 5 s guardando la banda; token per turno sotto quelli
-di oggi. Prima: STATE.md ~2,7 KB (≈700 token) iniettato a inizio sessione; traccia a mano.
+di oggi; ≤ 1 modifica su 5 fatta in tua assenza rifiutata al rientro (R26). Prima: STATE.md ~2,7 KB (≈700 token) iniettato a inizio sessione; traccia a mano.
 
 ## Decisioni
 | Data | Decisione | Motivo | Chi |
@@ -116,6 +118,7 @@ di oggi. Prima: STATE.md ~2,7 KB (≈700 token) iniettato a inizio sessione; tra
 | 2026-11-08 | JSONL in `.ariadne/`; osservatore che segnala; LOG dentro `.ariadne/` | Q27–Q29 | tu |
 | 2026-11-08 | Nota dell'agente + scribe economico; punto di rientro dichiarato; contenitore proposto a livello pieno; dogfooding subito | Q30–Q33 (in chat: "approvo") | tu |
 | 2026-11-08 | Brief chiuso | Domande aperte vuote | tu |
+| 2026-11-08 | Lavoro non sorvegliato: mandato al momento del piano + coda di revisione al rientro (opzioni 2+3); da provare nel prototipo | Q34: piani lunghi con Claude Code lasciato solo per ore | tu |
 | 2026-11-08 | Concetto A "Piano prima": il piano nasce approvato, i checkpoint chiudono e riempiono, struttura nuova solo fuori piano; banda dal lineage | concetti.md: lo scribe non decide la struttura; regge rinvii e rami paralleli | tu |
 
 ## Domande aperte

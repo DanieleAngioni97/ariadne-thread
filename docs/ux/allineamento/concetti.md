@@ -167,3 +167,7 @@ Rischio da tenere d'occhio nel prototipo: quante proposte "fuori piano" arrivano
 sono più di una su cinque rifiutate (metrica del brief), il piano va proposto a grana più grossa.
 
 **Scelta (2026-11-08, utente):** A, con la banda calcolata dal lineage come proposto.
+
+**Aggiunta (Q34):** quando lavora da solo per ore l'agente non si ferma alle proposte: dentro il
+mandato approvato con il piano le applica come "da confermare", fuori dal mandato annota "da
+decidere" e sceglie l'opzione prudente. Al rientro trovi una coda da rivedere (R25, R26).
