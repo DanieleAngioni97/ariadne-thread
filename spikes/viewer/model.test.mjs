@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 import {
-  anomalies, continuationOf, defaultExpanded, deferredCount, origin, threadSet, visibleEdges, visibleNodes,
+  anomalies, continuationOf, defaultExpanded, deferredCount, filesWithin, origin, threadSet, visibleEdges, visibleNodes,
 } from './model.js'
 
 // root ─ a ─ b(current inside: b1 → b2*) ; a opens branch x ; detour d off a
@@ -111,4 +111,21 @@ test('the deferred step and its continuation point at each other', () => {
   assert.equal(continuationOf(plan, 'ok').id, 'p1')
   assert.equal(origin(plan, 'p1').id, 'ok')
   assert.equal(continuationOf(plan, 'lost'), null)
+})
+
+test('a container lists every file touched inside it, once per path, with the reason from each step', () => {
+  const tree = {
+    current: 'a',
+    nodes: [
+      { id: 'm', files: [{ path: 'x.md', change: 'created', why: 'start' }] },
+      { id: 'a', parent: 'm', files: [{ path: 'x.md', change: 'edited', why: 'more' }, { path: 'y.md', change: 'edited', why: 'fix' }] },
+      { id: 'a1', parent: 'a', files: [{ path: 'z.md', change: 'created', why: 'new' }] },
+    ],
+  }
+  assert.deepEqual(filesWithin(tree, 'm'), [
+    { path: 'x.md', change: 'created', reasons: [{ step: 'm', why: 'start' }, { step: 'a', why: 'more' }] },
+    { path: 'y.md', change: 'edited', reasons: [{ step: 'a', why: 'fix' }] },
+    { path: 'z.md', change: 'created', reasons: [{ step: 'a1', why: 'new' }] },
+  ])
+  assert.deepEqual(filesWithin(tree, 'a1').map(f => f.path), ['z.md'])
 })

@@ -166,3 +166,22 @@ export function origin(data, id) {
   const from = byId(data).get(id)?.continues
   return (from && byId(data).get(from)) ?? null
 }
+
+/**
+ * Files touched by `id` and every step inside it, once per path in the order first touched.
+ * A file counts as created if any step created it; each step that touched it adds its reason.
+ */
+export function filesWithin(data, id) {
+  const nodes = byId(data)
+  const out = new Map()
+  for (const node of data.nodes) {
+    if (node.id !== id && !containers(nodes, node.id).includes(id)) continue
+    for (const f of node.files ?? []) {
+      const seen = out.get(f.path) ?? { path: f.path, change: f.change, reasons: [] }
+      if (f.change === 'created') seen.change = 'created'
+      seen.reasons.push({ step: node.id, why: f.why })
+      out.set(f.path, seen)
+    }
+  }
+  return [...out.values()]
+}
