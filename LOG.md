@@ -9,3 +9,4 @@
 - 2026-11-07 — M0 chiusa: mod come sorgente + viewer web, Apache-2.0. M1: `docs/requirements-draft.md` (livelli, stato, contesto al click, salto alla chat via banda).
 - 2026-11-07 · M0 chiusa, M1 avviata: spike del viewer web pronto per il giudizio · 92ff465
 - 2026-11-08 · M1 chiusa: spike del viewer approvato, ricerca §7, brief dell'allineamento R1–R24; M2 avviata · d84a45e
+- 2026-11-08 · M2: concetto A scelto, dogfooding su .ariadne/ (validatore + convertitore), prototipo provato e revisionato; prossimo m2.10 specifica · 2b2e006

@@ -2,41 +2,41 @@
 Aggiornato: 2026-11-08 · Branch: `spike/viewer` (da `docs/m0-research`) · PR: nessuna (scelta dell'utente)
 
 ## Milestone
-M2 — Progettazione. M1 chiusa il 2026-11-08: spike del viewer approvato ("va benissimo per ora"),
-requisiti in `docs/requirements-draft.md`, brief dell'allineamento persona ↔ modello chiuso
-(`docs/ux/allineamento/brief.md`, R1–R24, modalità nuovo, profondità standard).
+M2 — Progettazione. Scelto il concetto A «Piano prima» (`docs/ux/allineamento/concetti.md`):
+prototipo provato dall'utente ("mi torna"), revisione leggera fatta (`valutazione.md`). Dogfooding
+avviato: la fonte del processo è `.ariadne/graph.jsonl`, nodo corrente `m2.10` (`.ariadne/thread.json`).
 
 ## Next
-1. Fase 3 di `ux:design-flow` (il brief è già chiuso, la fase 2 si salta perché la modalità è
-   nuovo): 2–3 concetti di flusso davvero diversi in `docs/ux/allineamento/concetti.md` (chi scrive
-   e quando, come approvi, cosa legge l'agente, liste e "↩ Torna a", rami con rientro), con lo
-   schema dei nodi quanto basta per confrontarli. Raccomandane uno; sceglie l'utente.
-2. Dogfooding (R24, approvato): `plan-before-coding`, poi conversione di `docs/process-trace.md` in
-   `.ariadne/graph.jsonl` + validatore come script (test prima). STATE/LOG restano finché il
-   riassunto per l'agente (R7) non li sostituisce.
-3. Poi prototipo (fase 4), revisione d'usabilità leggera (fase 5), `specifica.md` (fase 6).
-4. A ogni passo aggiornare `docs/process-trace.md` (nodo corrente `m2.2`; formato in testa al file).
+1. Fase 6 di `ux:design-flow`: scrivere `docs/ux/allineamento/specifica.md` (formato in
+   `references/specifica.md` della skill) da brief R1–R26, concetti, `prototipo/index.html` e
+   `valutazione.md`. Dentro i 6 minori della valutazione (§ Correzioni 4–9), il mandato (R25), la
+   coda al rientro (R26) e lo schema dei nodi di `concetti.md`.
+2. A ogni checkpoint aggiornare `.ariadne/graph.jsonl` (e `thread.json`), poi
+   `node scripts/ariadne/validate.mjs` → `ok`. Un passo nuovo fuori piano si propone all'utente prima
+   di aggiungerlo (concetto A). Chiudere `m2.10` con le prove quando la specifica è approvata.
+3. Poi `plan-before-coding` per l'implementazione (scribe, riassunto R7 dal grafo, banda nella mod,
+   viewer che legge `.ariadne/`). Quando il riassunto R7 esiste, togliere STATE.md e LOG.md (R8, R24).
 
 ## Decisioni aperte e rischi
-- Non pubblicati: 5 commit su `docs/m0-research` e 23 su `spike/viewer` (non sul remote). Push solo su richiesta.
-- Lo scribe (R21) non esiste da nessuna parte: è da progettare in M2.
-- API delle mod in EARLY ACCESS: rilanciare i test della mod a ogni aggiornamento di Claude Code.
-- Da verificare (task `m2.7`): se la mod vede `/btw`; canale browser → mod → banda; scorrimento della
-  chat con `$.ui.scroll({ to: { requestId } })`, ammesso solo su un input della persona; una mod non
-  riceve `session.start` su `/branch` (solo `session.end`).
-- Per le questioni laterali con tool usare `/subtask` o un fork, non la conversazione principale.
-- UI del grafo nel terminale bocciata: non rifarla. Porta 8765 occupata: spike sulla 8790.
-- Il browser tiene in cache i moduli dello spike: dopo ogni modifica, Cmd+Shift+R.
+- Non pubblicati: 5 commit su `docs/m0-research` e 36 su `spike/viewer`. Push solo su richiesta.
+- `docs/process-trace.md` è congelato: non aggiornarlo. 25 nodi storici su 38 sono `uncertain`.
+- Lo scribe (R21) è ancora solo un'idea: prompt, modello e operazioni vanno nella specifica.
+- Il viewer dello spike legge ancora `spikes/viewer/data.js`, non `.ariadne/`.
+- API delle mod in EARLY ACCESS; verifiche aperte in `m2.7` (/btw, canale browser → mod, scroll).
+- Prototipi da far provare all'utente: pulsanti con nomi e una riga di guida, mai tasti nascosti;
+  aprirli con `open`, non con `human-review` (rende la pagina modificabile e rompe i tasti).
+- Screenshot con Playwright: `uv run --with playwright`, `executable_path` sul Chromium in
+  `~/Library/Caches/ms-playwright/chromium_headless_shell-1243/` (le versioni nuove non lo trovano).
+- UI del grafo nel terminale bocciata. Porta 8765 occupata: spike sulla 8790. Dopo modifiche allo
+  spike, Cmd+Shift+R.
 
 ## Pointers
-- Brief `docs/ux/allineamento/brief.md` · Requisiti `docs/requirements-draft.md` · Ricerca
-  `docs/research.md` (§7: memoria per agenti e controllo del grafo) · Analisi mod `docs/analysis-mod.md`
-  · Traccia `docs/process-trace.md` · Visione `docs/vision.md`.
-- Spike viewer: `python3 -m http.server 8790 --bind 127.0.0.1 --directory spikes/viewer` →
-  http://127.0.0.1:8790/ (`?level=milestones|path|all`, `?select=<id>`, `?lang=it|en`); bozza del
-  formato in `spikes/viewer/data.js`, regole dei rinvii in `spikes/viewer/model.js`.
-- Verifica: `node --test spikes/viewer/` → 12 pass. Spike mod fuori dal repo
-  (`~/.claude/dev-mods/9491e746-5169-4bed-8881-53945d893b0b/ariadne-spike/`): `claude plugin test` → 7 pass.
-- Proposte per l'harness nate qui: repo dotclaude, `docs/spec-driven/proposte-harness.md`.
-- Skill suggerite: `ux:design-flow` (riprende da `docs/ux/allineamento/`); `plan-before-coding` e
-  `commit-checkpoint` per il dogfooding; `plugin-authoring` per la mod; `domain-modeling` per lo schema.
+- UX: `docs/ux/allineamento/` → `brief.md` (R1–R26, Decisioni), `concetti.md`, `prototipo/index.html`,
+  `valutazione.md`. Requisiti `docs/requirements-draft.md` · Ricerca `docs/research.md` §7.
+- Grafo: `.ariadne/graph.jsonl` · validatore `scripts/ariadne/validate.mjs` · convertitore (una tantum)
+  `scripts/ariadne/convert-trace.mjs`.
+- Verifica: `node --test scripts/ariadne/ spikes/viewer/` → 31 pass · `node scripts/ariadne/validate.mjs` → ok.
+- Spike mod fuori dal repo (`~/.claude/dev-mods/9491e746-5169-4bed-8881-53945d893b0b/ariadne-spike/`):
+  `claude plugin test` → 7 pass.
+- Skill: `ux:design-flow` (riprende da `docs/ux/allineamento/`, fase 6); poi `plan-before-coding`,
+  `commit-checkpoint`; `plugin-authoring` per la mod; `domain-modeling` per lo schema.
