@@ -154,6 +154,13 @@ current: m1.3
 - detail: Domanda laterale durante il grilling. Nessuno registra il processo avvenuto con decisioni, rinvii e perché; Beads è il motore più vicino (idee, non backend). Ne escono 11 regole candidate per il brief. docs/research.md §7.
 - branches:
 
+### d3 — Cosa prendere dal metodo spec-driven
+- status: done
+- parent: m1.3
+- summary: Lettura di un documento interno su Spec Kit e su un harness di Claude Code, per idee utili ad ariadne e all'harness.
+- detail: Idee per il brief: decisioni firmate dall'utente con data, riga Thread: nei commit come prova, marcatori con esito "da rivedere" se manca la prova, vincolo nel posto giusto (hook/gate/prompt), riassunto rimesso davanti dopo la compattazione, convergenza, rework = nodo chiuso e poi riaperto. Il documento non entra nel repo (classificato interno).
+- branches:
+
 ### m2 — M2 Progettazione
 - status: todo
 - parent: m1
