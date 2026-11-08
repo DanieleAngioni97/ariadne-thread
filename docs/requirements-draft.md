@@ -6,11 +6,11 @@
 ## Forma del prodotto
 
 - **F1** Una mod di Claude Code legge la chat e aggiorna il grafo in automatico.
-- **F2** Il grafo vive in un file del progetto ignorato da git (`.ariadne/`).
+- **F2** Il grafo vive in `.ariadne/`, **versionato in git** come JSONL: una sola fonte di verità (brief R9, R19).
 - **F3** Nel terminale resta solo una banda sopra il prompt: dove sei, da dove vieni, cosa è aperto.
 - **F4** Il grafo si guarda in un viewer web locale, nel browser, che si aggiorna in diretta.
 - **F5** Il viewer legge solo il file: funziona anche con un grafo scritto a mano.
-- **F6** STATE.md e LOG.md sono, per ora, un export generato dal grafo a fine milestone.
+- **F6** Il grafo sostituisce STATE.md, LOG.md e Next: il LOG è append-only dentro `.ariadne/` (brief R8, R24).
 - **F7** Licenza Apache-2.0.
 
 ## Livelli e annidamento
@@ -58,10 +58,18 @@ dalla mod, che ne legge l'output) e lo scorrimento a un messaggio nel terminale.
 
 ## Aggiornamento automatico
 
-- **A1** A fine turno la mod propone gli aggiornamenti al grafo (nodi nuovi, stati, posizione).
+- **A1** Ai checkpoint l'agente principale scrive una nota (cosa, perché, prova); uno scribe la traduce in operazioni tipizzate che un validatore controlla. L'osservatore segnala soltanto (brief R1, R6, R14, R20, R21).
 - **A2** Una domanda laterale o un cambio di argomento crea una deviazione (S4), non un passo del piano.
 - **A3** I file toccati dai tool nel turno si agganciano al nodo corrente (C3).
 - **A4** Il costo per turno va misurato e tenuto basso (ramo `b4`).
+
+## Allineamento persona ↔ modello
+
+Requisiti completi con i criteri di verifica: `docs/ux/allineamento/brief.md` (R1–R24, chiuso il
+2026-11-08). In sintesi: prova obbligatoria per ogni nodo; struttura solo con la tua conferma;
+limiti di leggibilità per livello che non limitano l'esplorazione; liste con "↩ Torna a"; rami con
+punto di rientro; mai cancellare; decisioni firmate; `Thread:` nei commit; riassunto per l'agente
+calcolato dal codice (≤ 300 token).
 
 ## Da verificare
 

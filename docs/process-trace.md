@@ -19,7 +19,7 @@ Traccia a mano del processo di questo progetto: il caso d'uso reale e il primo d
 
 ## Grafo
 
-current: m1.3
+current: m2.2
 
 ### p0 — Visione del progetto
 - status: done
@@ -120,7 +120,7 @@ current: m1.3
 - branches:
 
 ### m1 — M1 Analisi e requisiti
-- status: active
+- status: done
 - parent: m0.12
 - summary: Trasformare visione e ricerca in requisiti verificabili.
 - detail: Fase 2 del meta-processo; bozza in docs/requirements-draft.md.
@@ -141,7 +141,7 @@ current: m1.3
 - branches:
 
 ### m1.3 — Rifinire i requisiti
-- status: active
+- status: done
 - parent: m1.2
 - summary: Portare il giudizio sullo spike in docs/requirements-draft.md.
 - detail: Tra le novità: rinvii come task in milestone successive, piano end-to-end, interfaccia nella lingua dell'utente, file con il loro perché. Si chiude con un grilling su backend e frontend (skill grilling + ux:design-flow): chi scrive il grafo, cosa nasce senza conferma, prove per ogni nodo, budget di leggibilità, il grafo al posto di STATE/LOG/Next.
@@ -162,10 +162,24 @@ current: m1.3
 - branches:
 
 ### m2 — M2 Progettazione
-- status: todo
+- status: active
 - parent: m1
 - summary: Modello dati del grafo, come si aggiorna, la UI.
 - detail: Fase 3 del meta-processo. Task noti: m2.1 modello dati di .ariadne/; m2.2 flusso di aggiornamento; m2.3 UI del viewer; m2.4 costo dell'osservatore (riprende b4); m2.5 task tools come sorgente (riprende b3); m2.6 layout stabile (riprende b2); m2.7 verifiche sulla mod (/btw, canale browser → mod, scorrimento della chat).
+- branches:
+
+### m1.4 — Brief dell'allineamento
+- status: done
+- parent: m1.3
+- summary: Grilling in tre round (skill ux:design-flow): 24 requisiti verificabili su chi scrive il grafo, conferme, prove, leggibilità, contesto per l'agente.
+- detail: docs/ux/allineamento/brief.md. Decisioni chiave: scrive l'agente ai checkpoint con uno scribe economico; struttura su conferma; prova obbligatoria; mai cancellare; grafo JSONL versionato al posto di STATE/LOG/Next; dogfooding prima della mod.
+- branches:
+
+### m2.2 — Flusso di aggiornamento: concetti
+- status: active
+- parent: m2
+- summary: Fase 3 di ux:design-flow: 2–3 flussi diversi per scrivere, approvare e leggere il grafo, contro il brief.
+- detail: Include lo schema dei nodi (m2.1) quanto basta per confrontarli. Poi dogfooding (R24): conversione di questa traccia in .ariadne/.
 - branches:
 
 ### m2.4 — Misurare il costo dell'osservatore

@@ -2,18 +2,17 @@
 Aggiornato: 2026-11-07 · Branch: `spike/viewer` (da `docs/m0-research`) · PR: nessuna (scelta dell'utente)
 
 ## Milestone
-M1 — Analisi e requisiti. M0 chiusa: una mod di Claude Code è la sorgente (legge la chat, scrive
-`.ariadne/`, tiene una banda sopra il prompt); il grafo vive in un viewer web locale nel browser.
-Licenza Apache-2.0. Spike del viewer costruito, in attesa del giudizio dell'utente.
+M2 — Progettazione. M1 chiusa il 2026-11-08: spike del viewer approvato, requisiti in
+`docs/requirements-draft.md` e brief dell'allineamento persona ↔ modello chiuso
+(`docs/ux/allineamento/brief.md`, R1–R24).
 
 ## Next
-1. Secondo giudizio dell'utente sullo spike rivisto (`spikes/viewer/`, nodo `m1.2`): tooltip in primo
-   piano, frecce dal routing di ELK, colori e simboli per tipo, rinvii come task nelle milestone
-   successive, piano M0–M5, interfaccia in italiano, pannello con i file e il loro perché.
-2. Spiegare all'utente come la mod si interfaccia con Claude Code e come decide cosa aggiungere al grafo.
-3. Portare i due giudizi in `docs/requirements-draft.md` (nodo `m1.3`): tra le regole nuove, ogni rinvio
-   crea un task in una milestone successiva e il piano è segnato end-to-end. Poi M2.
-4. A ogni passo aggiornare `docs/process-trace.md` (formato in testa al file; ora c'è lo stato `deferred`).
+1. Fase 3 di `ux:design-flow`: 2–3 concetti di flusso in `docs/ux/allineamento/concetti.md`
+   (chi scrive, come approvi, cosa legge l'agente), con lo schema dei nodi quanto basta; scegli tu.
+2. Dogfooding (R24): `plan-before-coding`, poi conversione di `docs/process-trace.md` in
+   `.ariadne/graph.jsonl` + validatore come script; STATE/LOG restano finché il riassunto non li sostituisce.
+3. Poi prototipo (fase 4), revisione (fase 5), specifica (fase 6).
+4. A ogni passo aggiornare `docs/process-trace.md` (nodo corrente `m2.2`).
 
 ## Decisioni aperte e rischi
 - Non pubblicati: 5 commit su `docs/m0-research`; `spike/viewer` non è sul remote. Push solo su richiesta.

@@ -69,6 +69,10 @@ Un'azione = un clic, un tasto, o una frase scritta in chat chiusa da Invio.
 | R17 | Un nodo con prova incerta appare attenuato con "?" e il motivo (Q24) | nessun nodo incerto mostrato come verificato | deve |
 | R18 | Ogni commit porta `Thread: <id>`; il rework è un nodo chiuso e poi riaperto (Q25) | 100% dei commit con la riga; rework contabile | deve |
 | R19 | Formato: JSONL, un nodo per riga in ordine stabile, in `.ariadne/` versionato (Q27, Q11) | il diff di un commit mostra solo i nodi cambiati | deve |
+| R21 | Al checkpoint l'agente scrive una nota di 1–3 righe (cosa, perché, prova); uno scribe economico la traduce in operazioni, che il validatore controlla (Q30) | ogni operazione nasce da una nota dell'agente | deve |
+| R22 | Ogni ramo dichiara dove rientra; finché è aperto è un "rientro in sospeso" nel riassunto e nella banda (Q31) | 0 rami aperti senza punto di rientro | deve |
+| R23 | Livello pieno: l'agente propone un contenitore per i fratelli affini e tu confermi (Q32) | nessun livello oltre il profilo senza proposta | deve |
+| R24 | Dogfooding prima della mod: grafo in `.ariadne/`, validatore come script, aggiornato dall'agente a ogni checkpoint (Q33) | STATE/LOG tolti quando il riassunto li sostituisce | deve |
 | R20 | L'osservatore, ai checkpoint, confronta gli ultimi turni col grafo e segnala nella banda; rilettura completa solo a richiesta (Q28) | nessuna scrittura dell'osservatore; costo misurato in `m2.4` | deve |
 
 ## Vincoli
@@ -110,28 +114,10 @@ di oggi. Prima: STATE.md ~2,7 KB (≈700 token) iniettato a inizio sessione; tra
 | 2026-11-08 | Mai cancellare; decisioni firmate; nodi incerti attenuati; `Thread:` nei commit | Q22–Q25 | tu |
 | 2026-11-08 | Riassunto dal codice con lineage a ritroso e istruzioni per approfondire | Q26 | tu |
 | 2026-11-08 | JSONL in `.ariadne/`; osservatore che segnala; LOG dentro `.ariadne/` | Q27–Q29 | tu |
+| 2026-11-08 | Nota dell'agente + scribe economico; punto di rientro dichiarato; contenitore proposto a livello pieno; dogfooding subito | Q30–Q33 (in chat: "approvo") | tu |
+| 2026-11-08 | Brief chiuso | Domande aperte vuote | tu |
 
 ## Domande aperte
 
-Round 3 — l'ultimo prima dei concetti (fase 3). Rispondi sotto ogni «Risposta:».
-
-### Q30 — Lo scribe (da Q21)
-Mi dici dov'è l'agente "task scribe"? Non l'ho trovato in `~/Sviluppo` né nei tuoi repo su GitHub.
-Intanto la scelta: (a) l'agente principale chiama direttamente le operazioni tipizzate · (b) l'agente principale, al checkpoint, scrive una nota di 1–3 righe (cosa, perché, prova) e uno scribe economico (Haiku/Sonnet) la traduce in operazioni, che il validatore controlla · (c) lo scribe legge da solo gli ultimi turni e decide cosa scrivere.
-➡️ (b): il "perché" lo dà chi ha lavorato (R1), la fatica di formattare la fa un modello economico; (c) è l'osservatore che inventa, cioè il rischio da evitare.
-Risposta:
-
-### Q31 — Rami che devono rientrare (da Q26)
-(a) Quando nasce un ramo si dichiara dove rientra (es. "torna in m1.3"); finché è aperto compare nel riassunto e nella banda come "rientro in sospeso" · (b) Nessun punto di rientro dichiarato: si vede solo che è aperto.
-➡️ (a): "prima o poi dovranno tornare a unirsi" diventa una promessa che il sistema ricorda; è la stessa regola dei rinvii.
-Risposta:
-
-### Q32 — Raggruppare quando un livello si riempie (da Q19)
-Sei al limite del profilo e arriva un nodo nuovo. (a) L'agente propone un nodo contenitore che raccoglie i fratelli affini, e tu confermi (è struttura) · (b) Raggruppa da solo, annullabile · (c) Solo un avviso.
-➡️ (a): coerente con R2 (la struttura è tua) e non blocca nulla.
-Risposta:
-
-### Q33 — Iniziare a usarlo prima che esista la mod
-(a) Subito, a mano: converto `docs/process-trace.md` in `.ariadne/graph.jsonl`, scrivo il validatore come script, e io (l'agente) aggiorno il grafo con le regole del brief a ogni checkpoint; STATE/LOG restano finché il riassunto non li sostituisce · (b) Solo quando c'è la mod (M3).
-➡️ (a): misuriamo da subito token, errori e leggibilità sul caso vero (Q15), e il formato si stabilizza prima di scrivere la mod.
-Risposta:
+Nessuna: brief chiuso il 2026-11-08. Fatto da recuperare, non bloccante: dove vive l'agente
+"task scribe" che usi in un altro progetto (Q30), per riusarne il prompt.
