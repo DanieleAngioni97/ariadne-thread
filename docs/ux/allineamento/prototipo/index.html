@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prototipo — concetto A «Piano prima»</title>
+<style>
+:root {
+  --ground: #e7eaee; --surface: #f7f8fa; --ink: #18202b; --muted: #66707c; --line: #bfc6cf;
+  --thread: #c0313b; --thread-soft: rgba(192, 49, 59, 0.12);
+  --done: #2f7d4f; --active: #2459c4; --todo: #7b8591; --deferred: #7346b8; --detour: #a56a0c; --ghost: #9aa3ae;
+  --term-bg: #1d1f23; --term-ink: #d8dce2; --term-muted: #8a919b; --band-bg: #2a2e35;
+  font-family: system-ui, sans-serif; color: var(--ink); background: var(--ground);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { display: grid; grid-template-columns: minmax(0, 55fr) minmax(0, 45fr); }
+button { font: inherit; color: inherit; cursor: pointer; }
+
+/* Terminal: Claude Code with the band above the prompt */
+.term { display: grid; grid-template-rows: auto 1fr auto auto; background: var(--term-bg); color: var(--term-ink);
+  font: 13px/1.5 ui-monospace, 'SF Mono', Menlo, monospace; min-height: 0; }
+.term header { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px;
+  border-bottom: 1px solid #333840; color: var(--term-muted); }
+.term header button { background: #3a404a; border: 1px solid #4b525d; border-radius: 4px; padding: 2px 10px; color: var(--term-ink); }
+.chat { overflow-y: auto; padding: 12px 14px; min-height: 0; }
+.msg { margin: 0 0 10px; white-space: pre-wrap; }
+.msg.user::before { content: '> '; color: var(--term-muted); }
+.msg.agent { color: #e6e1cf; }
+.msg.agent::before { content: '⏺ '; color: #d9a35b; }
+.msg.sys { color: var(--term-muted); font-style: italic; }
+.msg.note { border-left: 2px solid #d9a35b; padding-left: 8px; color: #c9c3b0; }
+.msg.summary { border: 1px dashed #59606b; padding: 8px; color: #b8c4d6; }
+.band { background: var(--band-bg); border-top: 1px solid #3a404a; padding: 6px 12px; }
+.band .where { color: #f0f2f5; }
+.band .where b { color: #ff8a8f; font-weight: 600; }
+.band .row { margin-top: 3px; }
+.band .proposal { color: #ffd479; }
+.band .back { color: #9fd0ff; }
+.band .detour { color: #f1b45f; }
+.band .update { color: #8fd19e; }
+.band kbd { background: #454c57; border-radius: 3px; padding: 0 5px; color: #fff; font: inherit; }
+.prompt { display: flex; gap: 8px; padding: 8px 12px 12px; border-top: 1px solid #333840; }
+.prompt span { color: var(--term-muted); }
+.prompt input { flex: 1; background: transparent; border: 0; color: var(--term-ink); font: inherit; outline: none; }
+.legend { padding: 0 12px 10px; color: var(--term-muted); font-size: 12px; }
+
+/* Viewer: read-only, in the browser beside the terminal */
+.viewer { display: grid; grid-template-rows: auto 1fr auto; min-height: 0; border-left: 1px solid var(--line); }
+.viewer header { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 14px;
+  background: var(--surface); border-bottom: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.viewer header strong { color: var(--ink); }
+.viewer header button { background: #fff; border: 1px solid var(--line); border-radius: 4px; padding: 2px 8px; font-size: 12px; }
+.graph { overflow-y: auto; padding: 14px; min-height: 0; }
+.milestone { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; margin-bottom: 12px; }
+.milestone > .node { font-weight: 600; }
+.children { margin-left: 14px; border-left: 2px solid var(--line); padding-left: 10px; }
+.children.on-thread { border-left-color: var(--thread); }
+.node { display: flex; align-items: baseline; gap: 6px; width: 100%; text-align: left; background: none; border: 1px solid transparent;
+  border-radius: 6px; padding: 3px 6px; margin: 2px 0; font-size: 13.5px; }
+.node:hover { background: #fff; border-color: var(--line); }
+.node .sym { width: 1.1em; flex: none; text-align: center; color: var(--k); }
+.node .id { color: var(--muted); font-size: 12px; flex: none; }
+.node .title { overflow-wrap: anywhere; }
+.node .tag { margin-left: auto; flex: none; font-size: 11px; color: var(--muted); }
+.k-done { --k: var(--done); } .k-active { --k: var(--active); } .k-todo { --k: var(--todo); }
+.k-deferred { --k: var(--deferred); } .k-deferred .title { color: var(--muted); }
+.node.current { background: var(--thread-soft); border-color: var(--thread); }
+.node.thread .title { text-decoration: underline 2px var(--thread-soft); text-underline-offset: 3px; }
+.node.uncertain { opacity: 0.55; }
+.node.selected { outline: 2px solid var(--ink); }
+.node.ghost { border: 1px dashed var(--ghost); color: var(--ghost); background: repeating-linear-gradient(135deg, transparent 0 6px, rgba(0,0,0,0.03) 6px 12px); }
+.node.ghost .sym { color: var(--ghost); }
+.node.flash { animation: flash 0.9s ease-out 2; }
+@keyframes flash { 50% { background: #fff3c4; } }
+.detour-wrap { margin-left: 22px; border-left: 2px dashed var(--detour); padding-left: 8px; }
+.detour-wrap .node .sym { color: var(--detour); }
+.empty { color: var(--muted); font-size: 13px; font-style: italic; padding: 4px 6px; }
+.more { color: var(--muted); font-size: 12px; padding: 2px 6px; background: none; border: 0; }
+.detail { border-top: 1px solid var(--line); background: var(--surface); padding: 10px 14px; font-size: 13px; max-height: 40%; overflow-y: auto; }
+.detail h3 { margin: 0 0 6px; font-size: 14px; }
+.detail dl { display: grid; grid-template-columns: max-content 1fr; gap: 3px 10px; margin: 0; }
+.detail dt { color: var(--muted); }
+.detail dd { margin: 0; overflow-wrap: anywhere; }
+.agent-view { white-space: pre-wrap; font: 12.5px/1.5 ui-monospace, Menlo, monospace; background: #fff; border: 1px solid var(--line);
+  border-radius: 6px; padding: 10px; margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<section class="term" aria-label="Terminale di Claude Code (simulato)">
+  <header>
+    <span>claude · checkout-api</span>
+    <button id="advance" title="Simula il lavoro dell'agente fino al prossimo checkpoint">▶ l'agente lavora <kbd>n</kbd></button>
+  </header>
+  <div class="chat" id="chat" aria-live="polite"></div>
+  <div class="band" id="band" aria-live="polite"></div>
+  <div>
+    <form class="prompt" id="form"><span>&gt;</span><input id="input" autocomplete="off" placeholder="scrivi in chat, oppure un tasto della banda a prompt vuoto"></form>
+    <div class="legend" id="legend">A prompt vuoto: <kbd>n</kbd> l'agente lavora · <kbd>a</kbd>/<kbd>r</kbd> approva/rifiuta · <kbd>v</kbd> vedi nel viewer · <kbd>t</kbd> torna · <kbd>?</kbd> comandi</div>
+  </div>
+</section>
+
+<section class="viewer" aria-label="Viewer del grafo (sola lettura)">
+  <header>
+    <span><strong>ariadne</strong> · checkout-api · sola lettura</span>
+    <button id="toggle-agent" aria-pressed="false">Cosa legge l'agente</button>
+  </header>
+  <div class="graph" id="graph"></div>
+  <div class="detail" id="detail" hidden></div>
+</section>
+
+<script>
+// Fake project: a payment timeout being debugged. Shape follows docs/ux/allineamento/concetti.md.
+const TODAY = '2026-11-08'
+const file = ref => ({ type: 'file', ref })
+const commit = ref => ({ type: 'commit', ref })
+const message = ref => ({ type: 'message', ref })
+const ok = { at: '2026-11-06', ref: 'chat' }
+
+let nodes = [
+  { id: 'm1', kind: 'milestone', title: 'M1 Diagnosi', status: 'done', what: 'Causa trovata: il pool di connessioni verso il provider si esaurisce sotto carico.', proof: [file('docs/diagnosi.md')], by: 'user', at: '2026-11-06', confirmed: ok },
+  { id: 'm1.1', parent: 'm1', kind: 'step', title: 'Raccogliere i log dei timeout', status: 'done', what: '312 timeout in 48 ore, tutti su /payments/confirm.', proof: [file('logs/timeouts-2026-11-05.txt')], by: 'agent', at: '2026-11-06' },
+  { id: 'm1.2', parent: 'm1', after: ['m1.1'], kind: 'step', title: 'Ipotesi: pool di connessioni esaurito', status: 'done', what: 'Ipotesi scelta tra tre (pool, DNS, rate limit del provider).', proof: [], uncertain: 'nessun commit né file: dedotta solo in chat', by: 'agent', at: '2026-11-06' },
+  { id: 'm1.3', parent: 'm1', after: ['m1.2'], kind: 'step', title: 'Confermare con le metriche', status: 'done', what: 'Pool al 100% in tutti i picchi di timeout.', proof: [commit('8e41d0a'), file('docs/diagnosi.md')], by: 'agent', at: '2026-11-07' },
+  { id: 'd1', parent: 'm1', after: ['m1.3'], kind: 'detour', title: 'Allarme sul pool in Grafana', status: 'deferred', deferred_to: 'm3.1', why: 'Utile ma non blocca la correzione.', what: 'Rimandato a M3.', proof: [message('chat 2026-11-07')], by: 'user', at: '2026-11-07', confirmed: ok },
+  { id: 'm2', after: ['m1'], kind: 'milestone', title: 'M2 Correzione', status: 'active', what: 'Correggere il timeout senza cambiare l\'API pubblica.', proof: [message('piano approvato il 2026-11-07')], by: 'user', at: '2026-11-07', confirmed: ok },
+  { id: 'm2.1', parent: 'm2', kind: 'step', title: 'Riprodurre il timeout in un test', status: 'active', what: 'Un test che fallisce con il pool a 2 connessioni.', proof: [message('piano approvato il 2026-11-07')], by: 'user', at: '2026-11-07' },
+  { id: 'm2.2', parent: 'm2', after: ['m2.1'], kind: 'step', title: 'Patch del retry con backoff', status: 'todo', what: 'Retry con backoff esponenziale sulle chiamate al provider.', proof: [message('piano approvato il 2026-11-07')], by: 'user', at: '2026-11-07' },
+  { id: 'm3', after: ['m2'], kind: 'milestone', title: 'M3 Rilascio', status: 'todo', what: 'Portare la correzione in produzione.', proof: [message('piano approvato il 2026-11-06')], by: 'user', at: '2026-11-06', confirmed: ok },
+  { id: 'm3.1', parent: 'm3', kind: 'step', title: 'Allarme sul pool in Grafana', status: 'todo', continues: 'd1', what: 'Riprende d1, rimandato in M1.', proof: [message('rinvio di d1')], by: 'user', at: '2026-11-07' },
+]
+let current = 'm2.1'
+let stage = 'start'
+let pending = null // { text, ghosts: [ids], approve(), reject() }
+let selected = null
+let showAgent = false
+let lastUpdate = ''
+let pick = false // after "t" on a list: a number picks a point
+
+const $ = id => document.getElementById(id)
+const get = id => nodes.find(n => n.id === id)
+const real = () => nodes.filter(n => !n.ghost)
+const childrenOf = id => nodes.filter(n => n.parent === id && n.kind !== 'detour')
+const detoursOf = id => nodes.filter(n => n.kind === 'detour' && n.after?.[0] === id)
+const containers = id => { const out = []; for (let n = get(id)?.parent; n; n = get(n).parent) out.unshift(n); return out }
+const list = () => real().find(n => n.kind === 'list' && n.status === 'active')
+const points = () => (list() ? childrenOf(list().id) : [])
+const decided = () => points().filter(p => p.status === 'done').length
+
+function say(who, text) {
+  const p = document.createElement('p')
+  p.className = `msg ${who}`
+  p.textContent = text
+  $('chat').append(p)
+  $('chat').scrollTop = $('chat').scrollHeight
+}
+
+/** Plan order: depth-first over containers, detours right after the node they leave. */
+function order() {
+  const out = []
+  const walk = id => { out.push(id); for (const c of childrenOf(id)) walk(c.id); for (const d of detoursOf(id)) walk(d.id) }
+  for (const top of real().filter(n => !n.parent)) walk(top.id)
+  return out.filter(id => !get(id).ghost)
+}
+
+function next() {
+  const ids = order()
+  const from = ids.indexOf(current)
+  return ids.slice(from + 1).map(get).find(n => n.status === 'todo' && n.kind !== 'milestone' && n.kind !== 'list')
+}
+
+/** The thread: the current node, its containers, everything they come after, and the deferred steps they resume. */
+function thread() {
+  const seen = new Set()
+  const walk = id => {
+    const n = get(id)
+    if (!n || seen.has(id)) return
+    seen.add(id)
+    for (const a of n.after ?? []) walk(a)
+    if (n.continues) walk(n.continues)
+    if (n.parent) walk(n.parent)
+  }
+  walk(current)
+  return seen
+}
+
+function setStatus(id, status) { get(id).status = status }
+function start(id) { setStatus(id, 'active'); current = id }
+
+// ---------- what the agent does at each checkpoint (simulated) ----------
+
+function advance() {
+  if (pending) return say('sys', 'C\'è una proposta in attesa: a approva, r rifiuta, v la mostra nel viewer.')
+  const cur = get(current)
+  if (cur.kind === 'detour' && cur.status === 'active') {
+    note(`${cur.id} chiuso: ${cur.title.toLowerCase()} chiarito. Prova: messaggio in chat. Rientro in ${cur.reentry}.`)
+    setStatus(cur.id, 'done')
+    cur.proof = [message(`chat ${TODAY}`)]
+    current = cur.reentry
+    return update(`deviazione chiusa · rientrato in ${get(current).title}`)
+  }
+  const step = stages[stage]
+  step()
+}
+
+function note(text) { say('note', `Checkpoint · nota per lo scribe: ${text}`) }
+function update(text) { lastUpdate = text; render() }
+
+const stages = {
+  start() {
+    say('agent', 'Ho scritto test/payments/pool-timeout.test.ts: con il pool a 2 connessioni la conferma va in timeout come in produzione. Commit 3fa9c12.')
+    note('m2.1 chiuso: timeout riprodotto. Prova: commit 3fa9c12. Prossimo: m2.2.')
+    setStatus('m2.1', 'done')
+    get('m2.1').proof = [commit('3fa9c12'), file('test/payments/pool-timeout.test.ts')]
+    start('m2.2')
+    stage = 'outplan'
+    update('m2.1 chiuso · m2.2 avviato (dettagli: automatici)')
+  },
+  outplan() {
+    say('agent', 'Prima della patch serve aggiornare http-client: la 4.1 non espone il timeout per singola richiesta, senza il quale il backoff non si può fare.')
+    note('fuori piano: nuovo passo «Aggiornare http-client a 4.2» prima di m2.2.')
+    propose({
+      text: 'nuovo passo «Aggiornare http-client a 4.2» prima di m2.2',
+      add: [{ id: 'm2.1b', parent: 'm2', after: ['m2.1'], kind: 'step', title: 'Aggiornare http-client a 4.2', status: 'todo', what: 'Serve il timeout per singola richiesta.', proof: [message(`proposta ${TODAY}`)], by: 'agent', at: TODAY }],
+      before: 'm2.2',
+      approve() { get('m2.2').after = ['m2.1b']; setStatus('m2.2', 'todo'); start('m2.1b'); stage = 'afterOutplan' },
+      reject() { say('agent', 'Va bene: resto sulla 4.1 e uso un timeout globale. Continuo su m2.2.'); stage = 'list' },
+    })
+  },
+  afterOutplan() {
+    say('agent', 'http-client aggiornato a 4.2, test verdi. Commit 7b20e4d.')
+    note('m2.1b chiuso: aggiornato a 4.2. Prova: commit 7b20e4d. Riprendo m2.2.')
+    setStatus('m2.1b', 'done')
+    get('m2.1b').proof = [commit('7b20e4d')]
+    start('m2.2')
+    stage = 'list'
+    update('m2.1b chiuso · m2.2 avviato (dettagli: automatici)')
+  },
+  list() {
+    say('agent', 'La review della patch ha 5 commenti. Li tratto come una lista, da decidere uno alla volta.')
+    note('lista «Commenti della review» sotto m2.2, 5 punti.')
+    const titles = [
+      'Il retry non deve ripetere i POST non idempotenti',
+      'Aggiungere jitter al backoff',
+      'Numero massimo di tentativi: 3 o 5?',
+      'Log a livello warn solo all\'ultimo tentativo',
+      'Rinominare RetryPolicy in BackoffPolicy in tutto il modulo payments, compresi i test e la documentazione interna',
+    ]
+    const by = { proof: [message(`review ${TODAY}`)], by: 'agent', at: TODAY }
+    propose({
+      text: 'lista «Commenti della review» (5 punti) sotto m2.2',
+      add: [
+        { id: 'm2.2.l', parent: 'm2.2', kind: 'list', title: 'Commenti della review', status: 'todo', what: '5 commenti della review sulla patch.', ...by },
+        ...titles.map((title, i) => ({ id: `m2.2.${i + 1}`, parent: 'm2.2.l', after: i ? [`m2.2.${i}`] : undefined, kind: 'point', title, status: 'todo', what: 'Da decidere.', ...by })),
+      ],
+      approve() { setStatus('m2.2.l', 'active'); start('m2.2.1'); stage = 'points' },
+      reject() { say('agent', 'Va bene: li discutiamo in chat senza lista.'); stage = 'close' },
+    })
+  },
+  points() {
+    const cur = get(current)
+    if (cur.id === 'm2.2.3' && detoursOf('m2.2.3').length === 0) {
+      say('agent', 'Per scegliere tra 3 e 5 tentativi serve capire quanto aspetta il backoff nel caso peggiore. È una questione a parte.')
+      note('deviazione «Durata del backoff nel caso peggiore», rientro in m2.2.3.')
+      return propose({
+        text: 'deviazione «Durata del backoff nel caso peggiore» · rientro: punto 3',
+        add: [detour('Durata del backoff nel caso peggiore', 'agent')],
+        approve() { start('m2.2.3.d') },
+        reject() { say('agent', 'Ok, decido senza: 3 tentativi.') },
+      })
+    }
+    // Point 5 is the one left open at the end: the agent decides the others first, then proposes to defer it.
+    const undecided = points().filter(p => p.status !== 'done' && p.id !== 'm2.2.5' && p.id !== cur.id)
+    if (cur.id === 'm2.2.5' || cur.kind !== 'point') {
+      if (undecided.length === 0) { stage = 'close'; return stages.close() }
+      if (cur.kind === 'point') setStatus(cur.id, 'todo')
+      start(undecided[0].id)
+      return update(`ora su: ${get(current).title}`)
+    }
+    const decision = { 'm2.2.1': 'solo GET e POST con chiave di idempotenza', 'm2.2.2': 'jitter pieno', 'm2.2.3': '3 tentativi (caso peggiore 7 s)', 'm2.2.4': 'accettato' }[cur.id] ?? 'accettato'
+    note(`${cur.id} deciso: ${decision}. Prova: messaggio in chat.`)
+    Object.assign(cur, { status: 'done', what: `Deciso: ${decision}.`, proof: [message(`chat ${TODAY}`)] })
+    start((undecided[0] ?? get('m2.2.5')).id)
+    update(`${cur.id} deciso · ${current} aperto (${decided()}/5 decisi)`)
+  },
+  close() {
+    const p5 = get('m2.2.5')
+    const deferring = p5 && p5.status !== 'done'
+    say('agent', `Patch pronta, test verdi, commit c91a5e0.${deferring ? ' Il punto 5 è un refactor che non serve alla correzione: lo rimando.' : ''} Chiudo M2 e propongo il piano di M3.`)
+    note(`m2.2 chiuso (commit c91a5e0)${deferring ? '; punto 5 rimandato a m3.4' : ''}; M2 chiusa; piano M3.`)
+    const by = { proof: [message(`piano proposto ${TODAY}`)], by: 'agent', at: TODAY }
+    propose({
+      text: `chiudere M2${deferring ? ', rimandare il punto 5 a M3' : ''} e il piano di M3 (3 passi)`,
+      add: [
+        { id: 'm3.2', parent: 'm3', after: ['m3.1'], kind: 'step', title: 'Deploy in staging dietro feature flag e verifica del tasso di errore per 24 ore', status: 'todo', what: 'Tasso di errore sotto lo 0,1% per 24 ore.', ...by },
+        { id: 'm3.3', parent: 'm3', after: ['m3.2'], kind: 'step', title: 'Rilascio in produzione', status: 'todo', what: 'Flag acceso al 100%.', ...by },
+        ...(deferring ? [{ id: 'm3.4', parent: 'm3', after: ['m3.3'], kind: 'step', title: 'Rinominare RetryPolicy in BackoffPolicy', status: 'todo', continues: 'm2.2.5', what: 'Riprende il punto 5 della review.', ...by }] : []),
+      ],
+      approve() {
+        if (deferring) { Object.assign(p5, { status: 'deferred', deferred_to: 'm3.4', why: 'refactor non necessario alla correzione', confirmed: { at: TODAY, ref: 'banda' } }) }
+        if (get('m2.2.l')) setStatus('m2.2.l', 'done')
+        Object.assign(get('m2.2'), { status: 'done', proof: [commit('c91a5e0')] })
+        setStatus('m2', 'done')
+        setStatus('m3', 'active')
+        start('m3.1')
+        stage = 'end'
+      },
+      reject() { say('agent', 'Va bene: lascio M2 aperta. Dimmi cosa cambiare nel piano di M3.') ; stage = 'end' },
+    })
+  },
+  end() {
+    say('sys', 'Fine dello scenario. Prova /clear per vedere cosa legge l\'agente quando riparte, oppure ricarica la pagina per rifare il giro.')
+  },
+}
+
+function detour(title, by) {
+  const from = get(current)
+  return { id: `${from.id}.d`, parent: from.parent, after: [from.id], kind: 'detour', title, status: 'todo', reentry: from.id,
+    what: 'Questione laterale.', proof: [message(`chat ${TODAY}`)], by, at: TODAY }
+}
+
+function propose({ text, add, before, approve, reject }) {
+  for (const n of add) {
+    n.ghost = true
+    const at = before ? nodes.indexOf(get(before)) : nodes.length
+    nodes.splice(at, 0, n)
+  }
+  pending = {
+    text,
+    ghosts: add.map(n => n.id),
+    approve() {
+      for (const id of this.ghosts) { const n = get(id); delete n.ghost; if (n.kind !== 'point' && n.kind !== 'list') n.confirmed = { at: TODAY, ref: 'banda' } }
+      approve()
+      say('sys', `Approvato: ${text}.`)
+    },
+    reject() {
+      nodes = nodes.filter(n => !this.ghosts.includes(n.id))
+      say('sys', `Rifiutato: ${text}. Il grafo non cambia.`)
+      reject()
+    },
+  }
+  render()
+}
+
+// ---------- what you do ----------
+
+function answer(yes) {
+  if (!pending) return say('sys', 'Nessuna proposta in attesa.')
+  const p = pending
+  pending = null
+  yes ? p.approve() : p.reject()
+  lastUpdate = ''
+  render()
+}
+
+function goBack() {
+  const cur = get(current)
+  if (cur.kind === 'detour' && cur.status === 'active') {
+    setStatus(cur.id, 'done')
+    current = cur.reentry
+    say('sys', `Deviazione chiusa, sei di nuovo su: ${get(current).title}.`)
+    return update(`rientrato in ${get(current).title}`)
+  }
+  if (!list()) return say('sys', 'Non sei dentro una lista: niente a cui tornare.')
+  pick = true
+  const lines = points().map((p, i) => `  ${p.status === 'done' ? '✓' : p.id === current ? '▶' : '·'} ${i + 1}. ${p.title}`)
+  say('agent', `↩ ${list().title} (${decided()}/5 decisi)\n${lines.join('\n')}\nScrivi il numero del punto da discutere.`)
+}
+
+function command(text) {
+  const t = text.trim()
+  say('user', t)
+  const lower = t.toLowerCase()
+  if (pick && /^\d$/.test(t)) {
+    const p = points()[Number(t) - 1]
+    pick = false
+    if (!p) return say('sys', 'Numero fuori lista.')
+    if (get(current).kind === 'point' && get(current).status === 'active') setStatus(current, 'todo')
+    if (p.status !== 'done') setStatus(p.id, 'active')
+    current = p.id
+    return update(`ora su: punto ${t}`)
+  }
+  pick = false
+  if (lower === '/clear') return clearChat()
+  if (/^(approvo|sì|si|ok)$/.test(lower)) return answer(true)
+  if (/^(rifiuto|no)$/.test(lower)) return answer(false)
+  if (lower === 'torna') return goBack()
+  const side = t.match(/^\/(btw|subtask)\s+(.+)/)
+  if (side) {
+    if (pending) return say('sys', 'Prima decidi la proposta in attesa.')
+    const n = detour(side[2].slice(0, 60), 'user')
+    if (get(n.id)) n.id += '2'
+    n.status = 'active'
+    n.confirmed = { at: TODAY, ref: 'chat' }
+    nodes.splice(nodes.indexOf(get(current)) + 1, 0, n)
+    say('agent', `Apro una deviazione: «${n.title}». Rientro in ${current} quando chiudiamo (t oppure «torna»).`)
+    current = n.id
+    return update('deviazione aperta da te: confermata dalla tua richiesta')
+  }
+  const move = t.match(/^sposta\s+(.+?)\s+sotto\s+(\S+)$/i)
+  if (move) {
+    const what = get(move[1]) ?? real().find(n => n.title.toLowerCase().includes(move[1].toLowerCase()))
+    const where = get(move[2]) ?? real().find(n => n.title.toLowerCase().includes(move[2].toLowerCase()))
+    if (!what || !where) return say('agent', 'Non trovo uno dei due nodi: usa l\'id che vedi nel viewer (es. «sposta m2.1b sotto m1»).')
+    Object.assign(what, { parent: where.id, after: undefined, by: 'user', at: TODAY, confirmed: { at: TODAY, ref: 'chat' } })
+    say('agent', `Spostato «${what.title}» sotto «${where.title}». Firmato da te, con la data di oggi.`)
+    return update(`${what.id} spostato sotto ${where.id} (correzione tua)`)
+  }
+  say('agent', '(simulato) Ricevuto. Non è un checkpoint: il grafo non cambia.')
+}
+
+function clearChat() {
+  $('chat').replaceChildren()
+  say('sys', 'Conversazione cancellata. All\'avvio l\'hook inietta il riassunto qui sotto, calcolato dal grafo senza modello (R7):')
+  say('summary', summary())
+}
+
+/** R7: lineage of the current step, open detours, next step, how to ask for more. Computed, never written. */
+function summary() {
+  const cur = get(current)
+  const path = [...containers(current), current].map(id => get(id).title).join(' › ')
+  const behind = [...thread()].filter(id => id !== current && !containers(current).includes(id) && get(id).kind !== 'milestone')
+    .map(get).filter(n => n.status === 'done').slice(0, 3).map(n => `- ${n.id} ${n.title}: ${n.what}${n.uncertain ? ` (incerto: ${n.uncertain})` : ''}`)
+  const reentries = real().filter(n => n.kind === 'detour' && (n.status === 'active' || n.status === 'todo'))
+    .map(n => `- ${n.title} → rientra in ${n.reentry}`)
+  const nx = next()
+  const text = [
+    `Sei in: ${path} (${cur.status})`,
+    'Da dove viene (solo le dipendenze):', ...(behind.length ? behind : ['- (inizio del ramo)']),
+    `Rientri in sospeso: ${reentries.length ? '\n' + reentries.join('\n') : 'nessuno'}`,
+    `Prossimo: ${nx ? `${nx.id} ${nx.title}` : 'nessuno nel piano'}`,
+    'Per approfondire: ariadne show <id> · ariadne why <id>',
+  ].join('\n')
+  return `${text}\n≈ ${Math.ceil(text.length / 4)} token (limite 300)`
+}
+
+// ---------- rendering ----------
+
+const SYM = { done: '✓', active: '●', todo: '○', deferred: '↷', replaced: '⊘' }
+const LIMIT = 3 // profilo standard: figli aperti per livello (R4)
+
+function nodeButton(n, onThread) {
+  const b = document.createElement('button')
+  b.className = `node k-${n.status}`
+  b.dataset.id = n.id
+  if (n.id === current) b.classList.add('current')
+  else if (onThread.has(n.id)) b.classList.add('thread')
+  if (n.uncertain) b.classList.add('uncertain')
+  if (n.ghost) b.classList.add('ghost')
+  if (n.id === selected) b.classList.add('selected')
+  const sym = n.ghost ? '+' : n.kind === 'detour' && n.status !== 'deferred' ? '⤷' : SYM[n.status]
+  const tag = n.ghost ? 'proposta' : n.status === 'deferred' ? `→ ${n.deferred_to}` : n.kind === 'list' ? `${childrenOf(n.id).filter(p => p.status === 'done').length}/${childrenOf(n.id).length}` : n.by === 'user' && n.kind !== 'milestone' ? 'tu' : ''
+  b.innerHTML = `<span class="sym"></span><span class="id"></span><span class="title"></span>${n.uncertain ? '<span title="">?</span>' : ''}<span class="tag"></span>`
+  b.querySelector('.sym').textContent = sym
+  b.querySelector('.id').textContent = n.id
+  b.querySelector('.title').textContent = n.title
+  b.querySelector('.tag').textContent = tag
+  if (n.uncertain) b.querySelector('span[title]').title = n.uncertain
+  b.title = n.what
+  b.onclick = () => { selected = selected === n.id ? null : n.id; render() }
+  return b
+}
+
+function renderChildren(id, onThread, expanded) {
+  const box = document.createElement('div')
+  box.className = 'children' + (onThread.has(id) ? ' on-thread' : '')
+  let kids = childrenOf(id)
+  // Readability profile: a level shows at most LIMIT children open around the current one; the rest fold.
+  if (kids.length > LIMIT + 1 && !expanded.has(id) && !kids.some(k => k.ghost)) {
+    const focus = Math.max(0, kids.findIndex(k => onThread.has(k.id) || k.ghost))
+    const startAt = Math.min(Math.max(0, focus - 1), kids.length - LIMIT)
+    const hidden = kids.length - LIMIT
+    const shown = kids.slice(startAt, startAt + LIMIT)
+    kids = shown
+    box.dataset.hidden = hidden
+  }
+  for (const k of kids) {
+    box.append(nodeButton(k, onThread))
+    const inner = childrenOf(k.id)
+    if (inner.length && (onThread.has(k.id) || inner.some(c => c.ghost) || expanded.has(k.id))) box.append(renderChildren(k.id, onThread, expanded))
+    for (const d of detoursOf(k.id)) {
+      const w = document.createElement('div')
+      w.className = 'detour-wrap'
+      w.append(nodeButton(d, onThread))
+      box.append(w)
+    }
+  }
+  if (box.dataset.hidden) {
+    const more = document.createElement('button')
+    more.className = 'more'
+    more.textContent = `+ altri ${box.dataset.hidden} (profilo standard: ${LIMIT} per livello) · mostra`
+    more.onclick = () => { expandedIds.add(id); render() }
+    box.append(more)
+  }
+  return box
+}
+
+const expandedIds = new Set()
+
+function renderGraph() {
+  const g = $('graph')
+  g.replaceChildren()
+  const onThread = thread()
+  if (showAgent) {
+    const pre = document.createElement('div')
+    pre.className = 'agent-view'
+    pre.textContent = summary()
+    g.append(pre)
+  }
+  for (const m of real().filter(n => !n.parent)) {
+    const box = document.createElement('div')
+    box.className = 'milestone'
+    box.append(nodeButton(m, onThread))
+    for (const d of detoursOf(m.id)) box.append(nodeButton(d, onThread))
+    if (nodes.some(n => n.parent === m.id && n.kind !== 'detour')) box.append(renderChildren(m.id, onThread, expandedIds))
+    for (const d of nodes.filter(n => n.parent === m.id && n.kind === 'detour' && !get(n.after?.[0])?.parent)) box.append(nodeButton(d, onThread))
+    if (!nodes.some(n => n.parent === m.id)) {
+      const e = document.createElement('div')
+      e.className = 'empty'
+      e.textContent = 'Piano non ancora proposto: l\'agente lo propone quando si apre la milestone.'
+      box.append(e)
+    }
+    g.append(box)
+  }
+}
+
+function renderDetail() {
+  const d = $('detail')
+  const n = get(selected)
+  d.hidden = !n
+  if (!n) return
+  const rows = [
+    ['Cosa', n.what],
+    n.why && ['Perché', n.why],
+    ['Stato', n.ghost ? 'proposta, in attesa della tua approvazione' : n.status],
+    ['Prova', n.proof.length ? n.proof.map(p => `${p.type}: ${p.ref}`).join(' · ') : '—'],
+    n.uncertain && ['Incerto', n.uncertain],
+    ['Deciso da', `${n.by === 'user' ? 'tu' : 'agente'}, ${n.at}`],
+    n.confirmed && ['Confermato', `da te il ${n.confirmed.at} (${n.confirmed.ref})`],
+    n.reentry && ['Rientra in', n.reentry],
+    n.deferred_to && ['Rimandato a', n.deferred_to],
+    n.continues && ['Riprende', n.continues],
+  ].filter(Boolean)
+  d.innerHTML = '<h3></h3><dl></dl>'
+  d.querySelector('h3').textContent = `${n.id} — ${n.title}`
+  for (const [k, v] of rows) {
+    const dt = document.createElement('dt'); dt.textContent = k
+    const dd = document.createElement('dd'); dd.textContent = v
+    d.querySelector('dl').append(dt, dd)
+  }
+}
+
+function renderBand() {
+  const band = $('band')
+  band.replaceChildren()
+  const row = (cls, html) => { const r = document.createElement('div'); r.className = `row ${cls}`; r.innerHTML = html; band.append(r) }
+  const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c])
+  // The band is read at a glance: one line per row, long titles cut (the viewer has them whole).
+  const short = (s, max = 38) => esc(s.length > max ? s.slice(0, max - 1) + '…' : s)
+  const path = containers(current).filter(id => get(id).kind !== 'list').map(id => short(get(id).title, 24))
+  const nx = next()
+  row('where', `${path.join(' › ')} › <b>${short(get(current).title, 44)}</b>${nx ? ` · prossimo: ${short(nx.title, 30)}` : ''}`)
+  const cur = get(current)
+  if (cur.kind === 'detour' && cur.status === 'active') row('detour', `⤷ deviazione · rientro: ${short(get(cur.reentry).title)} · <kbd>t</kbd> chiudi e torna`)
+  else if (list()) row('back', `↩ Torna a: ${esc(list().title)} (${decided()}/5 decisi) · <kbd>t</kbd>`)
+  if (pending) row('proposal', `◆ Proposta: ${esc(pending.text)} · <kbd>a</kbd> approva · <kbd>r</kbd> rifiuta · <kbd>v</kbd> vedi`)
+  else if (lastUpdate) row('update', `↺ ${esc(lastUpdate)}`)
+}
+
+function render() { renderBand(); renderGraph(); renderDetail() }
+
+function showInViewer() {
+  if (!pending) return say('sys', 'Nessuna proposta da mostrare.')
+  const el = document.querySelector(`.node[data-id="${CSS.escape(pending.ghosts[0])}"]`)
+  el?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  for (const id of pending.ghosts) document.querySelector(`.node[data-id="${CSS.escape(id)}"]`)?.classList.add('flash')
+}
+
+$('form').onsubmit = e => {
+  e.preventDefault()
+  const v = $('input').value
+  $('input').value = ''
+  if (v.trim()) command(v)
+}
+$('input').addEventListener('keydown', e => {
+  if ($('input').value !== '' || e.metaKey || e.ctrlKey || e.altKey) return
+  const keys = {
+    n: advance, a: () => answer(true), r: () => answer(false), v: showInViewer, t: goBack,
+    '?': () => say('sys', 'Comandi in chat: «torna», «approvo», «rifiuto», «/btw <domanda>» apre una deviazione, «sposta <id> sotto <id>» corregge un nodo, «/clear» mostra cosa legge l\'agente quando riparte.'),
+  }
+  if (keys[e.key]) { e.preventDefault(); keys[e.key]() }
+})
+$('advance').onclick = () => { advance(); $('input').focus() }
+$('toggle-agent').onclick = () => {
+  showAgent = !showAgent
+  $('toggle-agent').setAttribute('aria-pressed', showAgent)
+  render()
+}
+
+say('sys', 'Prototipo del concetto A «Piano prima». Dati finti. Premi n per far lavorare l\'agente fino al prossimo checkpoint; rispondi con i tasti della banda o in chat.')
+say('agent', 'Riprendo da m2.1: devo scrivere un test che riproduca il timeout.')
+render()
+$('input').focus()
+</script>
+</body>
+</html>
