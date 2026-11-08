@@ -29,7 +29,7 @@ current: m2.8
 - branches:
 
 ### m0 — M0 Ricerca
-- status: active
+- status: done
 - parent: p0
 - summary: Capire cosa esiste già e come alimentare il grafo da una sessione Claude Code.
 - detail: Fase 1 del meta-processo; nessun codice e nessuna scelta di stack. Esito in docs/research.md.
