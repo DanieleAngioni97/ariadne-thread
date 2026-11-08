@@ -45,6 +45,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .band .back { color: #9fd0ff; }
 .band .detour { color: #f1b45f; }
 .band .update { color: #8fd19e; }
+.band .away { color: #ffd479; }
 .band button { background: #454c57; border: 1px solid #5b6370; border-radius: 4px; padding: 1px 9px; margin-left: 6px; color: #fff; font: inherit; }
 .band button.yes { background: #2f7d4f; border-color: #3d9a63; }
 .band button.no { background: #8a2f36; border-color: #a93c45; }
@@ -80,6 +81,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .node.selected { outline: 2px solid var(--ink); }
 .node.ghost { border: 1px dashed var(--ghost); color: var(--ghost); background: repeating-linear-gradient(135deg, transparent 0 6px, rgba(0,0,0,0.03) 6px 12px); }
 .node.ghost .sym { color: var(--ghost); }
+.node.unconfirmed { border: 1px dashed var(--detour); background: #fdf6e8; }
 .node.flash { animation: flash 0.9s ease-out 2; }
 @keyframes flash { 50% { background: #fff3c4; } }
 .detour-wrap { margin-left: 22px; border-left: 2px dashed var(--detour); padding-left: 8px; }
@@ -109,6 +111,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
       <button data-say="/btw perché il provider chiude le connessioni dopo 30 s?">/btw una domanda laterale</button>
       <button data-say="sposta m2.1b sotto m1">sposta m2.1b sotto m1</button>
       <button data-say="/clear">/clear</button>
+      <button data-away>vai via per 3 ore</button>
     </div>
   </div>
 </section>
@@ -125,6 +128,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 <script>
 // Fake project: a payment timeout being debugged. Shape follows docs/ux/allineamento/concetti.md.
 const TODAY = '2026-11-08'
+// R25: what the agent may do alone, agreed when the plan was approved.
+const MANDATE = 'passi dentro la milestone corrente e deviazioni brevi; mai milestone nuove, rinvii o cambi d\'obiettivo'
 const file = ref => ({ type: 'file', ref })
 const commit = ref => ({ type: 'commit', ref })
 const message = ref => ({ type: 'message', ref })
@@ -136,7 +141,7 @@ let nodes = [
   { id: 'm1.2', parent: 'm1', after: ['m1.1'], kind: 'step', title: 'Ipotesi: pool di connessioni esaurito', status: 'done', what: 'Ipotesi scelta tra tre (pool, DNS, rate limit del provider).', proof: [], uncertain: 'nessun commit né file: dedotta solo in chat', by: 'agent', at: '2026-11-06' },
   { id: 'm1.3', parent: 'm1', after: ['m1.2'], kind: 'step', title: 'Confermare con le metriche', status: 'done', what: 'Pool al 100% in tutti i picchi di timeout.', proof: [commit('8e41d0a'), file('docs/diagnosi.md')], by: 'agent', at: '2026-11-07' },
   { id: 'd1', parent: 'm1', after: ['m1.3'], kind: 'detour', title: 'Allarme sul pool in Grafana', status: 'deferred', deferred_to: 'm3.1', why: 'Utile ma non blocca la correzione.', what: 'Rimandato a M3.', proof: [message('chat 2026-11-07')], by: 'user', at: '2026-11-07', confirmed: ok },
-  { id: 'm2', after: ['m1'], kind: 'milestone', title: 'M2 Correzione', status: 'active', what: 'Correggere il timeout senza cambiare l\'API pubblica.', proof: [message('piano approvato il 2026-11-07')], by: 'user', at: '2026-11-07', confirmed: ok },
+  { id: 'm2', after: ['m1'], kind: 'milestone', title: 'M2 Correzione', status: 'active', what: 'Correggere il timeout senza cambiare l\'API pubblica.', mandate: MANDATE, proof: [message('piano approvato il 2026-11-07')], by: 'user', at: '2026-11-07', confirmed: ok },
   { id: 'm2.1', parent: 'm2', kind: 'step', title: 'Riprodurre il timeout in un test', status: 'active', what: 'Un test che fallisce con il pool a 2 connessioni.', proof: [message('piano approvato il 2026-11-07')], by: 'user', at: '2026-11-07' },
   { id: 'm2.2', parent: 'm2', after: ['m2.1'], kind: 'step', title: 'Patch del retry con backoff', status: 'todo', what: 'Retry con backoff esponenziale sulle chiamate al provider.', proof: [message('piano approvato il 2026-11-07')], by: 'user', at: '2026-11-07' },
   { id: 'm3', after: ['m2'], kind: 'milestone', title: 'M3 Rilascio', status: 'todo', what: 'Portare la correzione in produzione.', proof: [message('piano approvato il 2026-11-06')], by: 'user', at: '2026-11-06', confirmed: ok },
@@ -148,7 +153,8 @@ let pending = null // { text, ghosts: [ids], approve(), reject() }
 let selected = null
 let showAgent = false
 let lastUpdate = ''
-let pick = false // after "t" on a list: a number picks a point
+let pick = false // after "Torna alla lista": a number picks a point
+let queue = [] // R26: what happened while you were away, reviewed on return
 
 const $ = id => document.getElementById(id)
 const get = id => nodes.find(n => n.id === id)
@@ -463,9 +469,10 @@ function nodeButton(n, onThread) {
   else if (onThread.has(n.id)) b.classList.add('thread')
   if (n.uncertain) b.classList.add('uncertain')
   if (n.ghost) b.classList.add('ghost')
+  if (n.unconfirmed) b.classList.add('unconfirmed')
   if (n.id === selected) b.classList.add('selected')
   const sym = n.ghost ? '+' : n.kind === 'detour' && n.status !== 'deferred' ? '⤷' : SYM[n.status]
-  const tag = n.ghost ? 'proposta' : n.status === 'deferred' ? `→ ${n.deferred_to}` : n.kind === 'list' ? `${childrenOf(n.id).filter(p => p.status === 'done').length}/${childrenOf(n.id).length}` : n.by === 'user' && n.kind !== 'milestone' ? 'tu' : ''
+  const tag = n.ghost ? 'proposta' : n.unconfirmed ? 'da confermare' : n.rejected ? 'rifiutato' : n.status === 'deferred' ? `→ ${n.deferred_to}` : n.kind === 'list' ? `${childrenOf(n.id).filter(p => p.status === 'done').length}/${childrenOf(n.id).length}` : n.by === 'user' && n.kind !== 'milestone' ? 'tu' : ''
   b.innerHTML = `<span class="sym"></span><span class="id"></span><span class="title"></span>${n.uncertain ? '<span title="">?</span>' : ''}<span class="tag"></span>`
   b.querySelector('.sym').textContent = sym
   b.querySelector('.id').textContent = n.id
@@ -553,6 +560,8 @@ function renderDetail() {
     n.uncertain && ['Incerto', n.uncertain],
     ['Deciso da', `${n.by === 'user' ? 'tu' : 'agente'}, ${n.at}`],
     n.confirmed && ['Confermato', `da te il ${n.confirmed.at} (${n.confirmed.ref})`],
+    n.unconfirmed && ['Da confermare', 'fatto dall\'agente in tua assenza, dentro il mandato'],
+    n.mandate && ['Mandato', n.mandate],
     n.reentry && ['Rientra in', n.reentry],
     n.deferred_to && ['Rimandato a', n.deferred_to],
     n.continues && ['Riprende', n.continues],
@@ -579,6 +588,9 @@ function renderBand() {
   const cur = get(current)
   if (cur.kind === 'detour' && cur.status === 'active') row('detour', `⤷ deviazione · rientro: ${short(get(cur.reentry).title)} <button data-act="back">Chiudi e torna</button>`)
   else if (list()) row('back', `↩ ${esc(list().title)} (${decided()}/5 decisi) <button data-act="back">Torna alla lista</button>`)
+  const item = queue.find(q => !q.done)
+  if (queue.length && !queue.started && item) row('away', `⏎ Mentre eri via: ${queue.filter(q => q.kind === 'confirm').length} da confermare, ${queue.filter(q => q.kind === 'decide').length} da decidere <button class="yes" data-act="all">Approva tutto</button><button data-act="one">Rivedi una per una</button>`)
+  else if (item) row('away', `⏎ ${item.kind === 'confirm' ? 'Da confermare' : 'Da decidere'} ${queue.indexOf(item) + 1}/${queue.length}: ${esc(item.text)} <button class="yes" data-act="q-yes">${item.kind === 'confirm' ? 'Approva' : 'Fallo'}</button><button class="no" data-act="q-no">${item.kind === 'confirm' ? 'Rifiuta' : 'Lascia così'}</button>${item.id ? '<button data-act="q-show">Mostra nel grafo</button>' : ''}`)
   if (pending) row('proposal', `◆ Proposta: ${esc(pending.text)} <button class="yes" data-act="yes">Approva</button><button class="no" data-act="no">Rifiuta</button><button data-act="show">Mostra nel grafo</button>`)
   else if (lastUpdate) row('update', `↺ ${esc(lastUpdate)}`)
 }
@@ -589,7 +601,9 @@ function render() { renderBand(); renderGraph(); renderDetail(); renderGuide() }
 function renderGuide() {
   const cur = get(current)
   let text
-  if (pending) text = 'L\'agente propone di cambiare la struttura del grafo: nel grafo a destra la modifica è tratteggiata in grigio. Decidi tu, con i pulsanti verde e rosso nella banda (la riga scura sopra il prompt).'
+  if (queue.length && !queue.started) text = 'Sei tornato dopo 3 ore. L\'agente ha lavorato da solo: dentro il mandato ha applicato le modifiche (arancioni tratteggiate nel grafo, «da confermare»); fuori dal mandato non ha applicato nulla e ti lascia una decisione. Approva tutto con 1 clic, oppure rivedi una per una.'
+  else if (queue.length) text = 'Revisione al rientro: approva o rifiuta una modifica alla volta. Se rifiuti, il ramo resta tracciato ma esce dal piano.'
+  else if (pending) text = 'L\'agente propone di cambiare la struttura del grafo: nel grafo a destra la modifica è tratteggiata in grigio. Decidi tu, con i pulsanti verde e rosso nella banda (la riga scura sopra il prompt).'
   else if (pick) text = 'Qui sopra in chat c\'è l\'indice della lista. Scrivi nel prompt il numero del punto da discutere e premi Invio.'
   else if (cur.kind === 'detour' && cur.status === 'active') text = 'Sei in una questione laterale (deviazione). Nel grafo è il ramo tratteggiato arancione. Quando hai finito, «Chiudi e torna» nella banda ti riporta al punto da cui eri partito.'
   else if (stage === 'start') text = 'A sinistra c\'è Claude Code, a destra il grafo nel browser. La riga scura sopra il prompt è la banda: dice dove sei e cosa viene dopo. Premi «Fai lavorare l\'agente» per farlo arrivare al prossimo checkpoint.'
@@ -598,14 +612,59 @@ function renderGuide() {
   else if (lastUpdate) text = 'L\'agente ha chiuso un passo e aperto il successivo da solo (riga verde nella banda): sono dettagli, non serve la tua conferma. Il grafo a destra si è aggiornato. Premi il pulsante blu per continuare.'
   else text = 'Premi il pulsante blu per far lavorare l\'agente fino al prossimo checkpoint.'
   $('guide').textContent = text
-  $('advance').disabled = Boolean(pending) || stage === 'end'
+  $('advance').disabled = Boolean(pending) || queue.length > 0 || stage === 'end'
 }
 
 function showInViewer() {
   if (!pending) return say('sys', 'Nessuna proposta da mostrare.')
-  const el = document.querySelector(`.node[data-id="${CSS.escape(pending.ghosts[0])}"]`)
-  el?.scrollIntoView({ block: 'center', behavior: 'smooth' })
-  for (const id of pending.ghosts) document.querySelector(`.node[data-id="${CSS.escape(id)}"]`)?.classList.add('flash')
+  flash(pending.ghosts)
+}
+
+function flash(ids) {
+  document.querySelector(`.node[data-id="${CSS.escape(ids[0])}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  for (const id of ids) document.querySelector(`.node[data-id="${CSS.escape(id)}"]`)?.classList.add('flash')
+}
+
+// ---------- away for hours (R25, R26) ----------
+
+/** The agent works alone: inside the mandate it applies structure as "to confirm"; outside it only takes a note. */
+function goAway() {
+  if (pending || queue.length) return say('sys', 'Prima chiudi la proposta o la revisione in corso.')
+  const ms = get(current).kind === 'milestone' ? current : containers(current)[0]
+  const anchor = get(current).kind === 'milestone' ? childrenOf(ms).at(-1)?.id : [...containers(current), current][1]
+  const n = childrenOf(ms).length
+  const step = { id: `${ms}.a${n}`, parent: ms, after: anchor ? [anchor] : undefined, kind: 'step', title: 'Test di carico con 200 richieste concorrenti', status: 'done',
+    what: 'Nessun timeout con il pool a 20 connessioni.', proof: [commit('d40b7e1')], by: 'agent', at: TODAY, unconfirmed: true }
+  const side = { id: `${ms}.a${n}.d`, parent: ms, after: [step.id], kind: 'detour', title: 'Perché il test locale era lento', status: 'done', reentry: step.id,
+    what: 'Il DNS locale aggiungeva 2 s: risolto con /etc/hosts.', proof: [message(`chat ${TODAY}`)], by: 'agent', at: TODAY, unconfirmed: true }
+  const at = anchor ? nodes.indexOf(get(anchor)) + 1 : nodes.length
+  nodes.splice(at, 0, step, side)
+  say('sys', '… 3 ore dopo …')
+  say('agent', `Mentre eri via: 3 checkpoint. Dentro il mandato ho aggiunto il passo «${step.title}» e una deviazione breve, entrambi da confermare. Fuori dal mandato non ho applicato nulla: avrei aperto una milestone per rifare il pool di connessioni; per ora ho tenuto il piano com'era.`)
+  queue = [
+    { kind: 'confirm', id: step.id, text: `nuovo passo «${step.title}»` },
+    { kind: 'confirm', id: side.id, text: `deviazione «${side.title}»` },
+    { kind: 'decide', text: 'aprire una milestone «Rifare il pool di connessioni»? (fuori mandato)' },
+  ]
+  lastUpdate = ''
+  render()
+}
+
+function review(q, yes) {
+  const n = q.id && get(q.id)
+  if (!n) return
+  delete n.unconfirmed
+  if (yes) n.confirmed = { at: TODAY, ref: 'revisione al rientro' }
+  else Object.assign(n, { status: 'replaced', rejected: true, confirmed: { at: TODAY, ref: 'revisione al rientro' } })
+}
+
+function reviewNext(yes) {
+  const q = queue.find(q => !q.done)
+  q.done = true
+  if (q.kind === 'confirm') review(q, yes)
+  say('sys', q.kind === 'confirm' ? `${yes ? 'Approvato' : 'Rifiutato (resta tracciato, fuori dal piano)'}: ${q.text}.` : yes ? 'Ok: l\'agente proporrà la milestone come piano da approvare.' : 'Lasciato così: il piano non cambia.')
+  if (queue.every(q => q.done)) queue = []
+  render()
 }
 
 $('form').onsubmit = e => {
@@ -616,10 +675,17 @@ $('form').onsubmit = e => {
 }
 $('band').onclick = e => {
   const act = e.target.closest('button')?.dataset.act
-  const actions = { yes: () => answer(true), no: () => answer(false), show: showInViewer, back: goBack }
+  const actions = {
+    yes: () => answer(true), no: () => answer(false), show: showInViewer, back: goBack,
+    all: () => { for (const q of queue) if (q.kind === 'confirm') review(q, true); for (const q of queue) q.done = true; say('sys', 'Approvate tutte le modifiche fatte in tua assenza; le decisioni aperte restano come le aveva lasciate l\'agente.'); queue = []; render() },
+    one: () => { queue.started = true; render() },
+    'q-yes': () => reviewNext(true), 'q-no': () => reviewNext(false),
+    'q-show': () => flash([queue.find(q => !q.done).id]),
+  }
   if (act) actions[act]()
 }
 document.querySelector('.legend').onclick = e => {
+  if (e.target.closest('[data-away]')) return goAway()
   const text = e.target.closest('button')?.dataset.say
   if (text) command(text)
 }
