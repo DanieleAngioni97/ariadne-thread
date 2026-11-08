@@ -19,7 +19,7 @@ Traccia a mano del processo di questo progetto: il caso d'uso reale e il primo d
 
 ## Grafo
 
-current: m1.2
+current: m1.3
 
 ### p0 — Visione del progetto
 - status: done
@@ -134,17 +134,17 @@ current: m1.2
 - branches:
 
 ### m1.2 — Spike visivo del viewer
-- status: active
+- status: done
 - parent: m1.1
 - summary: Pagina web usa e getta che mostra livelli espandibili, stati, filo, deviazioni, rinvii e pannello di contesto.
-- detail: Su branch spike/viewer (spikes/viewer/). Primo giudizio dell'utente: verso sinistra→destra ok; tooltip coperto dai nodi, frecce incasinate, tipi poco leggibili da lontano, todo di M0 rimasti lì senza motivo, interfaccia da avere nella lingua dell'utente, pannello da strutturare con tutti i file e il loro perché. Regole nuove: ogni rinvio crea un task in una milestone successiva; il piano va segnato fino in fondo per quanto si sa. Seconda versione pronta. Poi: navigando a un altro passo non si capiva dove andava il grafo; ora zooma sul passo scelto e lo fa pulsare. In attesa del secondo giudizio.
+- detail: Su branch spike/viewer (spikes/viewer/). Primo giudizio dell'utente: verso sinistra→destra ok; tooltip coperto dai nodi, frecce incasinate, tipi poco leggibili da lontano, todo di M0 rimasti lì senza motivo, interfaccia da avere nella lingua dell'utente, pannello da strutturare con tutti i file e il loro perché. Regole nuove: ogni rinvio crea un task in una milestone successiva; il piano va segnato fino in fondo per quanto si sa. Seconda versione pronta. Poi: navigando a un altro passo non si capiva dove andava il grafo; ora zooma sul passo scelto e lo fa pulsare. Secondo giudizio: il mockup va benissimo per ora; si passa a progettare l'allineamento tra persona e modello.
 - branches:
 
 ### m1.3 — Rifinire i requisiti
-- status: todo
+- status: active
 - parent: m1.2
 - summary: Portare il giudizio sullo spike in docs/requirements-draft.md.
-- detail: Tra le novità: rinvii come task in milestone successive, piano end-to-end, interfaccia nella lingua dell'utente, file con il loro perché.
+- detail: Tra le novità: rinvii come task in milestone successive, piano end-to-end, interfaccia nella lingua dell'utente, file con il loro perché. Si chiude con un grilling su backend e frontend (skill grilling + ux:design-flow): chi scrive il grafo, cosa nasce senza conferma, prove per ogni nodo, budget di leggibilità, il grafo al posto di STATE/LOG/Next.
 - branches:
 
 ### m2 — M2 Progettazione
