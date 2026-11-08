@@ -75,6 +75,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 .node .tag { margin-left: auto; flex: none; font-size: 11px; color: var(--muted); }
 .k-done { --k: var(--done); } .k-active { --k: var(--active); } .k-todo { --k: var(--todo); }
 .k-deferred { --k: var(--deferred); } .k-deferred .title { color: var(--muted); }
+.k-replaced { --k: var(--ghost); opacity: 0.6; } .k-replaced .title { text-decoration: line-through; color: var(--muted); }
 .node.current { background: var(--thread-soft); border-color: var(--thread); }
 .node.thread .title { text-decoration: underline 2px var(--thread-soft); text-underline-offset: 3px; }
 .node.uncertain { opacity: 0.55; }
@@ -369,7 +370,7 @@ function answer(yes) {
   const p = pending
   pending = null
   yes ? p.approve() : p.reject()
-  lastUpdate = ''
+  lastUpdate = `${yes ? 'approvato' : 'rifiutato, il grafo non cambia'}: ${p.text}`
   render()
 }
 
@@ -471,7 +472,7 @@ function nodeButton(n, onThread) {
   if (n.ghost) b.classList.add('ghost')
   if (n.unconfirmed) b.classList.add('unconfirmed')
   if (n.id === selected) b.classList.add('selected')
-  const sym = n.ghost ? '+' : n.kind === 'detour' && n.status !== 'deferred' ? '⤷' : SYM[n.status]
+  const sym = n.ghost ? '+' : n.kind === 'detour' && n.status !== 'deferred' && n.status !== 'replaced' ? '⤷' : SYM[n.status]
   const tag = n.ghost ? 'proposta' : n.unconfirmed ? 'da confermare' : n.rejected ? 'rifiutato' : n.status === 'deferred' ? `→ ${n.deferred_to}` : n.kind === 'list' ? `${childrenOf(n.id).filter(p => p.status === 'done').length}/${childrenOf(n.id).length}` : n.by === 'user' && n.kind !== 'milestone' ? 'tu' : ''
   b.innerHTML = `<span class="sym"></span><span class="id"></span><span class="title"></span>${n.uncertain ? '<span title="">?</span>' : ''}<span class="tag"></span>`
   b.querySelector('.sym').textContent = sym
@@ -490,7 +491,9 @@ function renderChildren(id, onThread, expanded) {
   let kids = childrenOf(id)
   // Readability profile: a level shows at most LIMIT children open around the current one; the rest fold.
   if (kids.length > LIMIT + 1 && !expanded.has(id) && !kids.some(k => k.ghost)) {
-    const focus = Math.max(0, kids.findIndex(k => onThread.has(k.id) || k.ghost))
+    // The window always contains where you are: the current node, what contains it, or the node a current detour leaves from.
+    const here = k => k.id === current || containers(current).includes(k.id) || get(current).after?.[0] === k.id
+    const focus = Math.max(0, kids.findIndex(here), kids.findIndex(k => k.ghost))
     const startAt = Math.min(Math.max(0, focus - 1), kids.length - LIMIT)
     const hidden = kids.length - LIMIT
     const shown = kids.slice(startAt, startAt + LIMIT)
@@ -664,6 +667,7 @@ function reviewNext(yes) {
   if (q.kind === 'confirm') review(q, yes)
   say('sys', q.kind === 'confirm' ? `${yes ? 'Approvato' : 'Rifiutato (resta tracciato, fuori dal piano)'}: ${q.text}.` : yes ? 'Ok: l\'agente proporrà la milestone come piano da approvare.' : 'Lasciato così: il piano non cambia.')
   if (queue.every(q => q.done)) queue = []
+  lastUpdate = q.kind === 'confirm' ? `${yes ? 'confermato' : 'rifiutato, resta tracciato fuori dal piano'}: ${q.text}` : yes ? 'la milestone arriverà come proposta' : 'il piano non cambia'
   render()
 }
 
@@ -677,7 +681,7 @@ $('band').onclick = e => {
   const act = e.target.closest('button')?.dataset.act
   const actions = {
     yes: () => answer(true), no: () => answer(false), show: showInViewer, back: goBack,
-    all: () => { for (const q of queue) if (q.kind === 'confirm') review(q, true); for (const q of queue) q.done = true; say('sys', 'Approvate tutte le modifiche fatte in tua assenza; le decisioni aperte restano come le aveva lasciate l\'agente.'); queue = []; render() },
+    all: () => { for (const q of queue) if (q.kind === 'confirm') review(q, true); for (const q of queue) q.done = true; say('sys', 'Approvate tutte le modifiche fatte in tua assenza; le decisioni aperte restano come le aveva lasciate l\'agente.'); queue = []; lastUpdate = 'confermate tutte le modifiche fatte in tua assenza'; render() },
     one: () => { queue.started = true; render() },
     'q-yes': () => reviewNext(true), 'q-no': () => reviewNext(false),
     'q-show': () => flash([queue.find(q => !q.done).id]),
