@@ -97,7 +97,7 @@ di oggi. Prima: STATE.md ~2,7 KB (≈700 token) iniettato a inizio sessione; tra
 
 Round 2 — rispondi sotto ogni «Risposta:» (basta la lettera, o "ok" per la proposta ➡️).
 Nascono dalle tue risposte, da `docs/research.md` §7 e dal metodo spec-driven (nodo `d3`).
-Le più importanti: **Q18, Q19, Q22, Q25**. Q20 aspetta un fatto che sto cercando (strumenti nativi di Claude Code).
+Le più importanti: **Q18, Q19, Q22, Q25**. Q20 ora ha i fatti sugli strumenti nativi.
 
 ### Q12 — Dove approvi una proposta strutturale (frontend)
 (a) Nella banda sopra il prompt: "Proposta: nuovo ramo «X» [Sì] [No] [Vedi]" · (b) Nel viewer, in una coda di proposte · (c) La banda avvisa e approva; il viewer mostra la proposta in grigio nel grafo, per vederla nel contesto.
@@ -116,7 +116,12 @@ Risposta:
 
 ### Q20 — Questione laterale che rischia di sporcare la chat
 Il tuo caso: in una review del frontend emerge un dubbio sul backend. (a) Deviazione nel grafo, nella stessa chat, con ritorno esplicito al punto lasciato · (b) Una conversazione separata (fork di Claude Code) registrata come ramo collegato, che a fine discussione porta indietro solo la decisione · (c) Entrambe: deviazione per le cose brevi, fork per quelle lunghe o con molto lavoro.
-➡️ (c), da confermare quando arriva il censimento degli strumenti nativi (fork, /btw, rewind).
+Fatti (docs di Claude Code, 2026-11-08): `/btw` risponde senza entrare nella chat ma non usa tool;
+`/subtask` lavora a parte con i tool e porta indietro solo il risultato; `/branch` copia la chat in una
+sessione nuova e si torna con `/resume`; `/fork` fa lo stesso in background. Non esistono segnalibri.
+Una mod non riceve `session.start` su `/branch` (arriva `session.end`), quindi il collegamento va fatto da noi.
+➡️ (c): deviazione nel grafo per le cose brevi; per quelle lunghe `/subtask` (torna solo la decisione) o
+`/branch` (discussione vera, poi `/resume`), registrati come ramo collegato al punto di partenza.
 Risposta:
 
 ### Q21 — Cosa scrive l'agente (backend)
