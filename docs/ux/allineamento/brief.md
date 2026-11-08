@@ -119,5 +119,5 @@ di oggi. Prima: STATE.md ~2,7 KB (≈700 token) iniettato a inizio sessione; tra
 
 ## Domande aperte
 
-Nessuna: brief chiuso il 2026-11-08. Fatto da recuperare, non bloccante: dove vive l'agente
-"task scribe" che usi in un altro progetto (Q30), per riusarne il prompt.
+Nessuna: brief chiuso il 2026-11-08. Lo scribe (Q30, R21) non esiste ancora da nessuna parte:
+è una proposta da progettare in M2 (prompt, modello, operazioni che emette).
