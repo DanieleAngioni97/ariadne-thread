@@ -113,6 +113,12 @@ test('the deferred step and its continuation point at each other', () => {
   assert.equal(continuationOf(plan, 'lost'), null)
 })
 
+test('the sample thread defers every open step of a closed milestone to a later task', async () => {
+  const { data: sample } = await import('./data.js')
+  assert.deepEqual(anomalies(sample), [])
+  for (const n of sample.nodes.filter(n => n.continues)) assert.equal(continuationOf(sample, n.continues).id, n.id)
+})
+
 test('a container lists every file touched inside it, once per path, with the reason from each step', () => {
   const tree = {
     current: 'a',
