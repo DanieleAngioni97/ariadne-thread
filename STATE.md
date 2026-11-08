@@ -7,14 +7,13 @@ prototipo provato dall'utente ("mi torna"), revisione leggera fatta (`valutazion
 avviato: la fonte del processo è `.ariadne/graph.jsonl`, nodo corrente `m2.10` (`.ariadne/thread.json`).
 
 ## Next
-1. Far approvare all'utente `docs/ux/allineamento/specifica.md` (bozza scritta: schema con
-   `mandate`/`review`/`prudent`, operazioni, scribe, banda, viewer, criteri R1–R26). Punti da
-   confermare: «lavoro da solo» esplicito, `log.jsonl`, undo a un livello in `thread.json`.
+1. `plan-before-coding` per l'implementazione da `docs/ux/allineamento/specifica.md` (approvata,
+   `m2.10` chiuso): CLI `ariadne` e riassunto R7 per primi, poi scribe, banda nella mod, viewer che
+   legge `.ariadne/`. Il piano va proposto come nodi `todo` da approvare (concetto A); decidere dove
+   finiscono `m2.4`–`m2.6`. Quando il riassunto R7 esiste, togliere STATE.md e LOG.md (R8, R24).
 2. A ogni checkpoint aggiornare `.ariadne/graph.jsonl` (e `thread.json`), poi
    `node scripts/ariadne/validate.mjs` → `ok`. Un passo nuovo fuori piano si propone all'utente prima
-   di aggiungerlo (concetto A). Chiudere `m2.10` con le prove quando la specifica è approvata.
-3. Poi `plan-before-coding` per l'implementazione (scribe, riassunto R7 dal grafo, banda nella mod,
-   viewer che legge `.ariadne/`). Quando il riassunto R7 esiste, togliere STATE.md e LOG.md (R8, R24).
+   di aggiungerlo (concetto A).
 
 ## Decisioni aperte e rischi
 - Non pubblicati: 5 commit su `docs/m0-research` e 36 su `spike/viewer`. Push solo su richiesta.
