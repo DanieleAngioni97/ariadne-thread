@@ -116,6 +116,7 @@ di oggi. Prima: STATE.md ~2,7 KB (≈700 token) iniettato a inizio sessione; tra
 | 2026-11-08 | JSONL in `.ariadne/`; osservatore che segnala; LOG dentro `.ariadne/` | Q27–Q29 | tu |
 | 2026-11-08 | Nota dell'agente + scribe economico; punto di rientro dichiarato; contenitore proposto a livello pieno; dogfooding subito | Q30–Q33 (in chat: "approvo") | tu |
 | 2026-11-08 | Brief chiuso | Domande aperte vuote | tu |
+| 2026-11-08 | Concetto A "Piano prima": il piano nasce approvato, i checkpoint chiudono e riempiono, struttura nuova solo fuori piano; banda dal lineage | concetti.md: lo scribe non decide la struttura; regge rinvii e rami paralleli | tu |
 
 ## Domande aperte
 

@@ -166,4 +166,4 @@ laterali ma non regge i rami paralleli e i rinvii, che questo repo usa già (m2.
 Rischio da tenere d'occhio nel prototipo: quante proposte "fuori piano" arrivano per passo. Se
 sono più di una su cinque rifiutate (metrica del brief), il piano va proposto a grana più grossa.
 
-**Scegli tu**: A (raccomandato), B, C, oppure un'altra combinazione.
+**Scelta (2026-11-08, utente):** A, con la banda calcolata dal lineage come proposto.

@@ -19,7 +19,7 @@ Traccia a mano del processo di questo progetto: il caso d'uso reale e il primo d
 
 ## Grafo
 
-current: m2.2
+current: m2.8
 
 ### p0 — Visione del progetto
 - status: done
@@ -176,10 +176,17 @@ current: m2.2
 - branches:
 
 ### m2.2 — Flusso di aggiornamento: concetti
-- status: active
+- status: done
 - parent: m2
 - summary: Fase 3 di ux:design-flow: 2–3 flussi diversi per scrivere, approvare e leggere il grafo, contro il brief.
-- detail: docs/ux/allineamento/concetti.md: A piano prima (raccomandato), B diario dopo, C pila di contesti, con lo schema dei nodi (m2.1) quanto basta per confrontarli; in attesa della scelta dell'utente. Poi dogfooding (R24): conversione di questa traccia in .ariadne/.
+- detail: docs/ux/allineamento/concetti.md: A piano prima (raccomandato), B diario dopo, C pila di contesti, con lo schema dei nodi (m2.1) quanto basta per confrontarli; scelto A il 2026-11-08 (con la banda calcolata dal lineage, presa da C). Poi dogfooding (R24): conversione di questa traccia in .ariadne/.
+- branches:
+
+### m2.8 — Dogfooding: grafo in .ariadne/
+- status: active
+- parent: m2.2
+- summary: Conversione di questa traccia in .ariadne/graph.jsonl con lo schema del concetto A, più un validatore come script (test prima).
+- detail: R24 del brief. STATE e LOG restano finché il riassunto per l'agente (R7) non li sostituisce. Poi prototipo (fase 4 di ux:design-flow).
 - branches:
 
 ### m2.4 — Misurare il costo dell'osservatore
