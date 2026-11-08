@@ -144,3 +144,66 @@ replicherebbe strumenti esistenti.
 - Disponibilità reale dei Task tools sui modelli attuali e loro uso come sorgente di stato.
 - Licenze da leggere per intero: tldraw, n8n.
 - Parti della doc hooks non lette (schemi esatti di Stop, PreCompact, hook HTTP).
+
+## 7. Memoria strutturata per agenti e controllo del grafo (M1, 2026-11-08)
+
+Domanda dell'utente durante il grilling di `m1.3`: davvero non esisteva nulla che facesse questo?
+La sezione 1 aveva censito solo strumenti *visivi*; qui gli strumenti che danno all'agente una
+memoria del piano, e le tecniche per tenere ordinata una struttura scritta da un LLM. Due ricerche
+web in parallelo. Legenda: [C] verificato nel codice · [D] dichiarato (README, DeepWiki) ·
+[W] fonte secondaria. I numeri vanno riverificati alla fonte prima di citarli altrove.
+
+### 7.1 Strumenti
+
+| Nome | Licenza | ★ / push | Formato su disco | Chi scrive | Anti-caos | Costo contesto | UI | Per noi |
+|---|---|---|---|---|---|---|---|---|
+| [Beads](https://github.com/gastownhall/beads) | MIT | 28,6k / 11-2026 | Dolt in `.beads/` [D]; JSONL solo export | CLI `bd` + MCP, nessuna conferma | `bd ready`, `defer`, `supersedes`, compattazione | `bd prime` ~1k token [W]; esploso con 61 memorie ([#7208](https://github.com/gastownhall/beads/issues/7208)) | TUI e viewer di terzi (anche React Flow) | Idee |
+| [Task Master](https://github.com/eyaltoledano/claude-task-master) | MIT + Commons Clause [C] | 28,3k / 04-2026 | un `tasks.json` (1,5 MB nel loro repo) [C] | l'LLM genera i task da un PRD | controllo delle dipendenze, nessun limite | tool MCP 5k–21k token [D] | CLI | No |
+| [Spec Kit](https://github.com/github/spec-kit) | MIT | 148,5k / 11-2026 | `spec.md`, `plan.md`, `tasks.md` [C] | slash command, l'LLM scrive | fasi con "clarify" e checklist umane | file letti a ogni fase | — | Idea: fasi con cancello |
+| [Backlog.md](https://github.com/MrLesk/Backlog.md) | MIT | 7,3k / 11-2026 | un `.md` per task, frontmatter [D] | CLI + MCP | un task = una sessione = una PR [D] | — | TUI kanban + web | Idea: formato leggibile nei diff |
+| [CCPM](https://github.com/automazeio/ccpm) | MIT | 8,4k / 11-2026 | markdown + GitHub Issues [D] | l'agente + script deterministici | ≤ 10 task per epic [D] | — | — | Idea: script deterministici |
+| Claude Code Tasks | proprietario | — | JSON in `~/.claude/tasks`, fuori da git [W] | l'agente, con `blockedBy` | pronto se non bloccato | 4 tool | pannello nel terminale | Non versionato, niente "perché" |
+| [MCP memory](https://github.com/modelcontextprotocol/servers) | — | monorepo | `memory.jsonl`, entità/relazioni [C] | MCP | quasi nulla: ignora i duplicati [C] | legge il grafo intero | — | No |
+| adr-kit, Lore ([arXiv 2603.15566](https://arxiv.org/abs/2603.15566)) | MIT / paper | piccoli | ADR in markdown; trailer nei commit | l'agente, hook in CI | decisione legata a file:line o al commit | basso | — | Idea: il "perché" legato al commit |
+
+- **Nessuno registra il processo avvenuto.** Sono tracker di lavoro da fare; decisioni, rami,
+  rinvii e "perché" non sono di prima classe. Lo scopo (sostituire STATE/LOG/Next) resta scoperto.
+- **Chi fa scrivere il piano all'LLM** (Task Master, Spec Kit) inventa task: l'opposto della fedeltà.
+- **Beads** è il motore più vicino: stati `deferred`/`closed`, dipendenze `discovered-from` (≈ ramo),
+  `supersedes` (≈ decisione rivista), `defer_until` (≈ rinvio), `close_reason`; il "pronto" come
+  query. Come backend è sproporzionato (Dolt, federazione, multi-agente) e non sa "dove sei".
+- **Formato**: JSONL o markdown con frontmatter battono un JSON unico o un database per i diff.
+- **Nessuno garantisce un tetto ai token** iniettati: va costruito un riassunto a budget fisso.
+- **Raccomandazione: prendere le idee e costruire** formato e backend; al più un export verso il
+  JSONL di Beads per riusarne i viewer. Confidenza media-alta.
+
+### 7.2 Tecniche per tenere ordinato un grafo scritto da un LLM
+
+| Tema | Cosa dice la letteratura | Fonte | Misurato? |
+|---|---|---|---|
+| Schema e validazione | Lo schema garantisce la forma, non il senso; gli invarianti vanno controllati a parte | [arXiv 2607.18261](https://arxiv.org/abs/2607.18261) | sì |
+| Patch | Operazioni piccole costano meno token della riscrittura; indirizzarle per id, non per posizione | [JSON Whisperer](https://arxiv.org/abs/2510.04717) | sì |
+| Operazioni tipizzate | Il modello sceglie tra aggiungi / aggiorna / elimina / **niente**, dopo aver visto i 10 elementi più simili | [Mem0](https://arxiv.org/abs/2504.19413) | sì |
+| Mai cancellare | Un fatto contraddetto non si cancella: riceve una data di invalidità | [Zep/Graphiti](https://arxiv.org/abs/2501.13956) | descritto |
+| Prove | Ogni affermazione cita fonti; un modello verifica che la fonte la sostenga (accordo con umani 78–85%, ma altrove debole) | [ALCE](https://aclanthology.org/2023.emnlp-main.398.pdf), [survey](https://arxiv.org/abs/2510.10161) | sì |
+| Consolidamento | Una passata a parte fonde duplicati e corregge confrontando col transcript; una nota sbagliata si propaga a ogni sessione | [Anthropic](https://www.anthropic.com/research/components-of-agent-memory) | descritto |
+| Conferme umane | Si approva ~93% dei permessi e si coglie poco del pericoloso; si rifiuta il 39% dei piani | riassunti di terzi ([1](https://daily.dev/posts/humans-in-the-loop-miss-a-third-of-dangerous-ai-coding-agent-requests-823tnlnkc), [2](https://devops.com/anthropic-makes-claude-codes-auto-mode-the-default-betting-automation-beats-manual-review)) | da verificare |
+| Chi scrive | L'agente racconta il proprio lavoro peggio di un osservatore (dichiara riuscito l'impossibile); l'osservatore però perde molti errori | [2602.22303](https://arxiv.org/abs/2602.22303), [2609.20812](https://arxiv.org/abs/2609.20812), [2606.10315](https://arxiv.org/abs/2606.10315) | sì |
+| Contesto per turno | Riscrivere il piano in fondo al contesto tiene l'agente in rotta | [Manus](https://manus.im/blog/Context-Engineering-for-AI-Agents-Lessons-from-Building-Manus) | no |
+
+Senza risposta: limiti pubblicati tipo "max N nodi per aggiornamento"; studi sull'estrazione di
+eventi da conversazioni; misure dell'efficacia del contesto iniettato. Vanno decisi e misurati da noi.
+
+### 7.3 Regole candidate (da decidere nel brief, `docs/ux/allineamento/brief.md`)
+
+1. Il modello emette solo operazioni tipizzate per id (`add`, `close`, `defer`, `link`, `noop`), mai il grafo intero.
+2. Un validatore deterministico applica gli invarianti (un solo corrente, niente cicli, padre esistente, transizioni ammesse, rinvii verso milestone successive); rifiuta con motivo, al più 3 tentativi.
+3. Nessun nodo senza prova (id di un messaggio, commit, file), la cui esistenza è verificata dal codice.
+4. Che la prova sostenga il nodo lo giudica un modello; se no, il nodo resta "non verificato" e il viewer lo attenua.
+5. Budget per aggiornamento e cap ai rami aperti; oltre, si propone di chiudere o rimandare, non di aggiungere.
+6. Prima di aggiungere, confronto con i nodi simili: aggiungi, aggiorna o niente.
+7. Mai cancellare: un nodo superato punta al successore.
+8. Consolidamento separato (fine sessione o soglia), confrontando col transcript.
+9. Conferma umana solo per la struttura; se i rifiuti si accumulano, si passa a chiedere tutto.
+10. Ruoli divisi: l'agente scrive intenzioni, decisioni e rinvii ai checkpoint; l'osservatore verifica i fatti e segnala.
+11. All'agente, a ogni turno, solo un riassunto a budget fisso derivato dal grafo verificato; il resto su richiesta.

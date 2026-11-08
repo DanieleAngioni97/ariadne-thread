@@ -147,6 +147,13 @@ current: m1.3
 - detail: Tra le novità: rinvii come task in milestone successive, piano end-to-end, interfaccia nella lingua dell'utente, file con il loro perché. Si chiude con un grilling su backend e frontend (skill grilling + ux:design-flow): chi scrive il grafo, cosa nasce senza conferma, prove per ogni nodo, budget di leggibilità, il grafo al posto di STATE/LOG/Next.
 - branches:
 
+### d2 — Davvero non esisteva nulla?
+- status: done
+- parent: m1.3
+- summary: Ricerca su memoria strutturata per agenti (Beads, Task Master, Spec Kit…) e su come tenere ordinato un grafo scritto da un LLM.
+- detail: Domanda laterale durante il grilling. Nessuno registra il processo avvenuto con decisioni, rinvii e perché; Beads è il motore più vicino (idee, non backend). Ne escono 11 regole candidate per il brief. docs/research.md §7.
+- branches:
+
 ### m2 — M2 Progettazione
 - status: todo
 - parent: m1
