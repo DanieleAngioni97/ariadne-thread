@@ -7,10 +7,9 @@ prototipo provato dall'utente ("mi torna"), revisione leggera fatta (`valutazion
 avviato: la fonte del processo è `.ariadne/graph.jsonl`, nodo corrente `m2.10` (`.ariadne/thread.json`).
 
 ## Next
-1. Fase 6 di `ux:design-flow`: scrivere `docs/ux/allineamento/specifica.md` (formato in
-   `references/specifica.md` della skill) da brief R1–R26, concetti, `prototipo/index.html` e
-   `valutazione.md`. Dentro i 6 minori della valutazione (§ Correzioni 4–9), il mandato (R25), la
-   coda al rientro (R26) e lo schema dei nodi di `concetti.md`.
+1. Far approvare all'utente `docs/ux/allineamento/specifica.md` (bozza scritta: schema con
+   `mandate`/`review`/`prudent`, operazioni, scribe, banda, viewer, criteri R1–R26). Punti da
+   confermare: «lavoro da solo» esplicito, `log.jsonl`, undo a un livello in `thread.json`.
 2. A ogni checkpoint aggiornare `.ariadne/graph.jsonl` (e `thread.json`), poi
    `node scripts/ariadne/validate.mjs` → `ok`. Un passo nuovo fuori piano si propone all'utente prima
    di aggiungerlo (concetto A). Chiudere `m2.10` con le prove quando la specifica è approvata.
