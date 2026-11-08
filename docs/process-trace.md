@@ -7,7 +7,10 @@ Traccia a mano del processo di questo progetto: il caso d'uso reale e il primo d
 - Righe in testa: `current: <id>` (posizione corrente).
 - Un nodo = un titolo `### <id> — <titolo>` seguito da campi `- chiave: valore`, uno per riga.
 - Campi:
-  - `status`: `done` | `active` | `todo` | `dropped`
+  - `status`: `done` | `active` | `todo` | `deferred` | `dropped`
+  - `deferred`: per un nodo `deferred`, `<id del task> — <perché>`. Un passo lasciato aperto quando la
+    sua milestone si chiude va sempre rimandato a un task di una milestone successiva.
+  - `continues`: per quel task, l'id del passo rimandato che riprende.
   - `parent`: id del nodo da cui nasce (vuoto per la radice). Più genitori separati da virgola.
   - `summary`: una frase, mostrata in hover.
   - `detail`: contesto per il click (perché, a cosa serve, da dove viene). Una riga.
@@ -133,8 +136,75 @@ current: m1.2
 ### m1.2 — Spike visivo del viewer
 - status: active
 - parent: m1.1
-- summary: Pagina web usa e getta che mostra livelli espandibili, stati, filo, deviazioni e pannello di contesto.
-- detail: Su branch spike/viewer (spikes/viewer/), dati di esempio presi da questa sessione. Pronto: livelli annidati con ELK, filo rosso, deviazioni in ocra, pannello con perché, file e momenti della chat. In attesa del giudizio dell'utente.
+- summary: Pagina web usa e getta che mostra livelli espandibili, stati, filo, deviazioni, rinvii e pannello di contesto.
+- detail: Su branch spike/viewer (spikes/viewer/). Primo giudizio dell'utente: verso sinistra→destra ok; tooltip coperto dai nodi, frecce incasinate, tipi poco leggibili da lontano, todo di M0 rimasti lì senza motivo, interfaccia da avere nella lingua dell'utente, pannello da strutturare con tutti i file e il loro perché. Regole nuove: ogni rinvio crea un task in una milestone successiva; il piano va segnato fino in fondo per quanto si sa. Seconda versione pronta, in attesa del secondo giudizio.
+- branches:
+
+### m1.3 — Rifinire i requisiti
+- status: todo
+- parent: m1.2
+- summary: Portare il giudizio sullo spike in docs/requirements-draft.md.
+- detail: Tra le novità: rinvii come task in milestone successive, piano end-to-end, interfaccia nella lingua dell'utente, file con il loro perché.
+- branches:
+
+### m2 — M2 Progettazione
+- status: todo
+- parent: m1
+- summary: Modello dati del grafo, come si aggiorna, la UI.
+- detail: Fase 3 del meta-processo. Task noti: m2.1 modello dati di .ariadne/; m2.2 flusso di aggiornamento; m2.3 UI del viewer; m2.4 costo dell'osservatore (riprende b4); m2.5 task tools come sorgente (riprende b3); m2.6 layout stabile (riprende b2); m2.7 verifiche sulla mod (/btw, canale browser → mod, scorrimento della chat).
+- branches:
+
+### m2.4 — Misurare il costo dell'osservatore
+- status: todo
+- parent: m2
+- continues: b4
+- summary: Qualità e costo per turno: Haiku sul turno o fork sulla sessione.
+- detail: Decide il default (requisito A4).
+- branches:
+
+### m2.5 — Task tools come sorgente
+- status: todo
+- parent: m2
+- continues: b3
+- summary: Verificare se TaskCreate/TaskUpdate sono disponibili e utili.
+- detail: Se sì, sono una sorgente di stato già strutturata.
+- branches:
+
+### m2.6 — Layout stabile
+- status: todo
+- parent: m2
+- continues: b2
+- summary: Il grafo cresce senza far saltare i nodi già piazzati.
+- detail: Da provare con ELK e le posizioni precedenti come vincolo.
+- branches:
+
+### m3 — M3 Implementazione
+- status: todo
+- parent: m2
+- summary: La mod come sorgente e il viewer web.
+- detail: Fase 4 del meta-processo. Task noti: m3.1 mod (osservatore e banda); m3.2 viewer web; m3.3 export di STATE e LOG (F6); m3.4 segnalibri nella chat (riprende b5).
+- branches:
+
+### m3.4 — Segnalibri nella chat
+- status: todo
+- parent: m3
+- continues: b5
+- summary: Un punto della chat marcato a mano diventa un nodo.
+- detail: Requisito C6; salto con lo scorrimento della chat della mod.
+- branches:
+
+### m4 — M4 Revisione e feedback
+- status: todo
+- parent: m3
+- summary: Usarlo sul serio e correggere.
+- detail: Task noti: m4.1 dogfooding su questo progetto (sostituire questa traccia a mano); m4.2 test della mod su una nuova release di Claude Code.
+- branches:
+
+### m5 — M5 Pubblicazione
+- status: todo
+- parent: m4
+- summary: Aprirlo alla community.
+- detail: Task noti: m5.1 LICENSE e NOTICE (Apache-2.0); m5.2 README e docs in inglese; m5.3 repo pubblico e primo rilascio.
 - branches:
 
 ### b1 — Leggere il codice di Agent Flow
@@ -145,28 +215,32 @@ current: m1.2
 - branches:
 
 ### b2 — Prototipo di layout stabile
-- status: todo
+- status: deferred
+- deferred: m2.6 — dipende dal viewer: si verifica quando si progetta la UI.
 - parent: m0.2
 - summary: Verificare che il grafo cresca senza far saltare i nodi già piazzati.
 - detail: Con la mod diventa: albero testuale stabile su terminale; 2D con Svg solo su desktop/VS Code. Verificare se dagre si include nel modulo.
 - branches:
 
 ### b3 — Task tools come sorgente di stato
-- status: todo
+- status: deferred
+- deferred: m2.5 — serve sapere come si aggiorna il grafo prima di scegliere le sorgenti.
 - parent: m0.3
 - summary: Verificare se TaskCreate/TaskUpdate sono disponibili e utili sui modelli attuali.
 - detail: Sono già un grafo con stato e dipendenze osservabile via hooks, ma la disponibilità per modello non è verificata.
 - branches:
 
 ### b4 — Prototipo dell'osservatore e dei suoi costi
-- status: todo
+- status: deferred
+- deferred: m2.4 — si misura sul flusso di aggiornamento progettato in M2, non su un’ipotesi.
 - parent: m0.8
 - summary: Misurare qualità e costo per turno dell'estrazione automatica dei nodi.
 - detail: Confronto tra $.model.complete con haiku sul turno e $.model.fork sulla sessione intera; decide il default.
 - branches:
 
 ### b5 — Segnalibri sui messaggi
-- status: todo
+- status: deferred
+- deferred: m3.4 — già nei requisiti (C6); si costruisce insieme alla mod.
 - parent: m0.10
 - summary: Marcare i punti importanti della chat e tornarci con un click.
 - detail: Richiesta dell'utente (visti in VS Code, assenti nel terminale); un segnalibro è un nodo agganciato all'uuid del messaggio; salto con $.ui.scroll.
