@@ -190,3 +190,9 @@ test('none changes nothing', () => {
   assert.equal(r.text, TEXT)
   assert.deepEqual(r.log, [])
 })
+
+test('an unreadable graph is refused before any operation', () => {
+  const r = run([{ op: 'start', id: 'c' }], { text: TEXT + 'not json\n' })
+  assert.equal(r.ok, false)
+  assert.equal(r.errors[0], 'grafo non valido alla riga 6: correggilo prima di cambiarlo')
+})

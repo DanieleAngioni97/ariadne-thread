@@ -17,6 +17,8 @@ const refuse = message => { throw new Refusal(message) }
  * Returns `{ ok: true, text, thread, log }` or `{ ok: false, errors }`; on refusal nothing changes.
  */
 export function apply({ text, thread, ops, at, by = 'agent' }) {
+  const broken = validate(text).find(e => e.rule === 'json')
+  if (broken) return { ok: false, errors: [`grafo non valido alla riga ${broken.line}: correggilo prima di cambiarlo`] }
   const lines = text.split('\n').filter(raw => raw.trim() !== '')
   const nodes = lines.map(raw => JSON.parse(raw))
   const touched = new Set()
