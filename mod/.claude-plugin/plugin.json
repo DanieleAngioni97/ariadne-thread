@@ -1,0 +1,1 @@
+{ "name": "ariadne", "version": "0.1.0", "author": { "name": "DanieleAngioni97" }, "description": "The band above the prompt: where you are in the thread, what waits on you, the last outcome", "types": "./types/index.d.ts" }
