@@ -1,0 +1,92 @@
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+
+import { parse, makeGraph } from './graph.mjs'
+
+const AT = '2026-11-11'
+const n = (id, fields) => ({ id, kind: 'step', title: id, status: 'done', what: `${id} result.`, by: 'agent', at: AT, ...fields })
+const jsonl = nodes => nodes.map(x => JSON.stringify(x)).join('\n') + '\n'
+
+// m1 done (a → b), m2 active: c done, d active (after c), e todo (after d), f todo (after e), x detour of m2.
+const NODES = [
+  n('m1', { kind: 'milestone' }),
+  n('a', { parent: 'm1' }),
+  n('b', { parent: 'm1', after: ['a'] }),
+  n('m2', { kind: 'milestone', status: 'active', after: ['m1'] }),
+  n('c', { parent: 'm2' }),
+  n('d', { parent: 'm2', status: 'active', after: ['c'] }),
+  n('x', { parent: 'm2', kind: 'detour', status: 'done', after: ['c'], reentry: 'd' }),
+  n('e', { parent: 'm2', status: 'todo', after: ['d'] }),
+  n('f', { parent: 'm2', status: 'todo', after: ['e'] }),
+  n('m3', { kind: 'milestone', status: 'todo', after: ['m2'] }),
+]
+
+test('parse keeps file order and skips blank and unreadable lines', () => {
+  const text = jsonl(NODES.slice(0, 2)) + '\nnot json\n' + JSON.stringify(NODES[2])
+  assert.deepEqual(parse(text).map(x => x.id), ['m1', 'a', 'b'])
+})
+
+test('containers are listed innermost first', () => {
+  const g = makeGraph([...NODES, n('p', { parent: 'd', kind: 'point', status: 'todo' })])
+  assert.deepEqual(g.containers('p'), ['d', 'm2'])
+  assert.deepEqual(g.containers('m1'), [])
+})
+
+test('dependencies follow after and continues backwards, nearest first, without milestones', () => {
+  const g = makeGraph(NODES)
+  assert.deepEqual(g.dependencies('d'), ['c', 'b', 'a'])
+})
+
+test('the chain inside the own milestone comes before earlier milestones', () => {
+  const g = makeGraph(NODES)
+  assert.deepEqual(g.dependencies('f'), ['e', 'd', 'c', 'b', 'a'])
+})
+
+test('a node reached first by a costly path keeps its cheapest distance', () => {
+  // m1 is found first from the container m2 (one hop), then from step j (no hop): its result k is
+  // near, and must come before t, four steps down another chain inside m2.
+  const g = makeGraph([
+    n('m1', { kind: 'milestone' }),
+    n('k', { parent: 'm1' }),
+    n('m2', { kind: 'milestone', status: 'active', after: ['m1'] }),
+    n('j', { parent: 'm2', after: ['m1'] }),
+    n('t', { parent: 'm2' }),
+    n('s', { parent: 'm2', after: ['t'] }),
+    n('r', { parent: 'm2', after: ['s'] }),
+    n('q', { parent: 'm2', after: ['r'] }),
+    n('h', { parent: 'm2', status: 'active', after: ['q', 'j'] }),
+  ])
+  const deps = g.dependencies('h')
+  assert.ok(deps.indexOf('k') < deps.indexOf('t'), deps.join(' '))
+})
+
+test('a milestone dependency contributes its final results, not its siblings', () => {
+  const g = makeGraph(NODES)
+  // c has no `after`, but its container m2 comes after m1, whose last result is b.
+  assert.deepEqual(g.dependencies('c'), ['b', 'a'])
+  assert.ok(!g.dependencies('d').includes('x'), 'a detour beside the thread is not a dependency')
+})
+
+test('continues links a resumed node to the one it resumes', () => {
+  const g = makeGraph([...NODES, n('g', { parent: 'm3', status: 'todo', continues: 'x' })])
+  assert.equal(g.dependencies('g')[0], 'x')
+})
+
+test('a cycle does not loop forever', () => {
+  const g = makeGraph([n('p', { after: ['q'] }), n('q', { after: ['p'] })])
+  assert.deepEqual(g.dependencies('p'), ['q'])
+})
+
+test('next is the first todo in the same container whose prerequisites are done or current', () => {
+  const g = makeGraph(NODES)
+  assert.equal(g.next('d'), 'e')
+})
+
+test('next climbs a level when the container has nothing ready', () => {
+  const g = makeGraph(NODES.map(x => (x.id === 'f' ? { ...x, status: 'done' } : x.id === 'e' ? { ...x, status: 'active' } : x)))
+  assert.equal(g.next('e'), 'm3')
+})
+
+test('next is null when the plan is over', () => {
+  assert.equal(makeGraph(NODES.slice(0, 3)).next('b'), null)
+})
