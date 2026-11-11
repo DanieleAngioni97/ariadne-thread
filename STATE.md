@@ -1,21 +1,20 @@
 # State — ariadne-thread
-Aggiornato: 2026-11-11 · Branch: `spike/viewer` (da `docs/m0-research`) · PR: nessuna (scelta dell'utente)
+Aggiornato: 2026-11-11 · Branch: `feat/m3.5-cli` (da `spike/viewer`) · PR: nessuna (scelta dell'utente)
 
 ## Milestone
 M3 — Implementazione. Design chiuso (`docs/ux/allineamento/specifica.md`, M2 chiusa). Piano di M3 approvato:
 `docs/implementazione.md` (sede del codice `src/` + `bin/`, ordine dei passi) e nodi in `.ariadne/graph.jsonl`;
-nodo corrente `m3.5` (`.ariadne/thread.json`). Il grafo è l'indice: nodi snelli che puntano ai documenti.
+nodo corrente `m3.6` (`.ariadne/thread.json`). Il grafo è l'indice: nodi snelli che puntano ai documenti.
 
 ## Next
-1. `m3.5` quasi chiuso (branch `feat/m3.5-cli`): `src/graph.mjs`, `src/summary.mjs`, `src/inspect.mjs`,
-   `bin/ariadne.mjs` e gli hook in `.claude/settings.json` sono fatti. Manca la prova: dopo `/clear` il
-   riassunto deve comparire nel contesto; poi chiudere `m3.5` con i commit come prova e passare a `m3.6`.
+1. `m3.5` chiuso: riassunto R7 visto nel contesto dopo `/clear`. Ora `m3.6` (operazioni tipizzate
+   e diario, `docs/implementazione.md` § m3.6): prima `plan-before-coding`, su un branch nuovo.
 2. A ogni checkpoint aggiornare `.ariadne/graph.jsonl` (e `thread.json`), poi
    `node src/validate.mjs` → `ok`. Un passo nuovo fuori piano si propone all'utente prima
    di aggiungerlo (concetto A). STATE.md e LOG.md vanno via alla fine di `m3.6`.
 
 ## Decisioni aperte e rischi
-- Non pubblicati: 5 commit su `docs/m0-research` e 36 su `spike/viewer`. Push solo su richiesta.
+- Non pubblicati: 5 commit su `docs/m0-research` 36 su `spike/viewer` e 8 su `feat/m3.5-cli`. Push solo su richiesta.
 - `docs/process-trace.md` è congelato: non aggiornarlo. 25 nodi storici su 38 sono `uncertain`.
 - Il viewer dello spike legge ancora `spikes/viewer/data.js`, non `.ariadne/`.
 - API delle mod in EARLY ACCESS; verifiche aperte in `m2.7` (/btw, canale browser → mod, scroll).
