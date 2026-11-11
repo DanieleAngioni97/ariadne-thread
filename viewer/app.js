@@ -26,20 +26,28 @@ const heightOf = node => {
 }
 const GLYPH = { done: '✓', active: '●', todo: '○', deferred: '↷', dropped: '⊘', detour: '⤷' }
 const PROOFS_SHOWN = 3
+const RELOAD_MS = 2000
 
 // The repo as it is now: `ariadne view` serves .ariadne/ and tells the page where the repo lives.
+// The files are read again every RELOAD_MS; `load` swaps the graph in when they change.
 const read = path => fetch(path).then(r => (r.ok ? r.text() : null))
-const [graphText, threadText, ROOT] = await Promise.all([read('.ariadne/graph.jsonl'), read('.ariadne/thread.json'), read('root')])
-const data = fromGraph(parse(graphText ?? ''), threadText ? JSON.parse(threadText) : null)
+const readFiles = () => Promise.all([read('.ariadne/graph.jsonl'), read('.ariadne/thread.json')])
+let data, byId, thread, problems, LIMIT, loaded
+function load([graphText, threadText]) {
+  loaded = `${graphText}\0${threadText}`
+  data = fromGraph(parse(graphText ?? ''), threadText ? JSON.parse(threadText) : null)
+  byId = new Map(data.nodes.map(n => [n.id, n]))
+  thread = threadSet(data)
+  problems = new Map(anomalies(data).map(a => [a.id, a.reason]))
+  LIMIT = limitOf(data.profile)
+}
+const [files, ROOT] = await Promise.all([readFiles(), read('root')])
+load(files)
 
 document.documentElement.lang = lang
 
-const byId = new Map(data.nodes.map(n => [n.id, n]))
-const thread = threadSet(data)
-const problems = new Map(anomalies(data).map(a => [a.id, a.reason]))
 const childCount = id => data.nodes.filter(n => n.parent === id).length
 const allContainers = () => new Set(data.nodes.filter(n => hasChildren(data, n.id)).map(n => n.id))
-const LIMIT = limitOf(data.profile)
 /** The key of the level that holds `id`, as the window and its markers name it. */
 const levelKey = id => byId.get(id)?.parent ?? ''
 
@@ -69,7 +77,11 @@ function classesOf(node, selected, arriving) {
   ].filter(Boolean).join(' ')
 }
 
-/** ELK lays out the visible nodes and routes the edges; edge points come back in root coordinates. */
+/**
+ * ELK lays out the visible nodes and routes the edges; edge points come back in root coordinates.
+ * Stable layout (m2.6): the layout follows the file order, so a new node moves only what comes after
+ * it, sideways. ELK's interactive mode was measured worse (docs/implementazione.md § m3.2).
+ */
 async function layout(expanded, focus, revealed) {
   const options = { limit: LIMIT, revealed }
   const shown = visibleNodes(data, expanded, focus, options)
@@ -349,6 +361,8 @@ function App() {
   const [revealed, setRevealed] = useState(() => (level === 'all' ? new Set(['', ...allContainers()]) : new Set()))
   const [selected, setSelected] = useState(() => (byId.has(params.get('select')) ? params.get('select') : data.current))
   const [graph, setGraph] = useState({ nodes: [], edges: [] })
+  // Bumped when .ariadne/ changes on disk, so the graph is drawn again (F5 is never needed).
+  const [version, setVersion] = useState(0)
   const [tip, setTip] = useState(null)
   const tipTimer = useRef(null)
   // Where to fly after the next layout (a step chosen from the panel or the breadcrumb), and the step just reached.
@@ -356,15 +370,32 @@ function App() {
   const [arriving, setArriving] = useState(null)
   const flow = useReactFlow()
 
+  // A reload keeps the viewport: only a change you made refits the view.
+  const drawn = useRef(version)
   useEffect(() => {
     let alive = true
+    const reloaded = drawn.current !== version
+    drawn.current = version
     layout(expanded, focus, revealed).then(next => {
       if (!alive) return
       setGraph(next)
-      if (!flyTo) requestAnimationFrame(() => flow.fitView({ padding: 0.12, duration: 240 }))
+      if (!flyTo && !reloaded) requestAnimationFrame(() => flow.fitView({ padding: 0.12, duration: 240 }))
     })
     return () => { alive = false }
-  }, [expanded, focus, revealed])
+  }, [expanded, focus, revealed, version])
+
+  useEffect(() => {
+    const timer = setInterval(async () => {
+      const next = await readFiles().catch(() => null)
+      if (!next || `${next[0]}\0${next[1]}` === loaded) return
+      const was = data.current
+      load(next)
+      setVersion(v => v + 1)
+      // Looking at where you are follows where you are; any other choice stays.
+      setSelected(id => (id === was ? data.current : id))
+    }, RELOAD_MS)
+    return () => clearInterval(timer)
+  }, [])
 
   // Zoom onto the chosen step once it is drawn, then make it pulse so the eye lands on it.
   useEffect(() => {

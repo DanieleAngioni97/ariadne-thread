@@ -143,8 +143,21 @@ Da dettagliare all'avvio. Prompt, ingresso e uscita in specifica § Scribe; `not
 valida, ritenta una volta, poi segnala.
 
 ## m3.2 — viewer
-Da dettagliare all'avvio. Riparte da `spikes/viewer/` (base visiva approvata in `m1.2`), legge
+Riparte da `spikes/viewer/` (base visiva approvata in `m1.2`), spostato in `viewer/`; legge
 `.ariadne/`, comportamento in specifica § Viewer; include il layout stabile (`m2.6`).
+
+- **Servire:** `ariadne view [--port n]` (`src/serve.mjs`): pagina da `viewer/`, logica da `src/`,
+  dati da `.ariadne/`, solo lettura su 127.0.0.1; qualunque altro percorso è rifiutato.
+- **Dati:** `fromGraph` in `viewer/model.js` porta nodi e `thread.json` nella forma del disegno.
+- **Raggruppamento (R4):** finestra di `limitOf(profile)` figli per livello attorno al nodo
+  corrente, a ciò che lo contiene o al rientro della deviazione; i nascosti diventano marcatori a cui
+  si attaccano gli archi; i sostituiti in fondo al livello quando li chiedi.
+- **Ricarica:** la pagina rilegge i file ogni 2 s e ridisegna senza ricaricare né rifare lo zoom;
+  il pannello segue il nodo corrente se lo stavi guardando.
+- **Layout stabile, misura del 2026-11-11** (copia del repo, «Tutto», un passo aggiunto in `m3.2`):
+  layout deterministico in ordine di file → si spostano solo gli 8 nodi dopo il nuovo, di lato,
+  sulla stessa riga; modalità interattiva di ELK (posizioni precedenti come vincolo) → 58 nodi su 60
+  si spostano e alcuni cambiano ordine. Scelto il layout deterministico; l'interattiva scartata.
 
 ## m3.1 — banda nella mod
 Da dettagliare all'avvio. Porta la mod da `~/.claude/dev-mods/…/ariadne-spike/` in `mod/`; righe e
