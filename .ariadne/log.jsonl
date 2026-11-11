@@ -36,3 +36,5 @@
 {"at":"2026-11-11T18:48Z","id":"m3.2.3","op":"start","text":"iniziato m3.2.3 Raggruppamento per profilo"}
 {"at":"2026-11-11T18:51Z","id":"m3.2.3","op":"close","text":"chiuso m3.2.3 Raggruppamento per profilo: livelli raggruppati per profilo con nascosti sopra/sotto e sostituiti nascosti","proof":[{"type":"commit","ref":"f3235fb"}]}
 {"at":"2026-11-11T18:51Z","id":"m3.2.4","op":"start","text":"iniziato m3.2.4 Ricarica e layout stabile"}
+{"at":"2026-11-11T18:54Z","id":"m3.2.4","op":"close","text":"chiuso m3.2.4 Ricarica e layout stabile: ricarica ogni 2 s senza F5; aggiungere un nodo sposta solo i successivi, di lato (misurato: 8 su 60)","proof":[{"type":"commit","ref":"6b451fb"}]}
+{"at":"2026-11-11T18:54Z","id":"m3.2.5","op":"start","text":"iniziato m3.2.5 Stati del viewer"}
