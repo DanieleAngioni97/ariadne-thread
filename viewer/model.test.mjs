@@ -2,9 +2,8 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 import {
-  anomalies, continuationOf, defaultExpanded, deferredCount, filesWithin, fromGraph, labelOf, limitOf, origin, panelRows, threadSet,
-  visibleEdges,
-  visibleNodes,
+  anomalies, continuationOf, defaultExpanded, deferredCount, emptyNote, filesWithin, fromGraph, labelOf, limitOf, origin, panelRows,
+  threadSet, visibleEdges, visibleNodes,
 } from './model.js'
 
 // root ─ a ─ b(current inside: b1 → b2*) ; a opens branch x ; detour d off a
@@ -257,4 +256,14 @@ test('edges from hidden steps end at the marker that stands for them', () => {
 test('replaced steps, once asked for, show at the end of the level even when the level is windowed', () => {
   const ids = visibleNodes(long, open, null, { limit: 3, revealed: new Set(['replaced:m']) }).map(n => n.id)
   assert.deepEqual(ids.slice(-2), ['more-below:m', 'r'])
+})
+
+test('a milestone without a plan and a list without points say why they are empty', () => {
+  const view = fromGraph([
+    { id: 'm', kind: 'milestone', title: 'M', status: 'todo' },
+    { id: 'l', kind: 'list', title: 'L', status: 'active' },
+    { id: 'n', kind: 'milestone', title: 'N', status: 'active' },
+    { id: 's', kind: 'step', title: 'S', status: 'todo', parent: 'n' },
+  ], null)
+  assert.deepEqual(['m', 'l', 'n', 's'].map(id => emptyNote(view, id)), ['plan', 'list', null, null])
 })

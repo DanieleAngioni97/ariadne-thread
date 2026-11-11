@@ -7,9 +7,11 @@ import ELK from 'elkjs'
 import htm from 'htm'
 
 import { parse } from '../src/graph.mjs'
+import { summarize } from '../src/summary.mjs'
+import { validate } from '../src/validate.mjs'
 import { lang, t } from './i18n.js'
 import {
-  anomalies, cameFrom, defaultExpanded, fromGraph, hasChildren, holdsCurrent, labelOf, ledTo, panelRows, pathTo, threadSet,
+  anomalies, cameFrom, defaultExpanded, emptyNote, fromGraph, hasChildren, holdsCurrent, labelOf, ledTo, panelRows, pathTo, threadSet,
   limitOf, visibleEdges, visibleNodes,
 } from './model.js'
 
@@ -32,10 +34,14 @@ const RELOAD_MS = 2000
 // The files are read again every RELOAD_MS; `load` swaps the graph in when they change.
 const read = path => fetch(path).then(r => (r.ok ? r.text() : null))
 const readFiles = () => Promise.all([read('.ariadne/graph.jsonl'), read('.ariadne/thread.json')])
-let data, byId, thread, problems, LIMIT, loaded
+let data, byId, thread, problems, LIMIT, loaded, missing, errors, agentSummary
 function load([graphText, threadText]) {
   loaded = `${graphText}\0${threadText}`
-  data = fromGraph(parse(graphText ?? ''), threadText ? JSON.parse(threadText) : null)
+  missing = graphText == null
+  errors = missing ? [] : validate(graphText)
+  const nodes = parse(graphText ?? '')
+  data = fromGraph(nodes, threadText ? JSON.parse(threadText) : null)
+  agentSummary = data.current ? summarize(nodes, { current: data.current }) : ''
   byId = new Map(data.nodes.map(n => [n.id, n]))
   thread = threadSet(data)
   problems = new Map(anomalies(data).map(a => [a.id, a.reason]))
@@ -311,6 +317,7 @@ function Panel({ node, expanded, focus, onSelect, onToggle, onFocus }) {
       </header>
 
       ${problem && html`<div class="warning" role="alert"><b>!</b> ${t.anomaly[problem]}</div>`}
+      ${emptyNote(data, node.id) && html`<p class="empty-note">${t.empty[emptyNote(data, node.id)]}</p>`}
 
       <dl class="rows">
         ${panelRows(data, node.id).map(row => html`
@@ -350,6 +357,25 @@ function Legend() {
     </div>`
 }
 
+/** «Grafo non valido: k errori», then the validator's lines; the readable nodes stay drawn. */
+function Invalid() {
+  if (errors.length === 0) return null
+  return html`
+    <div class="invalid" role="alert">
+      <b>${t.invalid(errors.length)}</b>
+      <ul>${errors.map((e, i) => html`<li key=${i}><code>${t.errorLine(e)}</code></li>`)}</ul>
+    </div>`
+}
+
+/** What the agent reads at every prompt (R7), hidden until asked. */
+function AgentSummary({ onClose }) {
+  return html`
+    <div class="agent-summary" role="dialog" aria-label=${t.agentReads}>
+      <div class="agent-summary-head"><b>${t.agentReads}</b><button class="action quiet" onClick=${onClose}>${t.closeSummary}</button></div>
+      <pre>${agentSummary}</pre>
+    </div>`
+}
+
 function App() {
   // ?level=milestones|path|all, ?select=<id> and ?lang=xx open the page in a given state.
   const params = new URLSearchParams(location.search)
@@ -364,6 +390,7 @@ function App() {
   // Bumped when .ariadne/ changes on disk, so the graph is drawn again (F5 is never needed).
   const [version, setVersion] = useState(0)
   const [tip, setTip] = useState(null)
+  const [summaryOpen, setSummaryOpen] = useState(false)
   const tipTimer = useRef(null)
   // Where to fly after the next layout (a step chosen from the panel or the breadcrumb), and the step just reached.
   const [flyTo, setFlyTo] = useState(null)
@@ -461,12 +488,18 @@ function App() {
               <button key=${n.id} class=${`crumb ${i === path.length - 1 ? 'is-here' : ''}`} onClick=${() => choose(n.id)}>${n.title}</button>`)}
           </nav>
           ${focus && html`<div class="focus-note">${t.only(byId.get(focus).title)} <button onClick=${() => setFocus(null)}>${t.showAll}</button></div>`}
+          ${agentSummary && html`<button class="action quiet" aria-expanded=${summaryOpen} onClick=${() => setSummaryOpen(o => !o)}>${t.agentReads}</button>`}
           <div class="levels" role="group" aria-label=${t.detail}>
             ${['milestones', 'path', 'all'].map(key => html`
               <button key=${key} aria-pressed=${level === key} onClick=${() => showLevel(key)}>${t.levels[key]}</button>`)}
           </div>
         </header>
         <main class="canvas">
+          ${missing && html`<p class="no-graph">${t.noGraph}</p>`}
+          <div class="overlays">
+            <${Invalid} />
+            ${summaryOpen && html`<${AgentSummary} onClose=${() => setSummaryOpen(false)} />`}
+          </div>
           <${ReactFlow}
             nodes=${graph.nodes}
             edges=${graph.edges}
@@ -482,11 +515,11 @@ function App() {
             <${Background} gap=${24} size=${1} color="#cfd5dc" />
             <${Controls} position="bottom-right" showInteractive=${false} />
           <//>
-          <${Legend} />
+          ${!missing && html`<${Legend} />`}
         </main>
-        <${Panel} node=${node} expanded=${expanded} focus=${focus}
+        ${node && html`<${Panel} node=${node} expanded=${expanded} focus=${focus}
           onSelect=${choose} onToggle=${toggle}
-          onFocus=${id => { setFocus(id); setExpanded(prev => new Set([...prev, id])) }} />
+          onFocus=${id => { setFocus(id); setExpanded(prev => new Set([...prev, id])) }} />`}
       </div>
       <${Tip} tip=${tip} />
     <//>`

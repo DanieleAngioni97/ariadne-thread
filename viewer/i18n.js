@@ -16,6 +16,15 @@ const STRINGS = {
     },
     uncertain: 'uncertain proof',
     anomalyKey: 'Needs attention',
+    noGraph: 'No graph in .ariadne/graph.jsonl. It is created when you approve the first plan.',
+    invalid: k => `Invalid graph: ${k} ${k === 1 ? 'error' : 'errors'}`,
+    errorLine: e => `line ${e.line} ${e.id ?? ''} ${e.rule}: ${e.message}`,
+    empty: {
+      plan: 'Plan not proposed yet: the agent proposes it when the milestone opens.',
+      list: 'No points: the list fills up when you approve the points.',
+    },
+    agentReads: 'What the agent reads',
+    closeSummary: 'Close',
     more: {
       above: k => `${k} hidden above`,
       below: k => `${k} hidden below`,
@@ -72,6 +81,15 @@ const STRINGS = {
     },
     uncertain: 'prova incerta',
     anomalyKey: 'Da sistemare',
+    noGraph: 'Nessun grafo in .ariadne/graph.jsonl. Si crea quando approvi il primo piano.',
+    invalid: k => `Grafo non valido: ${k} ${k === 1 ? 'errore' : 'errori'}`,
+    errorLine: e => `riga ${e.line} ${e.id ?? ''} ${e.rule}: ${e.message}`,
+    empty: {
+      plan: "Piano non ancora proposto: l'agente lo propone quando si apre la milestone.",
+      list: 'Nessun punto: la lista si riempie quando approvi i punti.',
+    },
+    agentReads: "Cosa legge l'agente",
+    closeSummary: 'Chiudi',
     more: {
       above: k => (k === 1 ? '1 nascosto sopra' : `${k} nascosti sopra`),
       below: k => (k === 1 ? '1 nascosto sotto' : `${k} nascosti sotto`),

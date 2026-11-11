@@ -68,6 +68,23 @@ button { font: inherit; color: inherit; }
 .focus-note button { border: 0; background: none; color: var(--ink); text-decoration: underline; cursor: pointer; }
 
 .canvas { position: relative; min-height: 0; }
+/* States: no graph, invalid graph, the agent's summary over the canvas. */
+.no-graph {
+  position: absolute; inset: 0; z-index: 6; display: grid; place-items: center; margin: 0; padding: 24px;
+  font-size: 16px; color: var(--muted); text-align: center;
+}
+.overlays {
+  position: absolute; top: 16px; left: 16px; right: 16px; z-index: 6;
+  display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+}
+.invalid, .agent-summary { max-height: 40vh; overflow-y: auto; padding: 12px 16px; border-radius: 10px; font-size: 14px; pointer-events: auto; }
+.invalid { background: #fdecec; color: var(--thread); border: 1px solid var(--thread); }
+.invalid ul { margin: 8px 0 0; padding-left: 18px; }
+.invalid code { font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px; }
+.agent-summary { background: var(--surface); border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(24, 32, 43, 0.16); }
+.agent-summary-head { display: flex; align-items: center; justify-content: space-between; }
+.agent-summary pre { margin: 10px 0 0; white-space: pre-wrap; font-family: ui-monospace, 'SF Mono', Menlo, monospace; font-size: 13px; line-height: 1.5; }
+.empty-note { margin: 16px 24px 0 !important; color: var(--muted); }
 .react-flow { --xy-background-color: var(--ground); }
 
 /* Kind → colour. Every badge, stripe and chip reads --k and --k-soft. */

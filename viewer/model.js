@@ -316,3 +316,10 @@ export function panelRows(data, id) {
   ]
   return rows.filter(([, value]) => value != null && value !== '').map(([key, value]) => ({ key, value }))
 }
+
+/** Why a container has nothing inside yet (specifica § Stati del viewer): 'plan', 'list' or null. */
+export function emptyNote(data, id) {
+  const node = byId(data).get(id)
+  if (!node || hasChildren(data, id)) return null
+  return node.kind === 'milestone' ? 'plan' : node.kind === 'list' ? 'list' : null
+}
