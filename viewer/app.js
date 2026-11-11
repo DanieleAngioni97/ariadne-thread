@@ -9,15 +9,22 @@ import htm from 'htm'
 import { parse } from '../src/graph.mjs'
 import { lang, t } from './i18n.js'
 import {
-  anomalies, cameFrom, continuationOf, defaultExpanded, deferredCount, filesWithin, fromGraph, hasChildren, holdsCurrent,
-  ledTo, origin, pathTo, threadSet, visibleEdges, visibleNodes,
+  anomalies, cameFrom, defaultExpanded, fromGraph, hasChildren, holdsCurrent, labelOf, ledTo, panelRows, pathTo, threadSet,
+  visibleEdges, visibleNodes,
 } from './model.js'
 
 const html = htm.bind(React.createElement)
 const elk = new ELK()
 
 const STEP = { width: 232, height: 64 }
-const GLYPH = { done: '✓', active: '▶', todo: '○', deferred: '»', dropped: '×', detour: '↪' }
+const STEP_CHARS_PER_LINE = 18
+/** Titles wrap, never cut (specifica § Stati del viewer): a step grows one line at a time. */
+const heightOf = node => {
+  const lines = Math.ceil(`${node.id} ${node.title}`.length / STEP_CHARS_PER_LINE)
+  return Math.max(STEP.height, 42 + 19 * lines)
+}
+const GLYPH = { done: '✓', active: '●', todo: '○', deferred: '↷', dropped: '⊘', detour: '⤷' }
+const PROOFS_SHOWN = 3
 
 // The repo as it is now: `ariadne view` serves .ariadne/ and tells the page where the repo lives.
 const read = path => fetch(path).then(r => (r.ok ? r.text() : null))
@@ -31,22 +38,17 @@ const thread = threadSet(data)
 const problems = new Map(anomalies(data).map(a => [a.id, a.reason]))
 const childCount = id => data.nodes.filter(n => n.parent === id).length
 const allContainers = () => new Set(data.nodes.filter(n => hasChildren(data, n.id)).map(n => n.id))
-/** "M2 Progettazione" → "M2": the short name of the milestone holding `id`. */
-const milestoneTag = id => pathTo(data, id)[0]?.title.split(' ')[0] ?? id
 
 /** What a node is, at a glance: its look follows this, not the raw status. */
-const kindOf = node => (node.kind === 'detour' ? 'detour' : node.status)
+const kindOf = node => (node.kind === 'detour' ? 'detour' : node.status === 'replaced' ? 'dropped' : node.status)
 
-function metaOf(node) {
-  if (node.id === data.current) return t.here
-  if (holdsCurrent(data, node.id)) return t.inside
-  if (node.kind === 'detour') return t.detour
-  if (node.status === 'deferred') {
-    const next = continuationOf(data, node.id)
-    return next ? t.deferredTo(milestoneTag(next.id)) : t.status.deferred
-  }
-  const deferred = node.status === 'done' && deferredCount(data, node.id)
-  return deferred ? t.closedWith(deferred) : t.status[node.status]
+/** The words at the right of a node (specifica § Viewer), else its status. */
+function labelText(node) {
+  const label = labelOf(data, node.id)
+  if (!label) return node.kind === 'detour' ? t.kind.detour : t.status[node.status]
+  if (label.type === 'deferred') return t.label.deferred(label.to)
+  if (label.type === 'list') return t.label.list(label.done, label.total)
+  return t.label[label.type]
 }
 
 function classesOf(node, selected, arriving) {
@@ -57,6 +59,8 @@ function classesOf(node, selected, arriving) {
     node.id === data.current && 'is-current',
     node.id === selected && 'is-selected',
     node.id === arriving && 'is-arriving',
+    node.review && 'is-review',
+    node.uncertain && 'is-uncertain',
     problems.has(node.id) && 'has-anomaly',
   ].filter(Boolean).join(' ')
 }
@@ -74,7 +78,7 @@ async function layout(expanded, focus) {
         layoutOptions: { 'elk.padding': '[top=60,left=24,bottom=24,right=24]' },
         children: shown.filter(c => c.parent === n.id).map(toElk),
       }
-    : { id: n.id, ...STEP }
+    : { id: n.id, width: STEP.width, height: heightOf(n) }
 
   const roots = shown.filter(n => !n.parent || !shownIds.has(n.parent))
   const graph = await elk.layout({
@@ -105,7 +109,7 @@ async function layout(expanded, focus) {
       type: open ? 'group' : 'step',
       position: { x: elkNode.x ?? 0, y: elkNode.y ?? 0 },
       ...(parentId ? { parentId } : {}),
-      ...(open ? { style: { width: elkNode.width, height: elkNode.height } } : {}),
+      style: { width: elkNode.width, height: elkNode.height },
       data: { node },
       draggable: false,
       zIndex: open ? 0 : 1,
@@ -176,8 +180,8 @@ function Step({ data: { node } }) {
       <${Handle} type="target" position=${Position.Left} />
       <${Badge} node=${node} />
       <div class="txt">
-        <div class="title">${node.title}</div>
-        <div class="meta">${metaOf(node)}</div>
+        <div class="title"><span class="nid">${node.id}</span> ${node.title}${node.uncertain && html` <span class="unsure" title=${node.uncertain} aria-label=${t.uncertain}>?</span>`}</div>
+        <div class="meta">${labelText(node)}</div>
       </div>
       ${inside > 0 && html`
         <button class="expand" aria-label=${t.open(inside, node.title)}
@@ -194,8 +198,8 @@ function Group({ data: { node } }) {
       <${Handle} type="target" position=${Position.Left} />
       <div class="group-head" onMouseEnter=${e => hover(node, e.currentTarget)} onMouseLeave=${() => hover(null)}>
         <${Badge} node=${node} />
-        <div class="title">${node.title}</div>
-        <div class="meta">${metaOf(node)}</div>
+        <div class="title"><span class="nid">${node.id}</span> ${node.title}</div>
+        <div class="meta">${labelText(node)}</div>
         <button class="expand" aria-label=${t.close(node.title)}
           onClick=${e => { e.stopPropagation(); toggle(node.id) }}>−</button>
       </div>
@@ -216,7 +220,7 @@ function Tip({ tip }) {
     top: below ? `${rect.bottom + 8}px` : undefined,
     bottom: below ? undefined : `${innerHeight - rect.top + 8}px`,
   }
-  return html`<div class="tip" role="tooltip" style=${style}>${node.summary}</div>`
+  return html`<div class="tip" role="tooltip" style=${style}>${node.what}${node.uncertain && html`<p class="unsure-why">? ${node.uncertain}</p>`}</div>`
 }
 
 const Chip = ({ node, onSelect }) => html`
@@ -224,35 +228,45 @@ const Chip = ({ node, onSelect }) => html`
     <${Badge} node=${node} /><span>${node.title}</span>
   </button>`
 
-/** Files touched in this step and in every step inside it, split into created and edited. */
-function Files({ node, onSelect }) {
-  const files = filesWithin(data, node.id)
-  if (!files.length) return html`<p class="empty">${t.panel.noFiles}</p>`
-  const groups = [['created', t.panel.created], ['edited', t.panel.edited]]
-    .map(([change, label]) => [label, files.filter(f => f.change === change)])
-    .filter(([, list]) => list.length)
-  return groups.map(([label, list]) => html`
-    <div class="file-group" key=${label}>
-      <div class="sub">${label} <span class="count">${list.length}</span></div>
-      <ul class="files">${list.map(f => html`
-        <li key=${f.path}>
-          <a href=${`vscode://file/${f.path.startsWith('~') ? f.path : `${ROOT}/${f.path}`}`}><code>${f.path}</code></a>
-          ${f.reasons.map(r => html`
-            <p key=${r.step}>
-              ${r.step !== node.id && html`<button class="step-link" onClick=${() => onSelect(r.step)}>${byId.get(r.step).title}</button> `}
-              ${r.why}
-            </p>`)}
-        </li>`)}
-      </ul>
-    </div>`)
+/** One proof: a commit sha, a file that opens in the editor, or the message that approved it. */
+function Proof({ proof }) {
+  if (proof.type === 'file') {
+    const path = proof.ref.startsWith('~') || !ROOT ? proof.ref : `${ROOT}/${proof.ref}`
+    return html`<a href=${`vscode://file/${path}`}><code>${proof.ref}</code></a>`
+  }
+  return proof.type === 'commit' ? html`<code>${proof.ref}</code>` : html`<span>${proof.ref}</span>`
 }
 
-function Panel({ node, expanded, focus, onSelect, onToggle, onFocus, onToast }) {
+/** The first proofs, then `+k` that opens the full list (specifica § Stati del viewer, «Molte prove»). */
+function Proofs({ list }) {
+  const [all, setAll] = useState(false)
+  const shown = all ? list : list.slice(0, PROOFS_SHOWN)
+  return html`
+    <ul class="proofs">
+      ${shown.map((p, i) => html`<li key=${i}><${Proof} proof=${p} /></li>`)}
+      ${!all && list.length > PROOFS_SHOWN && html`
+        <li><button class="action quiet" onClick=${() => setAll(true)}>${t.panel.more(list.length - PROOFS_SHOWN)}</button></li>`}
+    </ul>`
+}
+
+function RowValue({ row, onSelect }) {
+  const { key, value } = row
+  if (['reentry', 'deferredTo', 'continues', 'replacedBy'].includes(key)) {
+    const target = byId.get(value)
+    return target ? html`<div class="chips"><${Chip} node=${target} onSelect=${onSelect} /></div>` : html`<p>${value}</p>`
+  }
+  if (key === 'status') return html`<p>${t.status[value]}</p>`
+  if (key === 'proof') return html`<${Proofs} list=${value} />`
+  if (key === 'by') return html`<p>${t.panel.by[value.by] ?? value.by}${value.at ? `, ${value.at}` : ''}</p>`
+  if (key === 'confirmed') return html`<p>${[value.at, value.ref].filter(Boolean).join(' · ')}</p>`
+  if (key === 'review') return html`<p>${t.panel.review[value] ?? value}</p>`
+  return html`<p>${value}</p>`
+}
+
+function Panel({ node, expanded, focus, onSelect, onToggle, onFocus }) {
   const inside = childCount(node.id)
   const from = cameFrom(data, node.id)
   const led = ledTo(data, node.id)
-  const next = continuationOf(data, node.id)
-  const picks = origin(data, node.id)
   const isCurrent = node.id === data.current
   const problem = problems.get(node.id)
   return html`
@@ -260,29 +274,20 @@ function Panel({ node, expanded, focus, onSelect, onToggle, onFocus, onToast }) 
       <header class=${`panel-head k-${kindOf(node)}`}>
         <div class=${`status ${isCurrent ? 'is-here' : ''}`}>
           <${Badge} node=${node} />
-          <span>${node.kind === 'detour' ? t.detour : t.status[node.status]}${isCurrent ? ` · ${t.here}` : ''}</span>
+          <span>${labelText(node)}${isCurrent ? ` · ${t.here}` : ''}</span>
         </div>
-        <h2>${node.title}</h2>
-        <p class="summary">${node.summary}</p>
+        <h2><span class="nid">${node.id}</span> ${node.title}</h2>
       </header>
 
       ${problem && html`<div class="warning" role="alert"><b>!</b> ${t.anomaly[problem]}</div>`}
 
-      ${node.deferred && html`
-        <section class="deferred-box">
-          <h3>${t.panel.deferred}</h3>
-          <p>${node.deferred.why}</p>
-          ${next && html`<div class="sub">${t.panel.continuesIn}</div><div class="chips"><${Chip} node=${next} onSelect=${onSelect} /></div>`}
-        </section>`}
-
-      ${picks && html`
-        <section>
-          <h3>${t.panel.picksUp}</h3>
-          <div class="chips"><${Chip} node=${picks} onSelect=${onSelect} /></div>
-          <p class="note">${picks.deferred?.why}</p>
-        </section>`}
-
-      ${node.detail && html`<section><h3>${t.panel.why}</h3><p>${node.detail}</p></section>`}
+      <dl class="rows">
+        ${panelRows(data, node.id).map(row => html`
+          <div class=${`row row-${row.key}`} key=${row.key}>
+            <dt>${t.panel.rows[row.key]}</dt>
+            <dd><${RowValue} row=${row} onSelect=${onSelect} /></dd>
+          </div>`)}
+      </dl>
 
       ${inside > 0 && html`
         <section>
@@ -302,37 +307,15 @@ function Panel({ node, expanded, focus, onSelect, onToggle, onFocus, onToast }) 
           ${led.length > 0 && html`<div class="sub">${t.panel.ledTo}</div>
             <div class="chips">${led.map(n => html`<${Chip} key=${n.id} node=${n} onSelect=${onSelect} />`)}</div>`}
         </section>`}
-
-      <section>
-        <h3>${t.panel.files}</h3>
-        <${Files} node=${node} onSelect=${onSelect} />
-      </section>
-
-      <section>
-        <h3>${t.panel.chat}</h3>
-        ${node.chat?.length
-          ? node.chat.map((m, i) => html`
-              <div class=${`moment ${m.role === 'user' ? 'is-user' : ''}`} key=${i}>
-                <div class="who">${m.role === 'user' ? t.panel.you : 'Claude'}, ${m.at}</div>
-                <p>${m.text}</p>
-                <div class="row-actions">
-                  <button class="action quiet" title=${t.panel.simulated} onClick=${() => onToast(t.panel.sent)}>${t.panel.showInChat}</button>
-                </div>
-              </div>`)
-          : html`<p class="empty">${t.panel.noChat}</p>`}
-      </section>
     </aside>`
 }
 
+/** The legend in the words of specifica § Testi, compact, at the bottom of the canvas. */
 function Legend() {
-  const item = (kind, label) => html`<span class=${`k-${kind}`} key=${kind}><span class="badge">${GLYPH[kind]}</span>${label}</span>`
   return html`
     <div class="legend" aria-label="Legend">
-      ${['done', 'active', 'todo', 'deferred'].map(k => item(k, t.status[k]))}
-      ${item('detour', t.detour)}
-      <span class="current-key"><i></i>${t.legend.current}</span>
-      <span class="thread"><b>━</b>${t.legend.thread}</span>
-      ${problems.size > 0 && html`<span class="anomaly-key"><span class="alert">!</span>${t.legend.anomaly}</span>`}
+      ${t.legend.map(([key, text]) => html`<span class=${`key-${key}`} key=${key}>${text}</span>`)}
+      ${problems.size > 0 && html`<span class="anomaly-key"><span class="alert">!</span>${t.anomalyKey}</span>`}
     </div>`
 }
 
@@ -345,7 +328,6 @@ function App() {
   const [focus, setFocus] = useState(null)
   const [selected, setSelected] = useState(() => (byId.has(params.get('select')) ? params.get('select') : data.current))
   const [graph, setGraph] = useState({ nodes: [], edges: [] })
-  const [toast, setToast] = useState(null)
   const [tip, setTip] = useState(null)
   const tipTimer = useRef(null)
   // Where to fly after the next layout (a step chosen from the panel or the breadcrumb), and the step just reached.
@@ -372,12 +354,6 @@ function App() {
     const timer = setTimeout(() => setArriving(null), 1600)
     return () => clearTimeout(timer)
   }, [graph, flyTo])
-
-  useEffect(() => {
-    if (!toast) return
-    const timer = setTimeout(() => setToast(null), 2600)
-    return () => clearTimeout(timer)
-  }, [toast])
 
   // Show the tooltip after a short pause; hide it at once.
   const hover = useCallback((node, el) => {
@@ -450,11 +426,9 @@ function App() {
         </main>
         <${Panel} node=${node} expanded=${expanded} focus=${focus}
           onSelect=${choose} onToggle=${toggle}
-          onFocus=${id => { setFocus(id); setExpanded(prev => new Set([...prev, id])) }}
-          onToast=${setToast} />
+          onFocus=${id => { setFocus(id); setExpanded(prev => new Set([...prev, id])) }} />
       </div>
       <${Tip} tip=${tip} />
-      ${toast && html`<div class="toast" role="status">${toast}</div>`}
     <//>`
 }
 

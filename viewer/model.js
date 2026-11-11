@@ -188,7 +188,7 @@ export function filesWithin(data, id) {
 
 /**
  * The viewer's shape from the .ariadne/ files. Each node keeps its fields and gains what the drawing reads:
- * `summary` (the outcome), `files` (file proofs), `deferred` (where it continues) and `dropped` for replaced.
+ * `summary` (the outcome), `files` (file proofs) and `deferred` (where it continues).
  * Without a thread file the current node is the first active one.
  */
 export function fromGraph(nodes, thread) {
@@ -198,10 +198,47 @@ export function fromGraph(nodes, thread) {
     current: thread?.current ?? nodes.find(n => n.status === 'active')?.id ?? null,
     nodes: nodes.map(n => ({
       ...n,
-      status: n.status === 'replaced' ? 'dropped' : n.status,
       summary: n.what,
       files: (n.proof ?? []).filter(p => p.type === 'file').map(p => ({ path: p.ref, change: 'edited', why: n.what })),
       ...(n.status === 'deferred' ? { deferred: { to: continuation.get(n.id), why: n.why } } : {}),
     })),
   }
+}
+
+/**
+ * The label at the right of a node (specifica § Viewer): what waits on you, where a deferral went,
+ * how far a list is, or that you decided it. Null when there is nothing to say.
+ */
+export function labelOf(data, id) {
+  const node = byId(data).get(id)
+  if (!node) return null
+  if (node.review === 'confirm' || node.review === 'decide') return { type: node.review }
+  if (node.status === 'deferred' && node.deferred?.to) return { type: 'deferred', to: node.deferred.to }
+  if (node.kind === 'list') {
+    const points = childrenOf(data, id)
+    return { type: 'list', done: points.filter(p => p.status === 'done').length, total: points.length }
+  }
+  return node.by === 'user' ? { type: 'user' } : null
+}
+
+/** The detail panel's rows in the order of specifica § Viewer, only those with a value. */
+export function panelRows(data, id) {
+  const n = byId(data).get(id)
+  if (!n) return []
+  const rows = [
+    ['what', n.what],
+    ['why', n.why],
+    ['detail', n.detail],
+    ['status', n.status],
+    ['proof', n.proof?.length ? n.proof : null],
+    ['uncertain', n.uncertain],
+    ['by', n.by ? { by: n.by, at: n.at } : null],
+    ['confirmed', n.confirmed],
+    ['review', n.review],
+    ['reentry', n.reentry],
+    ['deferredTo', n.deferred?.to],
+    ['continues', n.continues],
+    ['replacedBy', n.replaced_by],
+  ]
+  return rows.filter(([, value]) => value != null && value !== '').map(([key, value]) => ({ key, value }))
 }

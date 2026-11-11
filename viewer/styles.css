@@ -89,7 +89,7 @@ button { font: inherit; color: inherit; }
 .step {
   position: relative;
   width: 232px;
-  height: 64px;
+  height: 100%;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -104,7 +104,10 @@ button { font: inherit; color: inherit; }
 @starting-style { .step { opacity: 0; } }
 .step:not(.k-todo):not(.k-dropped) { background: linear-gradient(90deg, var(--k-soft), var(--surface) 70%); }
 .txt { min-width: 0; flex: 1; }
-.title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.title { font-size: 14px; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.nid { font-size: 12px; font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+.unsure { color: var(--muted); font-weight: 700; cursor: help; }
+.unsure-why { margin: 6px 0 0; color: var(--muted); }
 .meta { font-size: 12px; color: var(--k, var(--muted)); margin-top: 2px; font-weight: 500; }
 
 .step.k-todo { border-style: dashed; border-left-style: solid; background: rgba(247, 248, 250, 0.6); }
@@ -113,6 +116,10 @@ button { font: inherit; color: inherit; }
 .k-dropped .title { text-decoration: line-through; }
 .step.k-deferred .title { color: var(--muted); }
 .step.k-detour { border-style: dashed; border-left-style: solid; }
+/* Done by the agent on its own, waiting on you; uncertain proof (R17). */
+.is-review { --review: #d9822b; border: 2px dashed var(--review); border-left: 6px solid var(--k); }
+.is-review .meta { color: var(--review); font-weight: 600; }
+.is-uncertain .txt, .is-uncertain .badge { opacity: 0.6; }
 
 .holds-current .meta, .is-current .meta { color: var(--thread); font-weight: 600; }
 .is-current { box-shadow: 0 0 0 2px var(--thread), 0 0 0 7px var(--thread-soft); }
@@ -182,12 +189,8 @@ button { font: inherit; color: inherit; }
 .legend > span { display: inline-flex; align-items: center; gap: 6px; }
 .legend .badge { width: 18px; height: 18px; font-size: 11px; }
 .legend .alert { width: 18px; height: 18px; font-size: 11px; }
-.legend .thread { color: var(--thread); }
-.legend .thread b { font-weight: 700; }
-.current-key i {
-  width: 18px; height: 12px; border-radius: 4px;
-  box-shadow: 0 0 0 2px var(--thread), 0 0 0 5px var(--thread-soft);
-}
+.legend .key-thread, .legend .key-current { color: var(--thread); }
+.legend .key-review { color: #d9822b; }
 
 /* Detail panel */
 .panel {
@@ -200,7 +203,6 @@ button { font: inherit; color: inherit; }
 .status .badge { width: 22px; height: 22px; font-size: 12px; }
 .status.is-here span:last-child { color: var(--thread); }
 .panel h2 { font-size: 22px; line-height: 1.25; margin: 10px 0 8px; }
-.summary { font-size: 15px; line-height: 1.5; margin: 0; }
 .panel h3 {
   font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em;
   margin: 24px 0 10px; padding-top: 16px; border-top: 1px solid var(--line);
@@ -208,19 +210,11 @@ button { font: inherit; color: inherit; }
 .panel p { margin: 0; line-height: 1.55; font-size: 14px; }
 .sub { font-size: 13px; font-weight: 600; margin: 12px 0 6px; }
 .sub:first-child { margin-top: 0; }
-.count { color: var(--muted); font-weight: 500; }
-.note { color: var(--muted); margin-top: 8px !important; }
 
 .warning {
   margin: 16px 24px 0; padding: 10px 12px; border-radius: 8px;
   background: var(--thread-soft); color: var(--thread); font-size: 14px; font-weight: 600;
 }
-.deferred-box {
-  margin: 16px 24px 0; padding: 0 14px 14px !important; border-radius: 10px;
-  background: var(--deferred-soft); border-left: 4px solid var(--deferred);
-}
-.deferred-box h3 { border-top: 0; padding-top: 12px; margin-top: 0; color: var(--deferred); }
-
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chip {
   display: inline-flex; align-items: center; gap: 6px;
@@ -239,33 +233,17 @@ button { font: inherit; color: inherit; }
 .action.quiet { background: none; color: var(--ink); }
 .action:active { transform: scale(0.97); }
 
-.file-group + .file-group { margin-top: 14px; }
-.files { list-style: none; margin: 0; padding: 0; }
-.files li { padding: 8px 0; }
-.files li + li { border-top: 1px dashed var(--line); }
-.files a { color: var(--ink); text-decoration-color: var(--line); text-underline-offset: 3px; }
-.files a:hover { text-decoration-color: var(--ink); }
-.files code { font-size: 13px; font-family: ui-monospace, 'SF Mono', Menlo, monospace; }
-.files p { color: var(--muted); font-size: 13px; margin-top: 2px; }
-.step-link {
-  border: 0; background: none; padding: 0; cursor: pointer;
-  color: var(--ink); font-weight: 600; text-decoration: underline; text-decoration-color: var(--line);
-}
-.step-link::after { content: ':'; }
-
-.moment { border-left: 2px solid var(--line); padding: 2px 0 2px 12px; }
-.moment + .moment { margin-top: 14px; }
-.moment.is-user { border-left-color: var(--thread); }
-.who { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
-.moment p { font-size: 14px; }
-.empty { color: var(--muted); font-size: 14px; }
-
-.toast {
-  position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
-  background: var(--ink); color: var(--surface); padding: 10px 16px; border-radius: 10px;
-  font-size: 14px; z-index: 50; transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out);
-}
-@starting-style { .toast { opacity: 0; transform: translate(-50%, 8px); } }
+.rows { margin: 8px 24px 0; }
+.row { padding: 12px 0; border-top: 1px solid var(--line); }
+.row:first-child { border-top: 0; }
+.rows dt { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 4px; }
+.rows dd { margin: 0; }
+.row-what p { font-size: 15px; }
+.proofs { list-style: none; margin: 0; padding: 0; font-size: 14px; line-height: 1.55; }
+.proofs a { color: var(--ink); text-decoration-color: var(--line); text-underline-offset: 3px; }
+.proofs a:hover { text-decoration-color: var(--ink); }
+.proofs code { font-size: 13px; font-family: ui-monospace, 'SF Mono', Menlo, monospace; }
+.proofs .action { margin-top: 4px; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0ms !important; }

@@ -2,7 +2,8 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 import {
-  anomalies, continuationOf, defaultExpanded, deferredCount, filesWithin, fromGraph, origin, threadSet, visibleEdges, visibleNodes,
+  anomalies, continuationOf, defaultExpanded, deferredCount, filesWithin, fromGraph, labelOf, origin, panelRows, threadSet, visibleEdges,
+  visibleNodes,
 } from './model.js'
 
 // root ─ a ─ b(current inside: b1 → b2*) ; a opens branch x ; detour d off a
@@ -154,11 +155,45 @@ test('the graph files become the viewer shape: current from the thread, the outc
   assert.equal(byId.get('m1').summary, 'done')
   assert.deepEqual(byId.get('m1').files, [{ path: 'docs/a.md', change: 'edited', why: 'done' }])
   assert.deepEqual(byId.get('s1').deferred, { to: 's2', why: 'no time' })
-  assert.equal(byId.get('x').status, 'dropped')
+  assert.equal(byId.get('x').status, 'replaced')
   assert.equal(continuationOf(view, 's1').id, 's2')
 })
 
 test('without a thread file the current node is the active one', () => {
   const view = fromGraph([{ id: 'a', title: 'A', status: 'done' }, { id: 'b', title: 'B', status: 'active' }], null)
   assert.equal(view.current, 'b')
+})
+
+// The label at the right of a node: what still waits on you comes first, then where it went, then who decided.
+test('a node label says what waits on you, where a deferral went, how far a list is, who decided', () => {
+  const view = fromGraph([
+    { id: 'm', kind: 'milestone', title: 'M', status: 'active', by: 'user' },
+    { id: 'q', kind: 'step', title: 'Q', status: 'todo', parent: 'm', review: 'confirm', by: 'user' },
+    { id: 'd', kind: 'step', title: 'D', status: 'deferred', parent: 'm' },
+    { id: 'n', kind: 'step', title: 'N', status: 'todo', continues: 'd' },
+    { id: 'l', kind: 'list', title: 'L', status: 'active', parent: 'm' },
+    { id: 'p1', kind: 'point', title: 'P1', status: 'done', parent: 'l' },
+    { id: 'p2', kind: 'point', title: 'P2', status: 'todo', parent: 'l' },
+    { id: 'a', kind: 'step', title: 'A', status: 'done', parent: 'm', by: 'agent' },
+  ], { current: 'l' })
+  assert.deepEqual(labelOf(view, 'q'), { type: 'confirm' })
+  assert.deepEqual(labelOf(view, 'd'), { type: 'deferred', to: 'n' })
+  assert.deepEqual(labelOf(view, 'l'), { type: 'list', done: 1, total: 2 })
+  assert.deepEqual(labelOf(view, 'm'), { type: 'user' })
+  assert.equal(labelOf(view, 'a'), null)
+})
+
+test('the panel lists only the rows that have a value, in the order of the spec', () => {
+  const view = fromGraph([
+    { id: 'm', kind: 'milestone', title: 'M', status: 'done', what: 'did it', why: 'needed',
+      proof: [{ type: 'commit', ref: 'abc' }], by: 'user', at: '2026-11-11', confirmed: { at: '2026-11-11', ref: 'chat' } },
+    { id: 'x', kind: 'step', title: 'X', status: 'replaced', parent: 'm', what: 'gone', replaced_by: 'y',
+      uncertain: 'no proof', review: 'confirm', by: 'agent', at: '2026-11-10' },
+    { id: 'y', kind: 'detour', title: 'Y', status: 'active', parent: 'm', what: 'side', reentry: 'm', continues: 'x' },
+  ], { current: 'y' })
+  assert.deepEqual(panelRows(view, 'm').map(r => r.key), ['what', 'why', 'status', 'proof', 'by', 'confirmed'])
+  assert.deepEqual(panelRows(view, 'x').map(r => r.key), ['what', 'status', 'uncertain', 'by', 'review', 'replacedBy'])
+  assert.deepEqual(panelRows(view, 'y').map(r => r.key), ['what', 'status', 'reentry', 'continues'])
+  assert.deepEqual(panelRows(view, 'm').find(r => r.key === 'by').value, { by: 'user', at: '2026-11-11' })
+  assert.equal(panelRows(view, 'x').find(r => r.key === 'status').value, 'replaced')
 })
