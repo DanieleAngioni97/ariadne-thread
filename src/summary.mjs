@@ -5,6 +5,18 @@ import { makeGraph } from './graph.mjs'
 
 export const LIMIT = 300
 const MAX_DEPENDENCIES = 3
+const MAX_FILES = 3
+const PATH = /[\w.-]+(?:\/[\w.-]+)*\.[a-z]{1,5}\b/g
+
+/** The files to open now: proofs and paths in `detail`, of the current node first, then its containers. */
+function usefulFiles(g, id) {
+  const files = []
+  for (const n of [id, ...g.containers(id)].map(g.get)) {
+    const own = [...(n.proof ?? []).filter(p => p.type === 'file').map(p => p.ref), ...(n.detail?.match(PATH) ?? [])]
+    for (const f of own) if (!files.includes(f)) files.push(f)
+  }
+  return files.slice(0, MAX_FILES)
+}
 
 /** Rough token count, the same estimate as the prototype: characters / 4. */
 export const tokens = text => Math.ceil(text.length / 4)
@@ -27,14 +39,15 @@ export function summarize(nodes, thread) {
     : ['Rientri in sospeso: nessuno']
 
   const confirm = nodes.filter(n => n.review === 'confirm').length
-  const decide = nodes.filter(n => n.review === 'decide').length
-  const review = confirm + decide > 0 ? [`Da rivedere al rientro: ${confirm} da confermare, ${decide} da decidere`] : []
+  const review = confirm > 0 ? [`Da confermare: ${confirm} modifiche dell'agente (ariadne confirm --all)`] : []
+  const files = current ? usefulFiles(g, current.id) : []
 
   const nextId = current && g.next(current.id)
   const tail = [
     ...reentries,
     ...review,
     `Prossimo: ${nextId ? `${nextId} ${g.get(nextId).title}` : 'nessuno nel piano'}`,
+    ...(files.length ? [`File utili: ${files.join(' · ')}`] : []),
     'Per approfondire: ariadne show <id> · ariadne why <id>',
   ]
 

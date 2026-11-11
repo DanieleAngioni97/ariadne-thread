@@ -36,15 +36,9 @@ test('show marks uncertain proof, the agent as author and links to other nodes',
   for (const row of ['Rientra in: b', 'Rimandato a: c', 'Riprende: a', 'Sostituito da: c']) assert.ok(text.includes(row), row)
 })
 
-test('show explains the review queue and the mandate', () => {
-  const nodes = [
-    n('m', { kind: 'milestone', status: 'active', mandate: { at: AT, ref: 'chat', allow: ['step', 'detour'] } }),
-    n('r', { status: 'todo', review: 'confirm' }),
-    n('q', { status: 'todo', review: 'decide', prudent: 'keep the plan' }),
-  ]
-  assert.match(show(nodes, 'm'), /\nMandato: step, detour \(dal 2026-11-11\)/)
-  assert.match(show(nodes, 'r'), /\nDa confermare: fatto dall'agente in tua assenza, dentro il mandato/)
-  assert.match(show(nodes, 'q'), /\nDa decidere: fuori dal mandato; scelta prudente: keep the plan/)
+test('show says when the agent decided a change without your confirmation', () => {
+  const nodes = [n('r', { status: 'todo', review: 'confirm' })]
+  assert.match(show(nodes, 'r'), /\nDa confermare: deciso dall'agente senza la tua conferma \(ariadne confirm r\)/)
 })
 
 test('show returns null for an unknown node', () => {

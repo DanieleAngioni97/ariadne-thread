@@ -53,10 +53,20 @@ test('open detours are listed with where they re-enter', () => {
   assert.match(summarize(nodes, { current: 'x' }), /Rientri in sospeso:\n- Side question → rientra in d\n/)
 })
 
-test('the review line appears only when nodes wait for review', () => {
-  assert.doesNotMatch(summarize(NODES, { current: 'd' }), /Da rivedere/)
-  const nodes = [...NODES, n('r1', { parent: 'm2', status: 'todo', review: 'confirm' }), n('r2', { parent: 'm2', status: 'todo', review: 'confirm' }), n('r3', { parent: 'm2', status: 'todo', review: 'decide', prudent: 'keep the plan' })]
-  assert.match(summarize(nodes, { current: 'd' }), /\nDa rivedere al rientro: 2 da confermare, 1 da decidere\nProssimo:/)
+test('the review line appears only when the agent left structure to confirm', () => {
+  assert.doesNotMatch(summarize(NODES, { current: 'd' }), /Da confermare/)
+  const nodes = [...NODES, n('r1', { parent: 'm2', status: 'todo', review: 'confirm' }), n('r2', { parent: 'm2', status: 'todo', review: 'confirm' })]
+  assert.match(summarize(nodes, { current: 'd' }), /\nDa confermare: 2 modifiche dell'agente \(ariadne confirm --all\)\nProssimo:/)
+})
+
+test('useful files come from the current node, then its containers, at most three', () => {
+  const nodes = NODES.map(x => {
+    if (x.id === 'd') return { ...x, detail: 'docs/plan.md § d', proof: [{ type: 'file', ref: 'src/d.mjs' }, { type: 'commit', ref: 'abc1234' }] }
+    if (x.id === 'm2') return { ...x, detail: 'see docs/plan.md and docs/spec.md', proof: [{ type: 'file', ref: 'docs/brief.md' }] }
+    return x
+  })
+  assert.match(summarize(nodes, { current: 'd' }), /\nFile utili: src\/d\.mjs · docs\/plan\.md · docs\/brief\.md\nPer approfondire:/)
+  assert.doesNotMatch(summarize(NODES, { current: 'd' }), /File utili/)
 })
 
 test('with no next step the summary says the plan is over', () => {
