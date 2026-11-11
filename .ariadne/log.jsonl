@@ -7,3 +7,20 @@
 {"at":"2026-11-11T11:43Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit cc5214d","proof":[{"type":"commit","ref":"cc5214d"}]}
 {"at":"2026-11-11T11:43Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit 4076ae4","proof":[{"type":"commit","ref":"4076ae4"}]}
 {"at":"2026-11-11T11:43Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit 6cd9b10","proof":[{"type":"commit","ref":"6cd9b10"}]}
+{"at":"2026-11-11T11:43Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit 24beed5","proof":[{"type":"commit","ref":"24beed5"}]}
+{"at":"2026-11-11T12:03Z","id":"m3.10","op":"add","text":"deviazione m3.10 Albero mai pulito dopo un commit, rientra in m3.6"}
+{"at":"2026-11-11T12:03Z","id":"i1","op":"add","text":"aggiunto lista i1 Indagine sull'albero sporco sotto m3.10"}
+{"at":"2026-11-11T12:03Z","id":"k1","op":"add","text":"aggiunto punto k1 Indizio: l'hook scrive dopo il commit sotto i1"}
+{"at":"2026-11-11T12:03Z","id":"k2","op":"add","text":"aggiunto punto k2 Indizio: anche il commit del grafo ha Thread sotto i1"}
+{"at":"2026-11-11T12:03Z","id":"h1","op":"add","text":"aggiunto punto h1 Ipotesi: amend del commit sotto i1, da k1"}
+{"at":"2026-11-11T12:03Z","id":"k3","op":"add","text":"aggiunto punto k3 Indizio: l'amend cambia lo sha sotto i1"}
+{"at":"2026-11-11T12:03Z","id":"h1","op":"replace","text":"sostituito h1 Ipotesi: amend del commit con k3"}
+{"at":"2026-11-11T12:03Z","id":"k4","op":"add","text":"aggiunto punto k4 Deduzione: i commit solo di .ariadne/ sono neutri sotto i1, da k1, k2, k3"}
+{"at":"2026-11-11T12:04Z","id":"k1","op":"close","text":"chiuso k1 Indizio: l'hook scrive dopo il commit: sync --hook aggiunge la prova del commit appena fatto a graph.jsonl e log.jsonl.","proof":[{"type":"file","ref":"bin/ariadne.mjs"}]}
+{"at":"2026-11-11T12:04Z","id":"k2","op":"close","text":"chiuso k2 Indizio: anche il commit del grafo ha Thread: Il commit che salva .ariadne/ porta Thread: m3.6, quindi riceve a sua volta una prova.","proof":[{"type":"commit","ref":"24beed5"}]}
+{"at":"2026-11-11T12:04Z","id":"k3","op":"close","text":"chiuso k3 Indizio: l'amend cambia lo sha: Dopo un amend lo sha registrato come prova non esiste più nella storia.","proof":[{"type":"message","ref":"git: amend crea un commit nuovo"}]}
+{"at":"2026-11-11T12:04Z","id":"m3.10","op":"fill","text":"prova per m3.10: commit d252091","proof":[{"type":"commit","ref":"d252091"}]}
+{"at":"2026-11-11T12:04Z","id":"m3.10","op":"fill","text":"prova per m3.10: commit cbad5c2","proof":[{"type":"commit","ref":"cbad5c2"}]}
+{"at":"2026-11-11T12:05Z","id":"k4","op":"close","text":"chiuso k4 Deduzione: i commit solo di .ariadne/ sono neutri: I commit che salvano solo .ariadne/ sono neutri: niente prova, non contano tra quelli senza Thread.","proof":[{"type":"commit","ref":"11eaac7"}]}
+{"at":"2026-11-11T12:05Z","id":"i1","op":"close","text":"chiuso i1 Indagine sull'albero sporco: Causa trovata: il commit del grafo riceveva a sua volta una prova; l'amend scartato perché cambia lo sha.","proof":[{"type":"commit","ref":"11eaac7"}]}
+{"at":"2026-11-11T12:05Z","id":"m3.10","op":"close","text":"chiuso m3.10 Albero mai pulito dopo un commit: Dopo un commit si salva .ariadne/ con un commit solo del grafo e l'albero resta pulito.","proof":[{"type":"commit","ref":"11eaac7"}]}
