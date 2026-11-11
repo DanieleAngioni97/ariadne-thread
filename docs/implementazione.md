@@ -100,10 +100,39 @@ riportata nel nodo). Tutti i test verdi.
 riassunto.
 
 ## m3.6 — operazioni e diario
-Da dettagliare all'avvio. Già fissato dalla specifica: tabella § Operazioni; campi `mandate`, `review`,
-`prudent`; `thread.json.last_correction`; `log.jsonl` append-only; regole nuove del validatore
-(§ Cosa cambia rispetto a oggi). Chiude togliendo STATE.md e LOG.md e la riga di `CLAUDE.md` sul grafo
-a mano.
+
+**Decisione (2026-11-11, utente).** Il grafo non frena mai l'agente: traccia quello che fa già. Ogni
+operazione entra subito; la struttura decisa dall'agente resta segnata `review: confirm` e la confermi
+quando vuoi («Approva tutto» = 1 azione). Via mandato, `review: decide`, `prudent`, proposte in attesa
+e la differenza accompagnato / da solo (cambiano R2, R25, R26 della specifica). Lo scribe (`m3.7`) e la
+sua misura (`m3.8`) si rinviano: l'agente scrive già operazioni strutturate, non note libere.
+
+**Obiettivo.** Tre usi provati sul grafo di questo repo: (1) sviluppo con deviazioni e cose
+temporanee, senza perdersi; (2) su richiesta, un ragionamento da investigatore: indizi e deduzioni
+come `point` con `after` = premesse, un'ipotesi smentita `replace` dall'indizio che la smentisce;
+(3) dopo un `/clear` improvviso l'agente riparte dal riassunto, risale con `why` e apre solo i file che
+servono ora (riga «File utili»).
+
+**Ingressi, dal più economico.**
+- Commit con la riga `Thread: <id>` (R18): prova sul nodo. `Thread: <id> done: <esito>`: chiude il
+  nodo con il commit come prova e passa al successivo. Li legge `ariadne sync`, chiamato da un hook
+  `PostToolUse` sui comandi Bash; idempotente (un commit già tra le prove si salta).
+- Sottocomandi per ciò che il commit non dice: `plan`, `start`, `close`, `add`, `fill`, `defer`,
+  `replace`, `move`, `undo`, `confirm`, `reject`; `apply <ops.json>` per le operazioni grezze.
+- `close` di un `detour` torna al suo `reentry`; di un passo, al successivo (`next`) o al contenitore.
+
+**File.** `src/apply.mjs` (operazioni pure: testo del grafo + filo + operazioni → nuovo testo, filo,
+righe di diario; righe dei nodi non toccati identiche, nuovi in fondo; tutto o niente col validatore),
+`src/trailers.mjs` (righe `Thread:` → operazioni), `src/validate.mjs` (`review: confirm` vale come
+conferma; `review` solo `confirm`), `src/summary.mjs` (righe «File utili» e «Da confermare»),
+`bin/ariadne.mjs` (sottocomandi, `sync`, `log`, riga `⚠ k commit senza Thread`),
+`.claude/settings.json` (hook `PostToolUse`).
+
+**Diario.** `.ariadne/log.jsonl`, una riga per operazione: `{at, id, op, text, proof?}`; `text` è una
+frase leggibile così com'è da banda e viewer; `ariadne log [n]` la stampa.
+
+**Fatto quando.** Tutti i test verdi; `m3.6` chiuso da un commit `Thread: m3.6 done: …`; i tre usi
+provati e riportati nel nodo; via STATE.md, LOG.md e la riga di `CLAUDE.md` sul grafo a mano.
 
 ## m3.8 — costo dell'osservatore
 Da dettagliare all'avvio. Riprende `m2.4`: qualità e costo per checkpoint di Haiku sul turno contro un

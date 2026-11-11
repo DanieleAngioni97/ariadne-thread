@@ -53,7 +53,9 @@ export function validate(text) {
     const badProof = proofs.some(p => !PROOF_TYPES.includes(p?.type) || typeof p.ref !== 'string' || p.ref === '')
     if (badProof || (proofs.length === 0 && !n.uncertain)) fail(n, 'proof', 'R3: needs a commit, file or message, or `uncertain` with the reason')
 
-    if (isStructural(n) && !(n.confirmed && DATE.test(n.confirmed.at ?? ''))) fail(n, 'confirmed', 'R2: structural node without the user confirmation')
+    if (n.review !== undefined && n.review !== 'confirm') fail(n, 'review', 'review can only be confirm')
+    const waiting = n.review === 'confirm'
+    if (isStructural(n) && !waiting && !(n.confirmed && DATE.test(n.confirmed.at ?? ''))) fail(n, 'confirmed', 'R2: structural node without the user confirmation or review: confirm')
     if (n.kind === 'detour' && isOpen(n) && !n.reentry) fail(n, 'reentry', 'R22: an open detour declares where it re-enters')
     if (n.status === 'replaced' && !n.replaced_by) fail(n, 'replaced_by', 'R15: a replaced node points to its successor')
     if (n.status === 'deferred' && !n.deferred_to) fail(n, 'deferred_to', 'a deferred node points to the task that resumes it')

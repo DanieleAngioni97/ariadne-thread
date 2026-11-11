@@ -63,6 +63,11 @@ test('R2: structural nodes carry the user confirmation', () => {
   assert.deepEqual(rules(jsonl([node({ kind: 'detour', reentry: 'a' })])).includes('confirmed'), true)
 })
 
+test('R2: structure the agent decided alone is valid while it waits for your confirmation', () => {
+  assert.deepEqual(rules(jsonl([node({ kind: 'milestone', review: 'confirm' })])), [])
+  assert.deepEqual(rules(jsonl([node({ kind: 'milestone', review: 'decide' })])), ['review', 'confirmed'])
+})
+
 test('R22: an open detour declares where it re-enters', () => {
   const confirmed = { at: AT, ref: 'msg' }
   const graph = jsonl([node({}), node({ id: 'd', kind: 'detour', status: 'active', after: ['a'], confirmed })])
