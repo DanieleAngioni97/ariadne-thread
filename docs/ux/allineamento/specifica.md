@@ -60,6 +60,11 @@ Append-only, una riga per nodo chiuso (`done`, `deferred`, `replaced`), in ordin
 
 ## Operazioni (R14)
 
+> **Cambiato il 2026-11-11** (`brief.md` § Decisioni, `implementazione.md` § m3.6): ogni operazione entra
+> subito; la struttura decisa dall'agente resta `review: confirm`. Mandato, `review: decide`, `prudent`,
+> ◆ Proposta in attesa e la distinzione accompagnato / da solo non valgono più. Le regole sotto restano
+> come storia del concetto A.
+
 L'unico modo di cambiare il grafo. Ogni operazione nomina i nodi per id.
 
 | Operazione | Effetto | Tipo |

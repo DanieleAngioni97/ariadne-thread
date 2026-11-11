@@ -120,6 +120,7 @@ di oggi; ≤ 1 modifica su 5 fatta in tua assenza rifiutata al rientro (R26). Pr
 | 2026-11-08 | Brief chiuso | Domande aperte vuote | tu |
 | 2026-11-08 | Lavoro non sorvegliato: mandato al momento del piano + coda di revisione al rientro (opzioni 2+3); da provare nel prototipo | Q34: piani lunghi con Claude Code lasciato solo per ore | tu |
 | 2026-11-08 | Concetto A "Piano prima": il piano nasce approvato, i checkpoint chiudono e riempiono, struttura nuova solo fuori piano; banda dal lineage | concetti.md: lo scribe non decide la struttura; regge rinvii e rami paralleli | tu |
+| 2026-11-11 | Il grafo non frena mai l'agente: ogni operazione entra subito, la struttura decisa dall'agente resta `review: confirm` finché la confermi; via mandato, `decide`/`prudent`, proposte in attesa e accompagnato/da solo; ingresso dai commit (`Thread:`) e dai sottocomandi, scribe rinviato | m3.6: l'attrito non vale il controllo preventivo; tutto resta tracciato e annullabile (R15) | tu |
 
 ## Domande aperte
 
