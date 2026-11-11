@@ -48,24 +48,97 @@ export function holdsCurrent(data, id) {
   return containers(byId(data), data.current).includes(id)
 }
 
-/** Visible nodes in display order: a container is followed by its children when it is open. */
-export function visibleNodes(data, expanded, focus = null) {
-  const out = []
-  const visit = (node, depth) => {
-    out.push({ ...node, depth })
-    if (expanded.has(node.id)) childrenOf(data, node.id).forEach(child => visit(child, depth + 1))
+const LIMITS = { essenziale: 2, standard: 3, esteso: 5 }
+
+/** How many children of a level show at once for a profile (R4); standard when unknown. */
+export const limitOf = profile => LIMITS[profile] ?? LIMITS.standard
+
+/**
+ * Where a level's window must sit: the current node, what holds it, or where the current detour
+ * returns (specifica § Viewer, Raggruppamento); else the first open step; else the last one.
+ */
+function anchorOf(data, live) {
+  const nodes = byId(data)
+  const anchors = new Set()
+  for (const at of [data.current, ...containers(nodes, data.current)]) {
+    anchors.add(at)
+    const node = nodes.get(at)
+    if (node?.kind === 'detour' && node.reentry) [node.reentry, ...containers(nodes, node.reentry)].forEach(a => anchors.add(a))
   }
-  const roots = focus ? data.nodes.filter(n => n.id === focus) : childrenOf(data, null)
-  roots.forEach(root => visit(root, 0))
-  return out
+  const found = [live.findIndex(n => n.id === data.current || anchors.has(n.id)), live.findIndex(n => n.status === 'todo' || n.status === 'active')]
+  return found.find(i => i >= 0) ?? live.length - 1
 }
 
-/** `after` edges between visible nodes; an endpoint inside a closed container moves to that container. */
-export function visibleEdges(data, expanded, focus = null) {
+/**
+ * The children of `level` that show, at most `limit` in a window around the anchor, and what hides:
+ * `above` and `below` the window, `replaced` (hidden until asked, R15, then in `tail` at the end). `revealed` holds the levels
+ * opened in full (their id, '' for the top) and those showing their replaced steps (`replaced:<id>`).
+ */
+function levelWindow(data, level, { limit = Infinity, revealed = new Set() } = {}) {
+  const key = level ?? ''
+  const kids = childrenOf(data, level)
+  const live = kids.filter(n => n.status !== 'replaced')
+  const gone = kids.filter(n => n.status === 'replaced')
+  const withReplaced = revealed.has(`replaced:${key}`)
+  const tail = withReplaced ? gone : []
+  const replaced = withReplaced ? 0 : gone.length
+  if (revealed.has(key) || live.length <= limit) return { key, shown: live, above: [], below: [], tail, replaced }
+  const anchor = anchorOf(data, live)
+  const start = Math.max(0, Math.min(anchor - Math.floor((limit - 1) / 2), live.length - limit))
+  return { key, shown: live.slice(start, start + limit), above: live.slice(0, start), below: live.slice(start + limit), tail, replaced }
+}
+
+/**
+ * Visible nodes in display order: a container is followed by its children when it is open. Where a level
+ * hides children, a marker node stands in their place: `{ id: 'more-<above|below|replaced>:<level>', more, count, level }`.
+ * Also returns `alias`: each hidden node → the marker that stands for it.
+ */
+function walk(data, expanded, focus, options) {
+  const out = []
+  const alias = new Map()
+  const marker = (more, w, count, depth, parent) => ({
+    id: `more-${more}:${w.key}`, more, count, level: w.key, depth, ...(parent ? { parent } : {}),
+  })
+  const visitLevel = (level, depth) => {
+    const w = levelWindow(data, level, options)
+    if (w.above.length) out.push(marker('above', w, w.above.length, depth, level))
+    w.shown.forEach(child => visit(child, depth))
+    if (w.below.length) out.push(marker('below', w, w.below.length, depth, level))
+    w.tail.forEach(child => visit(child, depth))
+    if (w.replaced) out.push(marker('replaced', w, w.replaced, depth, level))
+    for (const [side, hidden] of [['above', w.above], ['below', w.below]]) {
+      for (const n of hidden) alias.set(n.id, `more-${side}:${w.key}`)
+    }
+  }
+  const visit = (node, depth) => {
+    out.push({ ...node, depth })
+    if (expanded.has(node.id)) visitLevel(node.id, depth + 1)
+  }
+  if (focus) data.nodes.filter(n => n.id === focus).forEach(root => visit(root, 0))
+  else visitLevel(null, 0)
+  return { nodes: out, alias }
+}
+
+export function visibleNodes(data, expanded, focus = null, options = {}) {
+  return walk(data, expanded, focus, options).nodes
+}
+
+/**
+ * `after` edges between visible nodes. An endpoint inside a closed container moves to that container;
+ * a hidden one moves to the marker that stands for it.
+ */
+export function visibleEdges(data, expanded, focus = null, options = {}) {
   const nodes = byId(data)
-  const shown = new Set(visibleNodes(data, expanded, focus).map(n => n.id))
+  const { nodes: visible, alias } = walk(data, expanded, focus, options)
+  const shown = new Set(visible.map(n => n.id))
   const thread = threadSet(data)
-  const lift = id => [id, ...containers(nodes, id)].find(at => shown.has(at)) ?? null
+  const lift = id => {
+    for (const at of [id, ...containers(nodes, id)]) {
+      if (shown.has(at)) return at
+      if (alias.has(at)) return alias.get(at)
+    }
+    return null
+  }
 
   const edges = new Map()
   for (const node of data.nodes) {
@@ -195,6 +268,7 @@ export function fromGraph(nodes, thread) {
   const continuation = new Map(nodes.filter(n => n.continues).map(n => [n.continues, n.id]))
   return {
     project: thread?.project ?? '',
+    profile: thread?.profile,
     current: thread?.current ?? nodes.find(n => n.status === 'active')?.id ?? null,
     nodes: nodes.map(n => ({
       ...n,

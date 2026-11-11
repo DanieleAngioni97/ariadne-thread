@@ -10,13 +10,14 @@ import { parse } from '../src/graph.mjs'
 import { lang, t } from './i18n.js'
 import {
   anomalies, cameFrom, defaultExpanded, fromGraph, hasChildren, holdsCurrent, labelOf, ledTo, panelRows, pathTo, threadSet,
-  visibleEdges, visibleNodes,
+  limitOf, visibleEdges, visibleNodes,
 } from './model.js'
 
 const html = htm.bind(React.createElement)
 const elk = new ELK()
 
 const STEP = { width: 232, height: 64 }
+const MORE = { width: 232, height: 36 }
 const STEP_CHARS_PER_LINE = 18
 /** Titles wrap, never cut (specifica § Stati del viewer): a step grows one line at a time. */
 const heightOf = node => {
@@ -38,6 +39,9 @@ const thread = threadSet(data)
 const problems = new Map(anomalies(data).map(a => [a.id, a.reason]))
 const childCount = id => data.nodes.filter(n => n.parent === id).length
 const allContainers = () => new Set(data.nodes.filter(n => hasChildren(data, n.id)).map(n => n.id))
+const LIMIT = limitOf(data.profile)
+/** The key of the level that holds `id`, as the window and its markers name it. */
+const levelKey = id => byId.get(id)?.parent ?? ''
 
 /** What a node is, at a glance: its look follows this, not the raw status. */
 const kindOf = node => (node.kind === 'detour' ? 'detour' : node.status === 'replaced' ? 'dropped' : node.status)
@@ -66,11 +70,13 @@ function classesOf(node, selected, arriving) {
 }
 
 /** ELK lays out the visible nodes and routes the edges; edge points come back in root coordinates. */
-async function layout(expanded, focus) {
-  const shown = visibleNodes(data, expanded, focus)
+async function layout(expanded, focus, revealed) {
+  const options = { limit: LIMIT, revealed }
+  const shown = visibleNodes(data, expanded, focus, options)
   const shownIds = new Set(shown.map(n => n.id))
-  const edges = visibleEdges(data, expanded, focus)
-  const isOpen = n => expanded.has(n.id) && hasChildren(data, n.id)
+  const markers = new Map(shown.filter(n => n.more).map(n => [n.id, n]))
+  const edges = visibleEdges(data, expanded, focus, options)
+  const isOpen = n => !n.more && expanded.has(n.id) && hasChildren(data, n.id)
 
   const toElk = n => isOpen(n)
     ? {
@@ -78,7 +84,7 @@ async function layout(expanded, focus) {
         layoutOptions: { 'elk.padding': '[top=60,left=24,bottom=24,right=24]' },
         children: shown.filter(c => c.parent === n.id).map(toElk),
       }
-    : { id: n.id, width: STEP.width, height: heightOf(n) }
+    : n.more ? { id: n.id, ...MORE } : { id: n.id, width: STEP.width, height: heightOf(n) }
 
   const roots = shown.filter(n => !n.parent || !shownIds.has(n.parent))
   const graph = await elk.layout({
@@ -102,11 +108,11 @@ async function layout(expanded, focus) {
   const nodes = []
   const routes = new Map()
   const walk = (elkNode, parentId) => {
-    const node = byId.get(elkNode.id)
+    const node = byId.get(elkNode.id) ?? markers.get(elkNode.id)
     const open = isOpen(node)
     nodes.push({
       id: node.id,
-      type: open ? 'group' : 'step',
+      type: node.more ? 'more' : open ? 'group' : 'step',
       position: { x: elkNode.x ?? 0, y: elkNode.y ?? 0 },
       ...(parentId ? { parentId } : {}),
       style: { width: elkNode.width, height: elkNode.height },
@@ -207,7 +213,20 @@ function Group({ data: { node } }) {
     </div>`
 }
 
-const nodeTypes = { step: Step, group: Group }
+/** Stands for the children a level hides: «k nascosti sopra · mostra», «k sostituiti · mostra». */
+function More({ data: { node } }) {
+  const { reveal } = React.useContext(Ctx)
+  const key = node.more === 'replaced' ? `replaced:${node.level}` : node.level
+  return html`
+    <div class="more">
+      <${Handle} type="target" position=${Position.Left} />
+      <span>${t.more[node.more](node.count)} · </span>
+      <button onClick=${e => { e.stopPropagation(); reveal([key]) }}>${t.more.show}</button>
+      <${Handle} type="source" position=${Position.Right} />
+    </div>`
+}
+
+const nodeTypes = { step: Step, group: Group, more: More }
 const edgeTypes = { routed: RoutedEdge }
 
 /** One tooltip for the whole page, above everything, placed under the hovered node. */
@@ -326,6 +345,8 @@ function App() {
   const [expanded, setExpanded] = useState(() =>
     level === 'milestones' ? new Set() : level === 'all' ? allContainers() : defaultExpanded(data))
   const [focus, setFocus] = useState(null)
+  // Levels opened in full past the profile's limit, and levels showing their replaced steps (`replaced:<id>`).
+  const [revealed, setRevealed] = useState(() => (level === 'all' ? new Set(['', ...allContainers()]) : new Set()))
   const [selected, setSelected] = useState(() => (byId.has(params.get('select')) ? params.get('select') : data.current))
   const [graph, setGraph] = useState({ nodes: [], edges: [] })
   const [tip, setTip] = useState(null)
@@ -337,13 +358,13 @@ function App() {
 
   useEffect(() => {
     let alive = true
-    layout(expanded, focus).then(next => {
+    layout(expanded, focus, revealed).then(next => {
       if (!alive) return
       setGraph(next)
       if (!flyTo) requestAnimationFrame(() => flow.fitView({ padding: 0.12, duration: 240 }))
     })
     return () => { alive = false }
-  }, [expanded, focus])
+  }, [expanded, focus, revealed])
 
   // Zoom onto the chosen step once it is drawn, then make it pulse so the eye lands on it.
   useEffect(() => {
@@ -371,22 +392,30 @@ function App() {
     })
   }, [])
 
+  /** Opens levels in full; a new set only if something opens. */
+  const reveal = useCallback(keys => {
+    setRevealed(prev => (keys.every(k => prev.has(k)) ? prev : new Set([...prev, ...keys])))
+  }, [])
+
   const choose = useCallback(id => {
     setSelected(id)
     setFlyTo(id)
-    // Make sure the step is drawn: open everything that contains it (a new set only if something opens).
+    // Make sure the step is drawn: open everything that contains it and every level it sits in.
     const holders = pathTo(data, id).slice(0, -1).map(n => n.id)
     setExpanded(prev => (holders.every(at => prev.has(at)) ? prev : new Set([...prev, ...holders])))
+    const levels = [...holders, id].map(levelKey)
+    reveal(byId.get(id)?.status === 'replaced' ? [...levels, `replaced:${levelKey(id)}`] : levels)
   }, [])
 
   const showLevel = name => {
     setLevel(name)
     setExpanded(name === 'milestones' ? new Set() : name === 'all' ? allContainers() : defaultExpanded(data))
+    setRevealed(name === 'all' ? new Set(['', ...allContainers()]) : new Set())
   }
 
   const path = pathTo(data, data.current)
   const node = byId.get(selected) ?? byId.get(data.current)
-  const ctx = useMemo(() => ({ selected, arriving, toggle, hover }), [selected, arriving, toggle, hover])
+  const ctx = useMemo(() => ({ selected, arriving, toggle, hover, reveal }), [selected, arriving, toggle, hover, reveal])
 
   return html`
     <${Ctx.Provider} value=${ctx}>
@@ -412,7 +441,7 @@ function App() {
             edges=${graph.edges}
             nodeTypes=${nodeTypes}
             edgeTypes=${edgeTypes}
-            onNodeClick=${(_, n) => setSelected(n.id)}
+            onNodeClick=${(_, n) => n.type !== 'more' && setSelected(n.id)}
             onMoveStart=${() => hover(null)}
             nodesDraggable=${false}
             nodesConnectable=${false}

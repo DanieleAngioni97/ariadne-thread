@@ -16,6 +16,12 @@ const STRINGS = {
     },
     uncertain: 'uncertain proof',
     anomalyKey: 'Needs attention',
+    more: {
+      above: k => `${k} hidden above`,
+      below: k => `${k} hidden below`,
+      replaced: k => `${k} replaced`,
+      show: 'show',
+    },
     anomaly: {
       'left-behind': 'Left open in a closed milestone, with no task to pick it up',
       'no-target': 'Deferred, but to no task',
@@ -66,6 +72,12 @@ const STRINGS = {
     },
     uncertain: 'prova incerta',
     anomalyKey: 'Da sistemare',
+    more: {
+      above: k => (k === 1 ? '1 nascosto sopra' : `${k} nascosti sopra`),
+      below: k => (k === 1 ? '1 nascosto sotto' : `${k} nascosti sotto`),
+      replaced: k => (k === 1 ? '1 sostituito' : `${k} sostituiti`),
+      show: 'mostra',
+    },
     anomaly: {
       'left-behind': 'Rimasto aperto in una milestone chiusa, senza un task che lo riprenda',
       'no-target': 'Rimandato, ma a nessun task',

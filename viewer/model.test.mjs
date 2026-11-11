@@ -2,7 +2,8 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 import {
-  anomalies, continuationOf, defaultExpanded, deferredCount, filesWithin, fromGraph, labelOf, origin, panelRows, threadSet, visibleEdges,
+  anomalies, continuationOf, defaultExpanded, deferredCount, filesWithin, fromGraph, labelOf, limitOf, origin, panelRows, threadSet,
+  visibleEdges,
   visibleNodes,
 } from './model.js'
 
@@ -196,4 +197,64 @@ test('the panel lists only the rows that have a value, in the order of the spec'
   assert.deepEqual(panelRows(view, 'y').map(r => r.key), ['what', 'status', 'reentry', 'continues'])
   assert.deepEqual(panelRows(view, 'm').find(r => r.key === 'by').value, { by: 'user', at: '2026-11-11' })
   assert.equal(panelRows(view, 'x').find(r => r.key === 'status').value, 'replaced')
+})
+
+// A level of ten steps s0 → … → s9 inside m; the current node is s5.
+const long = {
+  current: 's5',
+  nodes: [
+    { id: 'm', title: 'M', status: 'active' },
+    ...Array.from({ length: 10 }, (_, i) => ({
+      id: `s${i}`, title: `S${i}`, parent: 'm', status: i < 5 ? 'done' : i === 5 ? 'active' : 'todo', ...(i ? { after: [`s${i - 1}`] } : {}),
+    })),
+    { id: 'r', title: 'R', parent: 'm', status: 'replaced', replaced_by: 's5' },
+  ],
+}
+const open = new Set(['m'])
+
+test('a profile limits how many children of a level show: 2, 3 or 5, standard by default', () => {
+  assert.deepEqual(['essenziale', 'standard', 'esteso', undefined].map(limitOf), [2, 3, 5, 3])
+})
+
+test('a long level shows a window around the current node and says what hides above and below', () => {
+  const nodes = visibleNodes(long, open, null, { limit: 3 })
+  assert.deepEqual(nodes.map(n => n.id), ['m', 'more-above:m', 's4', 's5', 's6', 'more-below:m', 'more-replaced:m'])
+  const more = Object.fromEntries(nodes.filter(n => n.more).map(n => [n.more, n.count]))
+  assert.deepEqual(more, { above: 4, below: 3, replaced: 1 })
+  assert.equal(nodes.find(n => n.id === 'more-above:m').parent, 'm')
+})
+
+test('a level without the current node opens at its first open step', () => {
+  const elsewhere = { ...long, current: 'm' }
+  const ids = visibleNodes(elsewhere, open, null, { limit: 3 }).map(n => n.id)
+  assert.deepEqual(ids.filter(id => id.startsWith('s')), ['s4', 's5', 's6'])
+})
+
+test('the window follows a detour back to where it started', () => {
+  const detour = {
+    current: 'd',
+    nodes: [...long.nodes.map(n => (n.id === 's5' ? { ...n, status: 'todo' } : n)), { id: 'd', title: 'D', kind: 'detour', status: 'active', reentry: 's8' }],
+  }
+  const ids = visibleNodes(detour, open, null, { limit: 3 }).map(n => n.id)
+  assert.deepEqual(ids.filter(id => /^s\d$/.test(id)), ['s7', 's8', 's9'])
+})
+
+test('show opens the level in full; replaced steps show only when asked', () => {
+  const all = visibleNodes(long, open, null, { limit: 3, revealed: new Set(['m']) }).map(n => n.id)
+  assert.equal(all.filter(id => /^s\d$/.test(id)).length, 10)
+  assert.ok(all.includes('more-replaced:m') && !all.includes('r'))
+  const withReplaced = visibleNodes(long, open, null, { limit: 3, revealed: new Set(['m', 'replaced:m']) }).map(n => n.id)
+  assert.ok(withReplaced.includes('r') && !withReplaced.includes('more-replaced:m'))
+})
+
+test('edges from hidden steps end at the marker that stands for them', () => {
+  const edges = visibleEdges(long, open, null, { limit: 3 }).map(e => `${e.source}->${e.target}`)
+  assert.ok(edges.includes('more-above:m->s4'))
+  assert.ok(edges.includes('s6->more-below:m'))
+  assert.ok(!edges.some(e => e.startsWith('more-above:m->more-above')))
+})
+
+test('replaced steps, once asked for, show at the end of the level even when the level is windowed', () => {
+  const ids = visibleNodes(long, open, null, { limit: 3, revealed: new Set(['replaced:m']) }).map(n => n.id)
+  assert.deepEqual(ids.slice(-2), ['more-below:m', 'r'])
 })
