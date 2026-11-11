@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -74,6 +74,70 @@ test('an unknown command or a missing id prints the usage', () => {
   for (const args of [['nope'], ['show'], []]) {
     const r = run(dir, ...args)
     assert.equal(r.status, 2, args.join(' '))
-    assert.match(r.stderr, /^uso: ariadne summary \| show <id> \| why <id> \| validate \[file\]\n/)
+    assert.match(r.stderr, /^uso: ariadne /)
   }
+})
+
+const read = (dir, file) => readFileSync(join(dir, '.ariadne', file), 'utf8')
+const nodesOf = dir => read(dir, 'graph.jsonl').trimEnd().split('\n').map(l => JSON.parse(l))
+const git = (dir, ...args) => spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { cwd: dir, encoding: 'utf8' })
+const PLAN = [n('m', { kind: 'milestone', status: 'active', confirmed: { at: AT, ref: 'chat' } }), n('a', { parent: 'm', status: 'active' }), n('b', { parent: 'm', status: 'todo', after: ['a'] })]
+
+test('close writes the graph, moves the thread on and appends a readable log line', () => {
+  const dir = project({ graph: PLAN, thread: { project: 'p', current: 'a', profile: 'standard' } })
+  const r = run(dir, 'close', 'a', 'A is done.', '--file', 'src/a.mjs')
+  assert.equal(r.status, 0, r.stderr)
+  assert.equal(r.stdout, '↺ chiuso a Title a: A is done.\n↺ iniziato b Title b\n')
+  assert.equal(nodesOf(dir).find(x => x.id === 'a').status, 'done')
+  assert.equal(JSON.parse(read(dir, 'thread.json')).current, 'b')
+  const log = read(dir, 'log.jsonl').trimEnd().split('\n').map(l => JSON.parse(l))
+  assert.deepEqual(log.map(l => l.text), ['chiuso a Title a: A is done.', 'iniziato b Title b'])
+  assert.equal(run(dir, 'log').stdout.split('\n').filter(Boolean).length, 2)
+})
+
+test('a refused operation exits 1 and leaves every file as it was', () => {
+  const dir = project({ graph: PLAN, thread: { current: 'a' } })
+  const before = read(dir, 'graph.jsonl')
+  const r = run(dir, 'close', 'a', 'No proof.')
+  assert.equal(r.status, 1)
+  assert.match(r.stderr, /R3/)
+  assert.equal(read(dir, 'graph.jsonl'), before)
+})
+
+test('add takes its fields from flags; a deduction lists its premises', () => {
+  const dir = project({ graph: PLAN, thread: { current: 'a' } })
+  run(dir, 'add', 'point', 'Clue', '--what', 'The cache is cold.', '--id', 'k1')
+  const r = run(dir, 'add', 'point', 'Deduction', '--what', 'The cache causes it.', '--after', 'k1', '--why', 'same time')
+  assert.equal(r.status, 0, r.stderr)
+  const d = nodesOf(dir).at(-1)
+  assert.deepEqual([d.parent, d.after, d.why], ['a', ['k1'], 'same time'])
+})
+
+test('sync turns Thread lines into operations once, and the summary warns about commits without them', () => {
+  const dir = project({ graph: PLAN, thread: { current: 'a' } })
+  git(dir, 'init', '-q')
+  git(dir, 'commit', '-q', '--allow-empty', '-m', 'feat: a\n\nThread: a done: A shipped.')
+  const r1 = run(dir, 'sync')
+  assert.match(r1.stdout, /↺ chiuso a Title a: A shipped\./)
+  assert.equal(nodesOf(dir).find(x => x.id === 'a').proof.at(-1).type, 'commit')
+  assert.equal(run(dir, 'sync').stdout, '')
+  git(dir, 'commit', '-q', '--allow-empty', '-m', 'chore: untracked')
+  assert.match(run(dir, 'summary').stdout, /\n⚠ 1 commit senza Thread: dall'ultimo aggiornamento del grafo\n/)
+})
+
+test('the commit hook reports to the agent only after a git commit', () => {
+  const dir = project({ graph: PLAN, thread: { current: 'a' } })
+  git(dir, 'init', '-q')
+  git(dir, 'commit', '-q', '--allow-empty', '-m', 'feat: a\n\nThread: a')
+  const hook = command => spawnSync(process.execPath, [CLI, 'sync', '--hook'], { cwd: dir, encoding: 'utf8', input: JSON.stringify({ tool_name: 'Bash', tool_input: { command } }) })
+  assert.equal(hook('ls').stdout, '')
+  const out = JSON.parse(hook('git commit -m x').stdout)
+  assert.equal(out.hookSpecificOutput.hookEventName, 'PostToolUse')
+  assert.match(out.hookSpecificOutput.additionalContext, /prova per a: commit/)
+})
+
+test('sync outside a git repository does nothing and exits 0', () => {
+  const r = run(project({ graph: PLAN, thread: { current: 'a' } }), 'sync')
+  assert.equal(r.status, 0)
+  assert.equal(r.stdout, '')
 })
