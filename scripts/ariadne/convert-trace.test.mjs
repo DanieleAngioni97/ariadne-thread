@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { existsSync, readFileSync } from 'node:fs'
 
 import { convert } from './convert-trace.mjs'
-import { validate } from './validate.mjs'
+import { validate } from '../../src/validate.mjs'
 
 const options = { dateOf: () => '2026-11-07', exists: path => path === 'docs/vision.md' }
 const trace = `# Process trace

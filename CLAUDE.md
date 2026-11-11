@@ -8,4 +8,4 @@ nodi con stato, rami, posizione corrente, contesto su hover/click.
   passa all'implementazione; le note di lavoro in `docs/` possono restare in italiano.
 - Mantenere `.ariadne/graph.jsonl` aggiornato a ogni checkpoint (dogfooding, R24): una riga per nodo,
   schema in `docs/ux/allineamento/concetti.md`; nodo corrente in `.ariadne/thread.json`. Dopo ogni
-  modifica: `node scripts/ariadne/validate.mjs` deve dire `ok`. `docs/process-trace.md` è congelato.
+  modifica: `node src/validate.mjs` deve dire `ok`. `docs/process-trace.md` è congelato.

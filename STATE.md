@@ -11,7 +11,7 @@ nodo corrente `m3.5` (`.ariadne/thread.json`). Il grafo è l'indice: nodi snelli
    test prima del codice per `src/graph.mjs`, `src/summary.mjs`, `src/inspect.mjs`, `bin/ariadne.mjs`;
    infine `.claude/settings.json` con gli hook (comando a parte). Chiudere con la prova dopo `/clear`.
 2. A ogni checkpoint aggiornare `.ariadne/graph.jsonl` (e `thread.json`), poi
-   `node scripts/ariadne/validate.mjs` → `ok`. Un passo nuovo fuori piano si propone all'utente prima
+   `node src/validate.mjs` → `ok`. Un passo nuovo fuori piano si propone all'utente prima
    di aggiungerlo (concetto A). STATE.md e LOG.md vanno via alla fine di `m3.6`.
 
 ## Decisioni aperte e rischi
@@ -29,9 +29,9 @@ nodo corrente `m3.5` (`.ariadne/thread.json`). Il grafo è l'indice: nodi snelli
 ## Pointers
 - UX: `docs/ux/allineamento/` → `brief.md` (R1–R26, Decisioni), `concetti.md`, `prototipo/index.html`,
   `valutazione.md`. Requisiti `docs/requirements-draft.md` · Ricerca `docs/research.md` §7.
-- Grafo: `.ariadne/graph.jsonl` · validatore `scripts/ariadne/validate.mjs` · convertitore (una tantum)
+- Grafo: `.ariadne/graph.jsonl` · validatore `src/validate.mjs` · convertitore (una tantum)
   `scripts/ariadne/convert-trace.mjs`.
-- Verifica: `node --test scripts/ariadne/ spikes/viewer/` → 31 pass · `node scripts/ariadne/validate.mjs` → ok.
+- Verifica: `node --test src/ scripts/ariadne/ spikes/viewer/` → 31 pass · `node src/validate.mjs` → ok.
 - Spike mod fuori dal repo (`~/.claude/dev-mods/9491e746-5169-4bed-8881-53945d893b0b/ariadne-spike/`):
   `claude plugin test` → 7 pass.
 - Skill: `ux:design-flow` (riprende da `docs/ux/allineamento/`, fase 6); poi `plan-before-coding`,

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Validates an ariadne thread: one JSON node per line (.ariadne/graph.jsonl).
 // Rules come from docs/ux/allineamento/brief.md (R2, R3, R5, R15, R16, R22) and concetti.md (schema).
-// Usage: node scripts/ariadne/validate.mjs [.ariadne/graph.jsonl]  → exit 1 and one line per error.
+// Usage: node src/validate.mjs [.ariadne/graph.jsonl]  → exit 1 and one line per error.
 
 import { readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
