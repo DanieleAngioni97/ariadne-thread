@@ -6,11 +6,11 @@ import {
 import ELK from 'elkjs'
 import htm from 'htm'
 
-import { data } from './data.js'
+import { parse } from '../src/graph.mjs'
 import { lang, t } from './i18n.js'
 import {
-  anomalies, cameFrom, continuationOf, defaultExpanded, deferredCount, filesWithin, hasChildren, holdsCurrent, ledTo,
-  origin, pathTo, threadSet, visibleEdges, visibleNodes,
+  anomalies, cameFrom, continuationOf, defaultExpanded, deferredCount, filesWithin, fromGraph, hasChildren, holdsCurrent,
+  ledTo, origin, pathTo, threadSet, visibleEdges, visibleNodes,
 } from './model.js'
 
 const html = htm.bind(React.createElement)
@@ -18,7 +18,11 @@ const elk = new ELK()
 
 const STEP = { width: 232, height: 64 }
 const GLYPH = { done: '✓', active: '▶', todo: '○', deferred: '»', dropped: '×', detour: '↪' }
-const ROOT = '/Users/danieleangioni/Sviluppo/Personal/ariadne-thread'
+
+// The repo as it is now: `ariadne view` serves .ariadne/ and tells the page where the repo lives.
+const read = path => fetch(path).then(r => (r.ok ? r.text() : null))
+const [graphText, threadText, ROOT] = await Promise.all([read('.ariadne/graph.jsonl'), read('.ariadne/thread.json'), read('root')])
+const data = fromGraph(parse(graphText ?? ''), threadText ? JSON.parse(threadText) : null)
 
 document.documentElement.lang = lang
 

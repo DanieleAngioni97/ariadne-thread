@@ -111,13 +111,13 @@ function milestoneOf(nodes, id) {
   return containers(nodes, id).at(-1) ?? id
 }
 
-/** Whether `later` comes after `earlier`, following `after` back through any number of steps. */
+/** Whether `later` comes after `earlier` or a step inside it, following `after` back through any number of steps. */
 function comesAfter(nodes, later, earlier) {
   const seen = new Set()
   const stack = [...(nodes.get(later)?.after ?? [])]
   while (stack.length) {
     const at = stack.pop()
-    if (at === earlier) return true
+    if (at === earlier || containers(nodes, at).includes(earlier)) return true
     if (seen.has(at)) continue
     seen.add(at)
     stack.push(...(nodes.get(at)?.after ?? []))
@@ -184,4 +184,24 @@ export function filesWithin(data, id) {
     }
   }
   return [...out.values()]
+}
+
+/**
+ * The viewer's shape from the .ariadne/ files. Each node keeps its fields and gains what the drawing reads:
+ * `summary` (the outcome), `files` (file proofs), `deferred` (where it continues) and `dropped` for replaced.
+ * Without a thread file the current node is the first active one.
+ */
+export function fromGraph(nodes, thread) {
+  const continuation = new Map(nodes.filter(n => n.continues).map(n => [n.continues, n.id]))
+  return {
+    project: thread?.project ?? '',
+    current: thread?.current ?? nodes.find(n => n.status === 'active')?.id ?? null,
+    nodes: nodes.map(n => ({
+      ...n,
+      status: n.status === 'replaced' ? 'dropped' : n.status,
+      summary: n.what,
+      files: (n.proof ?? []).filter(p => p.type === 'file').map(p => ({ path: p.ref, change: 'edited', why: n.what })),
+      ...(n.status === 'deferred' ? { deferred: { to: continuation.get(n.id), why: n.why } } : {}),
+    })),
+  }
 }

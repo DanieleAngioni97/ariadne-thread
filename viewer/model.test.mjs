@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 import {
-  anomalies, continuationOf, defaultExpanded, deferredCount, filesWithin, origin, threadSet, visibleEdges, visibleNodes,
+  anomalies, continuationOf, defaultExpanded, deferredCount, filesWithin, fromGraph, origin, threadSet, visibleEdges, visibleNodes,
 } from './model.js'
 
 // root ─ a ─ b(current inside: b1 → b2*) ; a opens branch x ; detour d off a
@@ -113,8 +113,11 @@ test('the deferred step and its continuation point at each other', () => {
   assert.equal(continuationOf(plan, 'lost'), null)
 })
 
-test('the sample thread defers every open step of a closed milestone to a later task', async () => {
-  const { data: sample } = await import('./data.js')
+test('the real thread defers every open step of a closed milestone to a later task', async () => {
+  const { readFileSync } = await import('node:fs')
+  const { parse } = await import('../src/graph.mjs')
+  const read = name => readFileSync(new URL(`../.ariadne/${name}`, import.meta.url), 'utf8')
+  const sample = fromGraph(parse(read('graph.jsonl')), JSON.parse(read('thread.json')))
   assert.deepEqual(anomalies(sample), [])
   for (const n of sample.nodes.filter(n => n.continues)) assert.equal(continuationOf(sample, n.continues).id, n.id)
 })
@@ -134,4 +137,28 @@ test('a container lists every file touched inside it, once per path, with the re
     { path: 'z.md', change: 'created', reasons: [{ step: 'a1', why: 'new' }] },
   ])
   assert.deepEqual(filesWithin(tree, 'a1').map(f => f.path), ['z.md'])
+})
+
+test('the graph files become the viewer shape: current from the thread, the outcome as summary', () => {
+  const nodes = [
+    { id: 'm1', kind: 'milestone', title: 'M1', status: 'done', what: 'done', proof: [{ type: 'file', ref: 'docs/a.md' }] },
+    { id: 's1', kind: 'step', title: 'S1', status: 'deferred', parent: 'm1', what: 'later', why: 'no time' },
+    { id: 'm2', kind: 'milestone', title: 'M2', status: 'active', after: ['m1'], what: 'now' },
+    { id: 's2', kind: 'step', title: 'S2', status: 'active', parent: 'm2', what: 'picks up', continues: 's1' },
+    { id: 'x', kind: 'step', title: 'X', status: 'replaced', parent: 'm2', what: 'gone', replaced_by: 's2' },
+  ]
+  const view = fromGraph(nodes, { project: 'p', current: 's2' })
+  assert.equal(view.project, 'p')
+  assert.equal(view.current, 's2')
+  const byId = new Map(view.nodes.map(n => [n.id, n]))
+  assert.equal(byId.get('m1').summary, 'done')
+  assert.deepEqual(byId.get('m1').files, [{ path: 'docs/a.md', change: 'edited', why: 'done' }])
+  assert.deepEqual(byId.get('s1').deferred, { to: 's2', why: 'no time' })
+  assert.equal(byId.get('x').status, 'dropped')
+  assert.equal(continuationOf(view, 's1').id, 's2')
+})
+
+test('without a thread file the current node is the active one', () => {
+  const view = fromGraph([{ id: 'a', title: 'A', status: 'done' }, { id: 'b', title: 'B', status: 'active' }], null)
+  assert.equal(view.current, 'b')
 })
