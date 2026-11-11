@@ -1,0 +1,9 @@
+{"at":"2026-11-11T11:41Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit cf8c1c2","proof":[{"type":"commit","ref":"cf8c1c2"}]}
+{"at":"2026-11-11T11:41Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit db17c78","proof":[{"type":"commit","ref":"db17c78"}]}
+{"at":"2026-11-11T11:41Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit 7f318ab","proof":[{"type":"commit","ref":"7f318ab"}]}
+{"at":"2026-11-11T11:41Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit e44310f","proof":[{"type":"commit","ref":"e44310f"}]}
+{"at":"2026-11-11T11:42Z","id":"m3.8","op":"defer","text":"rinviato m3.8 Misurare il costo dell’osservatore a M4 Revisione e feedback (m4.1)"}
+{"at":"2026-11-11T11:42Z","id":"m3.7","op":"defer","text":"rinviato m3.7 Scribe a M4 Revisione e feedback (m4.2)"}
+{"at":"2026-11-11T11:43Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit cc5214d","proof":[{"type":"commit","ref":"cc5214d"}]}
+{"at":"2026-11-11T11:43Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit 4076ae4","proof":[{"type":"commit","ref":"4076ae4"}]}
+{"at":"2026-11-11T11:43Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit 6cd9b10","proof":[{"type":"commit","ref":"6cd9b10"}]}
