@@ -8,6 +8,7 @@ import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs
 import { parseArgs } from 'node:util'
 
 import { apply } from '../src/apply.mjs'
+import { band } from '../src/band.mjs'
 import { parse } from '../src/graph.mjs'
 import { show, why } from '../src/inspect.mjs'
 import { summarize } from '../src/summary.mjs'
@@ -28,13 +29,13 @@ const USAGE = `uso: ariadne <comando>
   fill <id> [--what|--why|--detail|--title …] [--commit|--file|--message …]
   defer <id> <milestone> · replace <id> <successore>
   move <id> <parent> [--after a,b] · undo · confirm <id>|--all · reject <id> [successore]
-  apply <ops.json> · sync [--hook] · view [--port n]
+  apply <ops.json> · sync [--hook] · view [--port n] · band [--review i]
   --by user: l'azione viene da te (move, undo, confirm e reject lo sono sempre)`
 
 const FLAGS = {
   ref: { type: 'string' }, what: { type: 'string' }, why: { type: 'string' }, detail: { type: 'string' },
   title: { type: 'string' }, under: { type: 'string' }, after: { type: 'string' }, reentry: { type: 'string' },
-  id: { type: 'string' }, start: { type: 'boolean' }, done: { type: 'boolean' }, all: { type: 'boolean' }, hook: { type: 'boolean' }, port: { type: 'string' },
+  id: { type: 'string' }, start: { type: 'boolean' }, done: { type: 'boolean' }, all: { type: 'boolean' }, hook: { type: 'boolean' }, port: { type: 'string' }, review: { type: 'string' },
   by: { type: 'string' }, commit: { type: 'string', multiple: true }, file: { type: 'string', multiple: true },
   message: { type: 'string', multiple: true },
 }
@@ -82,6 +83,15 @@ function run(ops, by) {
     process.exit(1)
   }
   for (const l of r.log) console.log(`↺ ${l.text}`)
+}
+
+/** The band's rows as JSON for the mod (specifica § Banda); `review` is the queue item shown one at a time. */
+function bandJson(review) {
+  const text = existsSync(GRAPH) ? readFileSync(GRAPH, 'utf8') : null
+  const thread = text == null ? null : readThread(parse(text))
+  const log = existsSync(LOG) ? readFileSync(LOG, 'utf8').trimEnd().split('\n').filter(Boolean).map(l => JSON.parse(l)) : []
+  const index = review === undefined ? null : Number(review)
+  console.log(JSON.stringify({ viewer: VIEW_PORT, rows: band({ text, thread, log, review: Number.isInteger(index) ? index : null }) }))
 }
 
 function summary() {
@@ -193,6 +203,13 @@ if (command === 'summary') {
     summary()
   } catch (error) {
     console.log(`ariadne: riassunto non disponibile (${error.message})`)
+  }
+}
+else if (command === 'band') {
+  try {
+    bandJson(values.review)
+  } catch (error) {
+    console.log(JSON.stringify({ viewer: VIEW_PORT, rows: [{ kind: 'error', text: `⚠ ariadne: banda non disponibile (${error.message})`, actions: [] }] }))
   }
 }
 else if (command === 'sync') {

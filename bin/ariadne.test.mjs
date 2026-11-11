@@ -162,3 +162,15 @@ test('saving the graph after a commit leaves the tree clean', () => {
   assert.equal(git(dir, 'status', '--porcelain').stdout, '')
   assert.doesNotMatch(run(dir, 'summary').stdout, /commit senza Thread/)
 })
+
+test('band prints the band rows as JSON, with the viewer port, and exits 0 even without a graph', () => {
+  const r = run(project({ graph: [...GOOD, n('c', { status: 'todo', after: ['b'], review: 'confirm' })], thread: { current: 'b' } }), 'band', '--review', '0')
+  assert.equal(r.status, 0)
+  const out = JSON.parse(r.stdout)
+  assert.equal(out.viewer, 8790)
+  assert.deepEqual(out.rows.map(row => row.kind), ['where', 'queue'])
+  assert.match(out.rows[1].text, /^⏎ Da confermare 1\/1: c Title c$/)
+  const empty = run(project(), 'band')
+  assert.equal(empty.status, 0)
+  assert.equal(JSON.parse(empty.stdout).rows[0].kind, 'empty')
+})
