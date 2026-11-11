@@ -30,10 +30,10 @@ prompt. Non frenare il lavoro per il grafo: traccia quello che fai già.
 
 ## Note operative
 
-- Verifica: `node --test src/ bin/ scripts/ariadne/ spikes/viewer/` · `node bin/ariadne.mjs validate`.
+- Verifica: `node --test src/ bin/ scripts/ariadne/ viewer/` · `node bin/ariadne.mjs validate`.
 - `docs/process-trace.md` è congelato; 25 nodi storici sono `uncertain`.
 - Prototipi da far provare: pulsanti con nomi e una riga di guida; aprirli con `open`, non con
-  `human-review`. UI del grafo nel terminale bocciata. Spike del viewer sulla porta 8790
+  `human-review`. UI del grafo nel terminale bocciata. Viewer: `ariadne view`, porta 8790
   (8765 occupata), dopo modifiche Cmd+Shift+R.
 - Screenshot: `uv run --with playwright`, `executable_path` sul Chromium in
   `~/Library/Caches/ms-playwright/chromium_headless_shell-1243/`.

@@ -11,6 +11,7 @@ import { apply } from '../src/apply.mjs'
 import { parse } from '../src/graph.mjs'
 import { show, why } from '../src/inspect.mjs'
 import { summarize } from '../src/summary.mjs'
+import { serve } from '../src/serve.mjs'
 import { opsFromCommits, untracked } from '../src/trailers.mjs'
 import { validate } from '../src/validate.mjs'
 
@@ -18,6 +19,7 @@ const GRAPH = '.ariadne/graph.jsonl'
 const THREAD = '.ariadne/thread.json'
 const LOG = '.ariadne/log.jsonl'
 const RECENT_COMMITS = 20
+const VIEW_PORT = 8790
 const USAGE = `uso: ariadne <comando>
   summary · show <id> · why <id> · log [n] · validate [file]
   plan <parent> "<passo>"… --ref "<approvazione>"
@@ -26,13 +28,13 @@ const USAGE = `uso: ariadne <comando>
   fill <id> [--what|--why|--detail|--title …] [--commit|--file|--message …]
   defer <id> <milestone> · replace <id> <successore>
   move <id> <parent> [--after a,b] · undo · confirm <id>|--all · reject <id> [successore]
-  apply <ops.json> · sync [--hook]
+  apply <ops.json> · sync [--hook] · view [--port n]
   --by user: l'azione viene da te (move, undo, confirm e reject lo sono sempre)`
 
 const FLAGS = {
   ref: { type: 'string' }, what: { type: 'string' }, why: { type: 'string' }, detail: { type: 'string' },
   title: { type: 'string' }, under: { type: 'string' }, after: { type: 'string' }, reentry: { type: 'string' },
-  id: { type: 'string' }, start: { type: 'boolean' }, done: { type: 'boolean' }, all: { type: 'boolean' }, hook: { type: 'boolean' },
+  id: { type: 'string' }, start: { type: 'boolean' }, done: { type: 'boolean' }, all: { type: 'boolean' }, hook: { type: 'boolean' }, port: { type: 'string' },
   by: { type: 'string' }, commit: { type: 'string', multiple: true }, file: { type: 'string', multiple: true },
   message: { type: 'string', multiple: true },
 }
@@ -204,6 +206,15 @@ else if (command === 'show' && args[0]) inspect(show, args[0])
 else if (command === 'why' && args[0]) inspect(why, args[0])
 else if (command === 'validate') check(args[0])
 else if (command === 'log') showLog(Number(args[0]) || undefined)
+else if (command === 'view') {
+  const port = Number(values.port) || VIEW_PORT
+  serve(process.cwd(), port)
+    .on('listening', () => console.log(`ariadne: viewer su http://127.0.0.1:${port}/ (Ctrl+C per chiudere)`))
+    .on('error', error => {
+      console.error(`ariadne: viewer non avviato (${error.code === 'EADDRINUSE' ? `porta ${port} occupata, prova --port` : error.message})`)
+      process.exitCode = 1
+    })
+}
 else if (command === 'apply' && args[0]) run(JSON.parse(readFileSync(args[0], 'utf8')), values.by === 'user' ? 'user' : 'agent')
 else {
   const op = operation(command, args, values)
