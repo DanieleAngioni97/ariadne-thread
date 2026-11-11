@@ -42,3 +42,7 @@
 {"at":"2026-11-11T18:57Z","id":"m3.2.5","op":"close","text":"chiuso m3.2.5 Stati del viewer: stati del viewer (nessun grafo, grafo non valido, milestone e lista vuote) e riassunto per l'agente","proof":[{"type":"commit","ref":"4ca6cfc"}]}
 {"at":"2026-11-11T18:57Z","id":"m3.2","op":"close","text":"chiuso m3.2 Viewer che legge .ariadne/: Il viewer legge .ariadne/ (ariadne view): nodi e pannello della specifica, raggruppamento per profilo, ricarica senza F5 con layout stabile, stati vuoto e non valido","proof":[{"type":"file","ref":"viewer/app.js"},{"type":"file","ref":"docs/implementazione.md"}]}
 {"at":"2026-11-11T18:57Z","id":"m3.1","op":"start","text":"iniziato m3.1 Banda nella mod"}
+{"at":"2026-11-11T19:41Z","id":"m3.1","op":"plan","text":"piano per Banda nella mod: Banda calcolata dal grafo → Mod in mod/ con la banda → Banda provata nella sessione"}
+{"at":"2026-11-11T19:41Z","id":"m3.1.1","op":"start","text":"iniziato m3.1.1 Banda calcolata dal grafo"}
+{"at":"2026-11-11T19:43Z","id":"m3.1.1","op":"close","text":"chiuso m3.1.1 Banda calcolata dal grafo: ariadne band calcola le righe della banda dal grafo (dove, contesto, coda, esito)","proof":[{"type":"commit","ref":"2f6d573"}]}
+{"at":"2026-11-11T19:43Z","id":"m3.1.2","op":"start","text":"iniziato m3.1.2 Mod in mod/ con la banda"}
