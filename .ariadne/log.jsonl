@@ -38,3 +38,7 @@
 {"at":"2026-11-11T18:51Z","id":"m3.2.4","op":"start","text":"iniziato m3.2.4 Ricarica e layout stabile"}
 {"at":"2026-11-11T18:54Z","id":"m3.2.4","op":"close","text":"chiuso m3.2.4 Ricarica e layout stabile: ricarica ogni 2 s senza F5; aggiungere un nodo sposta solo i successivi, di lato (misurato: 8 su 60)","proof":[{"type":"commit","ref":"6b451fb"}]}
 {"at":"2026-11-11T18:54Z","id":"m3.2.5","op":"start","text":"iniziato m3.2.5 Stati del viewer"}
+{"at":"2026-11-11T18:55Z","id":"m3.2.5","op":"fill","text":"prova per m3.2.5: commit 2c1aa64","proof":[{"type":"commit","ref":"2c1aa64"}]}
+{"at":"2026-11-11T18:57Z","id":"m3.2.5","op":"close","text":"chiuso m3.2.5 Stati del viewer: stati del viewer (nessun grafo, grafo non valido, milestone e lista vuote) e riassunto per l'agente","proof":[{"type":"commit","ref":"4ca6cfc"}]}
+{"at":"2026-11-11T18:57Z","id":"m3.2","op":"close","text":"chiuso m3.2 Viewer che legge .ariadne/: Il viewer legge .ariadne/ (ariadne view): nodi e pannello della specifica, raggruppamento per profilo, ricarica senza F5 con layout stabile, stati vuoto e non valido","proof":[{"type":"file","ref":"viewer/app.js"},{"type":"file","ref":"docs/implementazione.md"}]}
+{"at":"2026-11-11T18:57Z","id":"m3.1","op":"start","text":"iniziato m3.1 Banda nella mod"}
