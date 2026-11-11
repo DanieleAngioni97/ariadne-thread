@@ -35,10 +35,13 @@ export function why(nodes, id) {
   const g = makeGraph(nodes)
   const n = g.get(id)
   if (!n) return null
-  const deps = g.dependencies(id).map(g.get)
+  // A point (a clue, a deduction) comes from its premises; the wider context is one command away.
+  const premises = n.kind === 'point' ? g.dependencies(id, { own: true }) : []
+  const deps = (premises.length ? premises : g.dependencies(id)).map(g.get)
   const shown = deps.slice(0, MAX_WHY)
   const out = [line(n), 'Viene da:', ...shown.map(d => `- ${line(d)}${d.status === 'done' ? '' : ` [${d.status}]`}`)]
   if (shown.length === 0) out.push('- (inizio del ramo)')
   if (deps.length > shown.length) out.push(`(+${deps.length - shown.length}: ariadne why ${shown.at(-1).id})`)
+  if (premises.length && n.parent) out.push(`(contesto: ariadne why ${n.parent})`)
   return out.join('\n')
 }

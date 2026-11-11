@@ -65,3 +65,8 @@ test('why marks unfinished dependencies and stops at ten', () => {
 test('why returns null for an unknown node', () => {
   assert.equal(why(NODES, 'ghost'), null)
 })
+
+test('why on a deduction shows its premises only, and points to the wider context', () => {
+  const nodes = [...NODES, n('k1', { parent: 'c', kind: 'point' }), n('k2', { parent: 'c', kind: 'point', after: ['k1'] })]
+  assert.equal(why(nodes, 'k2'), 'k2 Title k2: k2 result.\nViene da:\n- k1 Title k1: k1 result.\n(contesto: ariadne why c)')
+})

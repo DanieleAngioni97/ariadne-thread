@@ -40,10 +40,11 @@ export function makeGraph(nodes) {
   /**
    * What `id` comes from: `after` and `continues` backwards from it and its containers, nearest first.
    * Nearest = fewest hops from a milestone to an earlier one, then fewest steps: the chain inside the
-   * own milestone comes before the results of earlier milestones.
+   * own milestone comes before the results of earlier milestones. A detour also comes from the node it
+   * left (`reentry`). With `own`, only the node's own chain: no containers (premises of a deduction).
    */
-  function dependencies(id) {
-    const start = [id, ...containers(id)]
+  function dependencies(id, { own = false } = {}) {
+    const start = own ? [id] : [id, ...containers(id)]
     const done = new Set()
     const out = []
     const queue = start.map(at => ({ at, hops: 0, steps: 0 }))
@@ -55,7 +56,8 @@ export function makeGraph(nodes) {
       const n = get(at)
       const milestone = n.kind === 'milestone'
       if (!milestone && !start.includes(at)) out.push(at)
-      const edges = [...(n.after ?? []), ...(n.continues ? [n.continues] : [])].map(t => [t, milestone ? 1 : 0])
+      const left = n.kind === 'detour' && n.reentry ? [n.reentry] : []
+      const edges = [...(n.after ?? []), ...(n.continues ? [n.continues] : []), ...left].map(t => [t, milestone ? 1 : 0])
       if (milestone && !start.includes(at)) edges.push(...ends(at).map(t => [t, 0]))
       for (const [target, hop] of edges) {
         if (!done.has(target) && byId.has(target)) queue.push({ at: target, hops: hops + hop, steps: steps + 1 })

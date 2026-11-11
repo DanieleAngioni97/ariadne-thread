@@ -90,3 +90,13 @@ test('next climbs a level when the container has nothing ready', () => {
 test('next is null when the plan is over', () => {
   assert.equal(makeGraph(NODES.slice(0, 3)).next('b'), null)
 })
+
+test('a detour comes from the node it left, and from what that node comes from', () => {
+  const g = makeGraph([...NODES, n('y', { parent: 'm2', kind: 'detour', status: 'active', reentry: 'd' })])
+  assert.deepEqual(g.dependencies('y').slice(0, 2), ['d', 'c'])
+})
+
+test('own dependencies stop at the node: no containers', () => {
+  const g = makeGraph([...NODES, n('k1', { parent: 'd', kind: 'point' }), n('k2', { parent: 'd', kind: 'point', after: ['k1'] })])
+  assert.deepEqual(g.dependencies('k2', { own: true }), ['k1'])
+})
