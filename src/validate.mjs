@@ -1,10 +1,6 @@
-#!/usr/bin/env node
 // Validates an ariadne thread: one JSON node per line (.ariadne/graph.jsonl).
 // Rules come from docs/ux/allineamento/brief.md (R2, R3, R5, R15, R16, R22) and concetti.md (schema).
-// Usage: node src/validate.mjs [.ariadne/graph.jsonl]  → exit 1 and one line per error.
-
-import { readFileSync } from 'node:fs'
-import { pathToFileURL } from 'node:url'
+// Pure, for the CLI (`ariadne validate`) and the viewer alike.
 
 const KINDS = ['milestone', 'step', 'list', 'point', 'detour']
 const STATUSES = ['todo', 'active', 'done', 'deferred', 'replaced']
@@ -93,12 +89,4 @@ function findCycle(nodes, ids) {
     if (found) return found
   }
   return null
-}
-
-if (import.meta.url === pathToFileURL(process.argv[1]).href) {
-  const file = process.argv[2] ?? '.ariadne/graph.jsonl'
-  const errors = validate(readFileSync(file, 'utf8'))
-  for (const e of errors) console.error(`${file}:${e.line} ${e.id ?? ''} [${e.rule}] ${e.message}`)
-  if (errors.length > 0) process.exit(1)
-  console.log(`${file}: ok`)
 }
