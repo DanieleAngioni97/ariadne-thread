@@ -32,3 +32,5 @@
 {"at":"2026-11-11T18:45Z","id":"m3.2.1","op":"fill","text":"prova per m3.2.1: commit 24e0695","proof":[{"type":"commit","ref":"24e0695"}]}
 {"at":"2026-11-11T18:45Z","id":"m3.2.1","op":"close","text":"chiuso m3.2.1 Viewer sul grafo vero: il viewer disegna il grafo vero di .ariadne/, servito da ariadne view","proof":[{"type":"commit","ref":"ca49944"}]}
 {"at":"2026-11-11T18:45Z","id":"m3.2.2","op":"start","text":"iniziato m3.2.2 Nodi e pannello della specifica"}
+{"at":"2026-11-11T18:48Z","id":"m3.2.2","op":"close","text":"chiuso m3.2.2 Nodi e pannello della specifica: nodi con simbolo, id, etichetta e incerto; pannello con le righe della specifica","proof":[{"type":"commit","ref":"2c55b71"}]}
+{"at":"2026-11-11T18:48Z","id":"m3.2.3","op":"start","text":"iniziato m3.2.3 Raggruppamento per profilo"}
