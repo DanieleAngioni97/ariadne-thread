@@ -22,7 +22,7 @@ const USAGE = `uso: ariadne <comando>
   summary · show <id> · why <id> · log [n] · validate [file]
   plan <parent> "<passo>"… --ref "<approvazione>"
   start <id> · close <id> "<esito>" (--commit sha | --file path | --message testo)
-  add <kind> "<titolo>" --what "…" [--under id] [--after a,b] [--why …] [--detail …] [--reentry id] [--id x] [--start]
+  add <kind> "<titolo>" --what "…" [--under id] [--after a,b] [--why …] [--detail …] [--reentry id] [--id x] [--start | --done]
   fill <id> [--what|--why|--detail|--title …] [--commit|--file|--message …]
   defer <id> <milestone> · replace <id> <successore>
   move <id> <parent> [--after a,b] · undo · confirm <id>|--all · reject <id> [successore]
@@ -32,7 +32,7 @@ const USAGE = `uso: ariadne <comando>
 const FLAGS = {
   ref: { type: 'string' }, what: { type: 'string' }, why: { type: 'string' }, detail: { type: 'string' },
   title: { type: 'string' }, under: { type: 'string' }, after: { type: 'string' }, reentry: { type: 'string' },
-  id: { type: 'string' }, start: { type: 'boolean' }, all: { type: 'boolean' }, hook: { type: 'boolean' },
+  id: { type: 'string' }, start: { type: 'boolean' }, done: { type: 'boolean' }, all: { type: 'boolean' }, hook: { type: 'boolean' },
   by: { type: 'string' }, commit: { type: 'string', multiple: true }, file: { type: 'string', multiple: true },
   message: { type: 'string', multiple: true },
 }
@@ -159,7 +159,7 @@ function operation(command, args, v) {
     case 'fill': return a ? { op: 'fill', id: a, what: v.what, why: v.why, detail: v.detail, title: v.title, proof: proofs(v) } : null
     case 'add': {
       if (!a || !b) return null
-      const node = { kind: a, title: b, what: v.what, why: v.why, detail: v.detail, after: list(v.after), reentry: v.reentry, id: v.id, start: v.start }
+      const node = { kind: a, title: b, what: v.what, why: v.why, detail: v.detail, after: list(v.after), reentry: v.reentry, id: v.id, start: v.start, status: v.done ? 'done' : undefined }
       if (v.under) node.parent = v.under
       const p = proofs(v)
       if (p.length) node.proof = p

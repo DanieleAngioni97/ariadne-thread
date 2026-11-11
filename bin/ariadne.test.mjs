@@ -141,3 +141,10 @@ test('sync outside a git repository does nothing and exits 0', () => {
   assert.equal(r.status, 0)
   assert.equal(r.stdout, '')
 })
+
+test('add --done records an established fact, such as a clue', () => {
+  const dir = project({ graph: PLAN, thread: { current: 'a' } })
+  const r = run(dir, 'add', 'point', 'Clue', '--what', 'The cache is cold.', '--done', '--file', 'log.txt')
+  assert.equal(r.status, 0, r.stderr)
+  assert.equal(nodesOf(dir).at(-1).status, 'done')
+})
