@@ -1,24 +1,22 @@
 # State — ariadne-thread
-Aggiornato: 2026-11-08 · Branch: `spike/viewer` (da `docs/m0-research`) · PR: nessuna (scelta dell'utente)
+Aggiornato: 2026-11-11 · Branch: `spike/viewer` (da `docs/m0-research`) · PR: nessuna (scelta dell'utente)
 
 ## Milestone
-M2 — Progettazione. Scelto il concetto A «Piano prima» (`docs/ux/allineamento/concetti.md`):
-prototipo provato dall'utente ("mi torna"), revisione leggera fatta (`valutazione.md`). Dogfooding
-avviato: la fonte del processo è `.ariadne/graph.jsonl`, nodo corrente `m2.10` (`.ariadne/thread.json`).
+M3 — Implementazione. Design chiuso (`docs/ux/allineamento/specifica.md`, M2 chiusa). Piano di M3 approvato:
+`docs/implementazione.md` (sede del codice `src/` + `bin/`, ordine dei passi) e nodi in `.ariadne/graph.jsonl`;
+nodo corrente `m3.5` (`.ariadne/thread.json`). Il grafo è l'indice: nodi snelli che puntano ai documenti.
 
 ## Next
-1. `plan-before-coding` per l'implementazione da `docs/ux/allineamento/specifica.md` (approvata,
-   `m2.10` chiuso): CLI `ariadne` e riassunto R7 per primi, poi scribe, banda nella mod, viewer che
-   legge `.ariadne/`. Il piano va proposto come nodi `todo` da approvare (concetto A); decidere dove
-   finiscono `m2.4`–`m2.6`. Quando il riassunto R7 esiste, togliere STATE.md e LOG.md (R8, R24).
+1. `m3.5` (`docs/implementazione.md` § m3.5), su un branch nuovo: `git mv` del validatore in `src/`, poi
+   test prima del codice per `src/graph.mjs`, `src/summary.mjs`, `src/inspect.mjs`, `bin/ariadne.mjs`;
+   infine `.claude/settings.json` con gli hook (comando a parte). Chiudere con la prova dopo `/clear`.
 2. A ogni checkpoint aggiornare `.ariadne/graph.jsonl` (e `thread.json`), poi
    `node scripts/ariadne/validate.mjs` → `ok`. Un passo nuovo fuori piano si propone all'utente prima
-   di aggiungerlo (concetto A).
+   di aggiungerlo (concetto A). STATE.md e LOG.md vanno via alla fine di `m3.6`.
 
 ## Decisioni aperte e rischi
 - Non pubblicati: 5 commit su `docs/m0-research` e 36 su `spike/viewer`. Push solo su richiesta.
 - `docs/process-trace.md` è congelato: non aggiornarlo. 25 nodi storici su 38 sono `uncertain`.
-- Lo scribe (R21) è ancora solo un'idea: prompt, modello e operazioni vanno nella specifica.
 - Il viewer dello spike legge ancora `spikes/viewer/data.js`, non `.ariadne/`.
 - API delle mod in EARLY ACCESS; verifiche aperte in `m2.7` (/btw, canale browser → mod, scroll).
 - Prototipi da far provare all'utente: pulsanti con nomi e una riga di guida, mai tasti nascosti;
