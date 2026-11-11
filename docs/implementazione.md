@@ -160,6 +160,17 @@ Riparte da `spikes/viewer/` (base visiva approvata in `m1.2`), spostato in `view
   si spostano e alcuni cambiano ordine. Scelto il layout deterministico; l'interattiva scartata.
 
 ## m3.1 — banda nella mod
-Da dettagliare all'avvio. Porta la mod da `~/.claude/dev-mods/…/ariadne-spike/` in `mod/`; righe e
-testi in specifica § Banda. Prima: le verifiche aperte di `m2.7` (`/btw`, canale browser → mod, scroll).
+Porta la mod da `~/.claude/dev-mods/…/ariadne-spike/` in `mod/`; righe e testi in specifica § Banda.
 API in early access.
+
+- **Logica fuori dalla mod:** `src/band.mjs` calcola le righe (dove, contesto, coda, esito o errore)
+  con le larghezze della specifica; `ariadne band [--review i]` le stampa in JSON e non fallisce mai.
+- **Mod (`mod/`, nome `ariadne`):** legge `ariadne band` all'avvio, dopo ogni chiamata Bash e a fine
+  turno, e disegna le righe. Pulsanti: `run` → `node bin/ariadne.mjs …` (confirm, reject), `say` →
+  la frase in chat («torna»), `open` → il viewer su `?select=<id>` (`open` di macOS), `review` → una
+  voce alla volta. Fuori da un progetto ariadne la banda resta quella del motore.
+- **Sviluppo:** la cartella delle mod della sessione contiene un link a `mod/`; il motore segue il
+  link. Verifica: `claude plugin test mod` · `claude plugin validate mod`.
+- **Verifiche di `m2.7`:** il canale browser → mod non serve (il viewer non ha controlli di modifica,
+  R10; «Mostra nel grafo» va da mod a browser con l'URL). `/btw` e lo scorrimento della chat
+  riguardano `m3.4` e le deviazioni, non la banda.
