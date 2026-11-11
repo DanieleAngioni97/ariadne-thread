@@ -34,3 +34,9 @@ test('untracked counts the latest commits without a Thread line', () => {
   assert.equal(untracked([{ sha: 'c', thread: [] }, { sha: 'b', thread: [] }, { sha: 'a', thread: ['m3.6'] }, { sha: 'z', thread: [] }]), 2)
   assert.equal(untracked([{ sha: 'a', thread: ['m3.6'] }]), 0)
 })
+
+test('a commit that only saves .ariadne/ is neutral: no proof, not counted as untracked', () => {
+  const graphOnly = { sha: 'ggg', thread: ['m3.6'], files: ['.ariadne/graph.jsonl', '.ariadne/log.jsonl'] }
+  assert.deepEqual(opsFromCommits([graphOnly], new Set()), [])
+  assert.equal(untracked([{ sha: 'g2', thread: [], files: ['.ariadne/graph.jsonl'] }, { sha: 'a', thread: ['m3.6'], files: ['src/a.mjs'] }]), 0)
+})

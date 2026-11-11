@@ -148,3 +148,17 @@ test('add --done records an established fact, such as a clue', () => {
   assert.equal(r.status, 0, r.stderr)
   assert.equal(nodesOf(dir).at(-1).status, 'done')
 })
+
+test('saving the graph after a commit leaves the tree clean', () => {
+  const dir = project({ graph: PLAN, thread: { current: 'a' } })
+  git(dir, 'init', '-q')
+  writeFileSync(join(dir, 'a.txt'), 'a')
+  git(dir, 'add', '.')
+  git(dir, 'commit', '-q', '-m', 'feat: a\n\nThread: a')
+  run(dir, 'sync')
+  git(dir, 'add', '.ariadne')
+  git(dir, 'commit', '-q', '-m', 'chore: save the graph\n\nThread: a')
+  assert.equal(run(dir, 'sync').stdout, '')
+  assert.equal(git(dir, 'status', '--porcelain').stdout, '')
+  assert.doesNotMatch(run(dir, 'summary').stdout, /commit senza Thread/)
+})

@@ -50,13 +50,14 @@ function usage() {
   process.exit(2)
 }
 
-/** The latest commits, newest first, with the values of their `Thread:` lines; null outside git. */
+/** The latest commits, newest first, with their `Thread:` values and changed files; null outside git. */
 function commits() {
-  const r = spawnSync('git', ['log', `-n${RECENT_COMMITS}`, '--format=%h%x1f%(trailers:key=Thread,valueonly,separator=%x1e)%x1d'], { encoding: 'utf8' })
+  const format = '--format=%x1d%h%x1f%(trailers:key=Thread,valueonly,separator=%x1e)%x1f'
+  const r = spawnSync('git', ['log', `-n${RECENT_COMMITS}`, '--name-only', format], { encoding: 'utf8' })
   if (r.status !== 0) return null
-  return r.stdout.split('\x1d').map(s => s.trim()).filter(Boolean).map(entry => {
-    const [sha, values = ''] = entry.split('\x1f')
-    return { sha, thread: values.split('\x1e').map(v => v.trim()).filter(Boolean) }
+  return r.stdout.split('\x1d').filter(Boolean).map(entry => {
+    const [sha, values = '', names = ''] = entry.split('\x1f')
+    return { sha, thread: values.split('\x1e').map(v => v.trim()).filter(Boolean), files: names.split('\n').filter(Boolean) }
   })
 }
 
