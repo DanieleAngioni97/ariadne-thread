@@ -6,7 +6,7 @@ export type Action =
   | { label: string; open: string }
   | { label: string; review: number }
 
-export type WhereRow = { kind: 'where'; before: string; current: string; after: string }
+export type WhereRow = { kind: 'where'; before: string; current: string; after: string; actions: Action[] }
 export type TextRow = { kind: 'context' | 'queue' | 'error' | 'outcome' | 'empty'; text: string; actions: Action[] }
 export type Row = WhereRow | TextRow
 

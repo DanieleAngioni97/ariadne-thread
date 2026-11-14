@@ -89,6 +89,7 @@ export function band({ text, thread, log = [], review = null }) {
       before: path.map(n => `${cut(n.title, WIDTH.container)} › `).join(''),
       current: cut(current.title, WIDTH.current),
       after: next ? ` · prossimo: ${cut(g.get(next).title, WIDTH.next)}` : '',
+      actions: [{ label: 'Apri il grafo', run: ['open'] }],
     })
   }
   for (const r of [ctx, queue(nodes, review), last(text, log)]) if (r) rows.push(r)

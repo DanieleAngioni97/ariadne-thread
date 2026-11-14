@@ -25,7 +25,7 @@ async function refresh($: EngineInterface): Promise<void> {
   await update($, band, () => next)
 }
 
-async function act($: EngineInterface, viewer: number, action: Action): Promise<void> {
+async function act($: EngineInterface, action: Action): Promise<void> {
   if ('run' in action) {
     await $.process.run([...CLI, ...action.run])
     // Confirming or rejecting an item keeps the place: the next item takes it, or the count comes back.
@@ -33,7 +33,8 @@ async function act($: EngineInterface, viewer: number, action: Action): Promise<
   } else if ('say' in action) {
     await $.prompt.submit({ text: action.say, asUser: true })
   } else if ('open' in action) {
-    await $.process.run(['open', `http://127.0.0.1:${viewer}/?select=${encodeURIComponent(action.open)}`])
+    // Through the CLI, which starts the viewer when it is off.
+    await $.process.run([...CLI, 'open', action.open])
   } else {
     await update($, review, () => action.review)
   }
@@ -64,23 +65,27 @@ export const register: Register = on => {
     if (!current || current.rows.length === 0 || e.props.hasSurvey) return next(e)
     const { Box, Button, Text } = $.ui.resolve(e)
 
+    const buttons = (row: Row) =>
+      row.actions.map(action => <Button key={`${row.kind}-${action.label}`} label={action.label} onPress={() => act($, action)} />)
+
     const line = (row: Row) => {
       if (row.kind === 'where') {
         return (
-          <Text wrap="truncate-end">
-            {row.before}
-            <Text bold>{row.current}</Text>
-            <Text dimColor>{row.after}</Text>
-          </Text>
+          <Box flexDirection="row" columnGap={1}>
+            <Text wrap="truncate-end">
+              {row.before}
+              <Text bold>{row.current}</Text>
+              <Text dimColor>{row.after}</Text>
+            </Text>
+            {buttons(row)}
+          </Box>
         )
       }
       const color = row.kind === 'outcome' ? 'success' : row.kind === 'error' ? 'warning' : row.kind === 'queue' ? 'suggestion' : undefined
       return (
         <Box flexDirection="row" columnGap={1}>
           <Text color={color} wrap="truncate-end">{row.text}</Text>
-          {row.actions.map(action => (
-            <Button key={`${row.kind}-${action.label}`} label={action.label} onPress={() => act($, current.viewer, action)} />
-          ))}
+          {buttons(row)}
         </Box>
       )
     }

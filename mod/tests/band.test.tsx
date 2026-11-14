@@ -1,14 +1,14 @@
 import { describe, expect, test } from 'claude-code/testing'
 import type { On } from 'claude-code'
 
-import type { Band } from '../types'
+import type { Band, WhereRow } from '../types'
 
 const BAND = {
   component: 'AbovePrompt',
   props: { hasSurvey: false, isWorking: false, maxRows: 4, bodyColumns: 100, scroll: { offset: 0, bodyRows: 4 }, view: {} },
 } as const
 
-const where = { kind: 'where', before: 'M3 Implementazione › ', current: 'Banda nella mod', after: '' } as const
+const where: WhereRow = { kind: 'where', before: 'M3 Implementazione › ', current: 'Banda nella mod', after: '', actions: [{ label: 'Apri il grafo', run: ['open'] }] }
 const count: Band = {
   viewer: 8790,
   rows: [
@@ -67,6 +67,9 @@ describe('ariadne band', () => {
 
       await band.press({ key: 'context-Chiudi e torna' })
       expect(prompts).toEqual(['torna'])
+
+      await band.press({ key: 'where-Apri il grafo' })
+      expect(calls).toContainEqual(['node', 'bin/ariadne.mjs', 'open'])
       await band.unmount()
     })
 
@@ -82,7 +85,7 @@ describe('ariadne band', () => {
       await band.press({ key: 'queue-Approva' })
       expect(calls).toContainEqual(['node', 'bin/ariadne.mjs', 'confirm', 'x1'])
       await band.press({ key: 'queue-Mostra nel grafo' })
-      expect(calls).toContainEqual(['open', 'http://127.0.0.1:8790/?select=x1'])
+      expect(calls).toContainEqual(['node', 'bin/ariadne.mjs', 'open', 'x1'])
       await band.unmount()
     })
   }

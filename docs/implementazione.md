@@ -167,8 +167,9 @@ API in early access.
   con le larghezze della specifica; `ariadne band [--review i]` le stampa in JSON e non fallisce mai.
 - **Mod (`mod/`, nome `ariadne`):** legge `ariadne band` all'avvio, dopo ogni chiamata Bash e a fine
   turno, e disegna le righe. Pulsanti: `run` → `node bin/ariadne.mjs …` (confirm, reject), `say` →
-  la frase in chat («torna»), `open` → il viewer su `?select=<id>` (`open` di macOS), `review` → una
-  voce alla volta. Fuori da un progetto ariadne la banda resta quella del motore.
+  la frase in chat («torna»), `open` → `ariadne open <id>`, che avvia il viewer se è spento e apre
+  `?select=<id>` (sulla riga «dove», «Apri il grafo» senza id), `review` → una voce alla volta.
+  Fuori da un progetto ariadne la banda resta quella del motore.
 - **Sviluppo:** la cartella delle mod della sessione contiene un link a `mod/`; il motore segue il
   link. Verifica: `claude plugin test mod` · `claude plugin validate mod`.
 - **Verifiche di `m2.7`:** il canale browser → mod non serve (il viewer non ha controlli di modifica,

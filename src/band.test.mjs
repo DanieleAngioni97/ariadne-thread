@@ -15,7 +15,7 @@ const plan = [
 
 test('the where row: containers, the current node in bold, then what comes next', () => {
   const [where] = band({ text: graph(plan), thread: { current: 's2' }, log: [] })
-  assert.deepEqual(where, { kind: 'where', before: 'M1 Implementazione › ', current: 'Banda nella mod', after: ' · prossimo: Segnalibri' })
+  assert.deepEqual(where, { kind: 'where', before: 'M1 Implementazione › ', current: 'Banda nella mod', after: ' · prossimo: Segnalibri', actions: [{ label: 'Apri il grafo', run: ['open'] }] })
 })
 
 test('titles are cut with … at the spec widths', () => {

@@ -129,7 +129,9 @@ L'unico modo di cambiare il grafo. Ogni operazione nomina i nodi per id.
 Righe in quest'ordine, al più quattro, una riga ciascuna; titoli tagliati con «…» (dove 44 caratteri
 per il nodo corrente, 24 per i contenitori, 30 per «prossimo», 38 altrove). Il viewer ha i titoli interi.
 
-1. **Dove** (sempre): `<milestone> › <passo> › **<nodo corrente>** · prossimo: <titolo>`.
+1. **Dove** (sempre): `<milestone> › <passo> › **<nodo corrente>** · prossimo: <titolo> [Apri il grafo]`.
+   «Apri il grafo» apre il viewer nel browser e lo avvia se è spento (`ariadne open`); anche
+   «Mostra nel grafo» passa da lì.
    I nodi `list` non compaiono nel percorso. «prossimo» si omette quando c'è la riga 2 (valutazione
    § Correzioni 7) o quando il piano non ha un prossimo passo.
 2. **Contesto** (una sola, in quest'ordine di precedenza):
@@ -251,7 +253,7 @@ Regole:
 | Dove | Testo esatto |
 |---|---|
 | Banda, coda | `⏎ Mentre eri via: c da confermare, d da decidere` |
-| Banda, pulsanti | `Approva` · `Rifiuta` · `Mostra nel grafo` · `Torna alla lista` · `Chiudi e torna` · `Approva tutto` · `Rivedi una per una` · `Fallo` · `Lascia così` |
+| Banda, pulsanti | `Apri il grafo` · `Approva` · `Rifiuta` · `Mostra nel grafo` · `Torna alla lista` · `Chiudi e torna` · `Approva tutto` · `Rivedi una per una` · `Fallo` · `Lascia così` |
 | Chat, indice | `↩ <lista> (k/n decisi)` … `Scrivi il numero del punto da discutere.` |
 | Chat, numero sbagliato | `Numero fuori lista.` |
 | Chat, «torna» fuori contesto | `Non sei dentro una lista: niente a cui tornare.` |
