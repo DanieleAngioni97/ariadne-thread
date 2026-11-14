@@ -1,8 +1,9 @@
 # Piano di valutazione
 
-*Versione 3 del 2026-11-14 (passo `m4.3.5`), riscritta dopo due revisioni indipendenti
-(`revisione-1.md`, `revisione-2.md`). Si giudica contro `principi.md` (P1–P28); le fonti sono in
-`ricerca-metodi.md` (M) e `ricerca-usabilita.md` (U). Le §§ 13–14 rispondono a ogni rilievo.*
+*Versione 3.1 del 2026-11-14 (passo `m4.3.5`), riscritta dopo due revisioni indipendenti
+(`revisione-1.md`, `revisione-2.md`) e corretta dopo un'ultima rilettura. Si giudica contro `principi.md`
+(P1–P28); le fonti sono in `ricerca-metodi.md` (M) e `ricerca-usabilita.md` (U). Le §§ 13–14 rispondono a
+ogni rilievo.*
 
 ## 1. Cos'è ariadne, in breve
 
@@ -250,6 +251,15 @@ claude -p "<domanda>" --model <id> --effort medium --restricted
   solo prompt.
 - Il runner cerca il testo iniettato negli eventi `hook_response` del flusso; una prova senza lo scarta e la riporta.
 
+**Prompt della prova.** Lo stesso modello di testo nelle due condizioni, committato con la pre-registrazione:
+la domanda, poi «Nell'ultima riga scrivi `RISPOSTA: <risposta>`; se il progetto non contiene la risposta,
+scrivi `RISPOSTA: non risulta`».
+
+- Per Perché la risposta è la lettera dell'opzione; per Continua non si chiede la riga, conta l'azione.
+- *Fuori formato:* manca la riga `RISPOSTA:`, oppure ce n'è più d'una con contenuti diversi.
+- Per Astensione è giusta solo `non risulta`; le altre formule («nessuna traccia») vanno nell'elenco delle
+  risposte non riconosciute (§ 5).
+
 **CLAUDE.md di condizione:** lo stesso modello di testo, con lunghezza entro ±10%, che dice solo dove sta il
 filo e come consultarlo.
 
@@ -323,7 +333,8 @@ cluster: lo scenario.
 **E1b, il filo che resta indietro (secondaria).** Nella realtà STATE.md si aggiorna a fine milestone e il grafo
 a ogni commit, ma anche il grafo perde dei commit (quelli senza `Thread:`).
 
-- Stessi scenari di test e stesse domande, 3 ripetizioni.
+- Stessi scenari di test e stesse domande, 3 ripetizioni sulla formulazione originale, con il modello
+  principale di E1: 16 × 7 × 2 × 3 = 672 prove, metà di E1 (§ 11).
 - STATE.md riflette solo l'ultimo handoff di fine milestone, come prescrive la skill.
 - Il grafo perde una quota di chiusure pari al tasso di commit senza `Thread:` misurato in E4, scelte con un
   seed fisso.
@@ -370,14 +381,21 @@ checkpoint.
 
 **Regola di decisione (pre-registrata).** Si adotta la variante più economica in cui:
 
-- il limite inferiore dell'intervallo di Wilson al 95% del recall complessivo (160 errori) è ≥ 0,6;
+- il limite inferiore dell'intervallo al 95% del recall complessivo (160 errori) è ≥ 0,6;
 - il limite superiore dei falsi allarmi su F0 (40 checkpoint) è ≤ 0,15.
 
-*Verifica di raggiungibilità (rilievo B2):*
+*Come si calcolano i limiti:* i 160 errori stanno 4 per checkpoint e i checkpoint stanno in pochi scenari,
+quindi non sono indipendenti. I limiti della regola si calcolano con un bootstrap per scenario, che ricampiona
+insieme gli scenari con i loro checkpoint ed errori. Wilson, che assume l'indipendenza, si usa solo per la
+verifica di raggiungibilità qui sotto.
 
-- con 40 F0 e 0 falsi allarmi il limite superiore è ~0,09, con 2 è ~0,17. La soglia richiede quindi al più 1
-  falso allarme su 40;
-- con 160 errori serve un recall osservato di circa il 68%.
+*Verifica di raggiungibilità (rilievo B2), nel caso ottimistico di prove indipendenti:*
+
+- con 40 F0 e 0 falsi allarmi il limite superiore è ~0,09, con 1 è ~0,13, con 2 è ~0,17. La soglia richiede
+  quindi al più 1 falso allarme su 40;
+- con 160 errori serve un recall osservato di circa il 68%;
+- con la correlazione dentro lo scenario l'intervallo si allarga e serve un recall osservato più alto: il
+  pilota stima di quanto, e il valore si scrive prima di toccare il set di test.
 
 Le soglie sono **di prodotto**, scelte da noi e senza fonte:
 
@@ -423,11 +441,18 @@ alternati.
 **Misure:** tempo e correttezza per compito (chiave scritta prima); SEQ e Mental Demand per compito; UX-Lite
 alla fine di ogni condizione.
 
-**Analisi:** grafici per compito e test di randomizzazione per trattamenti alternati, uno per compito sul tempo.
+**Analisi:**
+
+- *Primaria:* un solo test di randomizzazione per trattamenti alternati sul tempo totale della sessione
+  (somma dei 4 compiti), a una coda a favore di ariadne.
+- *Secondarie:* grafici e test di randomizzazione per compito, riportati senza dichiarare significatività.
+- *Perché un solo test:* con 4 sessioni per condizione il p minimo è 0,014. Holm sui 4 compiti chiederebbe
+  p < 0,0125 al primo, cioè un risultato impossibile; 4 test senza correzione, invece, salverebbero l'ipotesi per
+  caso circa una volta su cinque.
 
 **Criteri di falsificazione, scritti ora (P28, rilievo m7).** L'ipotesi «ariadne aiuta la persona» è smentita se:
 
-- in nessuno dei 4 compiti il test di randomizzazione sul tempo dà p < 0,05 a favore di ariadne, **oppure**
+- il test primario sul tempo totale dà p ≥ 0,05, **oppure**
 - in un qualsiasi compito la correttezza con ariadne è più bassa di almeno 2 prove su 4.
 
 **Senza utenti, come ipotesi (P16):**
@@ -492,11 +517,19 @@ mappatura dichiarata.
 
 | Voce | Stima di partenza | Quando si decide |
 |---|---|---|
-| Pilota E1 ed E2 | ~10–20 $ | si parte dopo l'approvazione di questo piano |
-| E1, modello principale | Opus ~120–240 $; Sonnet circa un terzo (stima da verificare nel pilota) | dopo il pilota, con l'approvazione dell'utente |
+| Pilota E1 ed E2 | ~25–45 $ | si parte dopo l'approvazione di questo piano |
+| E1, modello principale | Opus ~120–240 $; Sonnet circa un terzo | dopo il pilota, con l'approvazione dell'utente |
+| E1b, modello principale | Opus ~60–120 $; Sonnet circa un terzo | idem |
 | E1, Haiku | ~5 $ | idem |
 | E2, A e B | ~15 $; C ~60–120 $ solo se serve | idem |
 | D4, giudici | ~2 $ | idem |
+
+Il calcolo, da verificare nel pilota, parte da ~0,09–0,18 $ per prova su Opus:
+
+- E1: 16 scenari × 7 domande × 2 condizioni × 6 ripetizioni (3 originali + 3 parafrasi) = 1.344 prove;
+- E1b: 16 × 7 × 2 × 3 = 672 prove;
+- pilota E1: 6 × 7 × 2 × 2 ripetizioni × 2 modelli = 336 prove, 168 su Opus (~15–30 $) e 168 su Sonnet
+  (~5–10 $); il pilota di E2 su Haiku aggiunge pochi dollari.
 
 I prezzi sono di listino; con l'abbonamento si consuma quota, non denaro.
 
@@ -519,6 +552,8 @@ I prezzi sono di listino; con l'abbonamento si consuma quota, non denaro.
 | E1 | lunghezza | pochi scenari per lunghezza: andamento descrittivo, non un test |
 | E2 | errori sintetici | casi naturali; test contro i marcatori |
 | E2 | trascrizioni sintetiche | stesse trascrizioni per tutte le varianti; limite dichiarato |
+| E2 | errori non indipendenti | limiti della regola con bootstrap per scenario |
+| E3 | test multipli sui compiti | un solo test primario sul tempo totale; compiti secondari |
 | E3 | autore = utente | dichiarato; scenari non letti; criteri di falsificazione; gruppo esterno in seguito |
 | E3 | apprendimento tra sessioni | ordine casuale; scenari sempre nuovi ma equivalenti |
 | E4 | un solo progetto, un solo utente | solo descrittivo; nessuna conclusione causale |
@@ -577,7 +612,8 @@ I prezzi sono di listino; con l'abbonamento si consuma quota, non denaro.
 1. In ariadne: la variabile `ARIADNE_NOW` per l'orologio finto, con il suo test.
 2. Creare `ariadne-eval`; scrivere generatore, runner, grader e test dei grader.
 3. E4 sull'archivio congelato: tassi e N, committati.
-4. Scrivere i 6 scenari di sviluppo; generare; scrivere e correggere *prima*.
+4. Scrivere i 6 scenari di sviluppo; generare; scrivere e correggere *prima*; generare le trascrizioni dei
+   checkpoint di sviluppo per il pilota di E2.
 5. Pilota E1 ed E2, con la prova canarino; potenza per simulazione; modifiche datate a questo piano.
 6. Bozzare e congelare gli scenari di test, quelli di E3 e le trascrizioni di E2; controllo del revisore su 4 scenari.
 7. **Commit di pre-registrazione:** piano, hash delle fixture, sha di ariadne, modelli, testi delle condizioni,
