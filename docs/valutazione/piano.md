@@ -26,6 +26,12 @@ le due domande principali, D1 (l'agente) e D2 (la persona); il resto si riduce o
 *Cosa si perde, da dichiarare nel rapporto:* il test vede solo differenze grandi; il risultato vale per
 Sonnet, non per Opus che l'utente usa; l'affidabilità si misura con 2 ripetizioni.
 
+*Domande dopo il primo pilota (2026-11-14):* «Aggiornamento» faceva 0 su 5 in entrambe le condizioni con
+risposte giuste, perché la decisione si descrive invece di nominarne il titolo, e Haiku rispondeva in italiano.
+Aggiornamento e Rinvio diventano a scelta tra 5 opzioni come Perché (la risposta giusta, la decisione
+sostituita o i passi e le milestone più simili, «non risulta»; il caso dà il 20%); il prompt chiede l'inglese.
+Dove resta aperta. Il primo pilota resta in `eval/runs/pilot-haiku/` come registro.
+
 *Ripresa:* il runner salta le prove già registrate, così una prova interrotta dal limite d'uso si rifà nella
 finestra successiva invece di andare persa.
 

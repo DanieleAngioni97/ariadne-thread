@@ -206,13 +206,36 @@ function finished(scenario) {
   return [...new Set(keys)]
 }
 
+const milestoneKeys = scenario => scenario.events.filter(e => e.type === 'milestone').map(e => e.key)
+
+/** The other steps, the most alike in words first; ties keep the scenario order. */
+function similar(scenario, titles, key) {
+  const words = k => new Set(normalize(titles[k]).split(' '))
+  const mine = words(key)
+  const milestones = new Set(milestoneKeys(scenario))
+  return Object.keys(titles).filter(k => k !== key && !milestones.has(k))
+    .map((k, i) => ({ k, i, shared: [...words(k)].filter(w => mine.has(w)).length }))
+    .sort((x, y) => y.shared - x.shared || x.i - y.i).map(x => x.k)
+}
+
 function answer(q, scenario, titles) {
   switch (q.cat) {
     case 'where': return { answer: { current: titles[q.current], next: titles[q.next] } }
     case 'why': return { answer: q.reason, options: [q.reason, ...q.distractors, NONE] }
     case 'proof': return { answer: q.file }
-    case 'deferred': return { answer: { step: titles[q.step], milestone: titles[q.milestone] } }
-    case 'update': return { answer: titles[q.step] }
+    case 'deferred': {
+      const others = milestoneKeys(scenario).filter(k => k !== q.milestone)
+      const [a, b, c] = similar(scenario, titles, q.step)
+      const right = `${titles[q.step]} → ${titles[q.milestone]}`
+      const wrong = [`${titles[a]} → ${titles[q.milestone]}`, `${titles[q.step]} → ${titles[others[0] ?? q.milestone]}`, `${titles[b]} → ${titles[others[0] ?? q.milestone]}`, `${titles[c]} → ${titles[q.milestone]}`]
+      return { answer: right, options: [right, ...[...new Set(wrong)].filter(o => o !== right).slice(0, 3), NONE] }
+    }
+    case 'update': {
+      // The replaced decision is the natural wrong answer; the other two are the closest titles.
+      const replaced = scenario.events.filter(e => e.type === 'replace' && e.by === q.step).map(e => e.step)
+      const wrong = [...replaced, ...similar(scenario, titles, q.step).filter(k => !replaced.includes(k))].slice(0, 3)
+      return { answer: titles[q.step], options: [titles[q.step], ...wrong.map(k => titles[k]), NONE] }
+    }
     case 'abstain': return { answer: NONE }
     case 'continue': {
       const sorted = files => [...new Set(files)].sort()

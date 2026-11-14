@@ -39,16 +39,15 @@ const cleanPath = p => p.trim().replace(/^[`'"]+|[`'".,;]+$/g, '').replace(/^\.\
 export function grade(q, output, ctx) {
   const value = extract(output)
   if (value === null) return result('format', null)
+  // Why, deferred and update are multiple choice: the letter of the option in the shuffled order.
+  if (q.options) {
+    const letter = /^\(?([a-z])(?:\)?|[).:]\s.*)$/i.exec(value)?.[1]
+    const option = letter ? ctx.order[letter.toLowerCase().charCodeAt(0) - 97] : undefined
+    if (option === undefined) return result('unrecognized', value)
+    return result(option === q.answer ? 'correct' : 'wrong', value)
+  }
   switch (q.cat) {
     case 'where': return gradeTitles(value, [q.answer.current, q.answer.next], ctx)
-    case 'deferred': return gradeTitles(value, [q.answer.step, q.answer.milestone], ctx)
-    case 'update': return gradeTitles(value, [q.answer], ctx)
-    case 'why': {
-      const letter = /^\(?([a-z])(?:\)?|[).:]\s.*)$/i.exec(value)?.[1]
-      const option = letter ? ctx.order[letter.toLowerCase().charCodeAt(0) - 97] : undefined
-      if (option === undefined) return result('unrecognized', value)
-      return result(option === q.answer ? 'correct' : 'wrong', value)
-    }
     case 'proof': {
       const path = cleanPath(value)
       if (path === q.answer) return result('correct', value)

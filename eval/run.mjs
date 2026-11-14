@@ -14,7 +14,7 @@ const CONDITIONS = ['prima', 'ariadne']
 const ARIADNE = 'node .ariadne/cli/bin/ariadne.mjs'
 const TIMEOUT_MS = 300_000
 const RETRIES = 2
-const FORMAT = 'In the last line write `RISPOSTA: <answer>`; if the project does not contain the answer, write `RISPOSTA: non risulta`.'
+const FORMAT = 'Answer in English. In the last line write `RISPOSTA: <answer>`; if the project does not contain the answer, write `RISPOSTA: non risulta`.'
 
 /** A seeded generator in [0, 1) (mulberry32): the same seed, the same order. */
 export function rng(seed) {
@@ -38,7 +38,7 @@ function shuffle(items, random) {
 
 export function promptFor(q, order) {
   if (q.cat === 'continue') return q.text
-  const options = q.cat === 'why' ? `\n\n${order.map((o, i) => `${String.fromCharCode(65 + i)}) ${o}`).join('\n')}\n\nAnswer with the letter.` : ''
+  const options = q.options ? `\n\n${order.map((o, i) => `${String.fromCharCode(65 + i)}) ${o}`).join('\n')}\n\nAnswer with the letter.` : ''
   return `${q.text}${options}\n\n${FORMAT}`
 }
 
@@ -64,7 +64,7 @@ function outside(events, copy) {
       for (const key of ['file_path', 'path', 'command', 'notebook_path']) {
         const value = c.input?.[key]
         if (typeof value !== 'string') continue
-        for (const [p] of value.matchAll(/(?<![\w.~-])\/[^\s'"`;|&)]+/g)) if (p !== '/dev/null' && !roots.some(r => p === r || p.startsWith(`${r}/`))) found.push(p)
+        for (const [p] of value.matchAll(/(?<![\w.~-])\/(?!\/)[^\s'"`;|&)]+/g)) if (p !== '/dev/null' && !roots.some(r => p === r || p.startsWith(`${r}/`))) found.push(p)
         if (/(^|[\s/'"])\.\.(\/|$|\s)|(^|\s)~/.test(value)) found.push(value)
       }
     }
@@ -95,7 +95,7 @@ export function trial({ fixture, condition, q, key, model, seed, bin = 'claude',
     const edits = q.cat === 'continue'
     const settings = join(injectDir, 'settings.json')
     writeFileSync(settings, JSON.stringify(settingsFor(condition, { injectDir, edits })))
-    const order = q.cat === 'why' ? shuffle(q.options, rng(seed)) : undefined
+    const order = q.options ? shuffle(q.options, rng(seed)) : undefined
     const text = phrasing === 'paraphrase' ? { ...q, text: q.paraphrase } : q
     const instructions = readFileSync(new URL(`./conditions/${condition}.md`, import.meta.url), 'utf8')
     const args = ['-p', promptFor(text, order), '--model', model, '--effort', 'medium', '--restricted',

@@ -25,6 +25,8 @@ test('the prompt asks for one RISPOSTA line; why lists the shuffled options by l
   const order = ['X', 'Y', 'Z', 'W', 'non risulta']
   assert.match(promptFor(q('why'), order), /\nA\) X\nB\) Y\nC\) Z\nD\) W\nE\) non risulta\n/)
   assert.doesNotMatch(promptFor(q('continue')), /RISPOSTA/)
+  assert.match(promptFor(q('update'), q('update').options), /\nA\) /)
+  assert.match(promptFor(q('proof')), /Answer in English/)
 })
 
 test('settings give each condition its hooks and allowed commands; Continua adds the edit tools', () => {
@@ -49,6 +51,7 @@ test('a trial grades the answer, checks the injection and counts tokens as if no
 
 test('a trial is excluded when a tool reaches outside the copy, or when nothing was injected', () => {
   assert.equal(at('ariadne', q('proof'), { FAKE_TOOL_PATH: '/etc/hosts', FAKE_ANSWER: 'RISPOSTA: src/lexer/index.js' }).excluded, 'outside')
+  assert.equal(at('ariadne', q('proof'), { FAKE_TOOL_PATH: '//', FAKE_ANSWER: 'RISPOSTA: src/lexer/index.js' }).excluded, null)
   const bare = generate(scenario, mkdtempSync(join(tmpdir(), 'ariadne-eval-')))
   rmSync(join(bare.dir, 'prima', 'STATE.md'), { force: true })
   const r = trial({ fixture: bare.dir, condition: 'prima', q: q('proof'), key: bare.key, model: 'fake', bin: FAKE, env: { FAKE_ANSWER: 'RISPOSTA: src/lexer/index.js' }, seed: 1 })

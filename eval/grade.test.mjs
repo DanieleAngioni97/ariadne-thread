@@ -24,16 +24,16 @@ test('a title answer is right when it names every expected title and no other on
   assert.equal(grade(where, 'RISPOSTA: sono su "M1 Parser › Validate invoice totals"; il prossimo è "m1.7 Report malformed invoices"', ctx).status, 'correct')
   assert.equal(grade(where, 'RISPOSTA: Validate invoice totals', ctx).status, 'wrong')
   assert.equal(grade(where, 'RISPOSTA: Validate invoice totals, Report malformed invoices, Export to the ledger', ctx).status, 'wrong')
-  const update = { cat: 'update', answer: 'Cache for parsed suppliers' }
-  assert.equal(grade(update, 'RISPOSTA: the in-memory supplier cache', ctx).status, 'correct')
-  assert.equal(grade(update, 'RISPOSTA: suppliers are kept in RAM', ctx).status, 'unrecognized')
-  assert.equal(grade(update, 'no answer line', ctx).status, 'format')
+  assert.equal(grade(where, 'RISPOSTA: suppliers are kept in RAM', ctx).status, 'unrecognized')
+  assert.equal(grade(where, 'no answer line', ctx).status, 'format')
 })
 
-test('deferred needs the step and its milestone', () => {
-  const q = { cat: 'deferred', answer: { step: 'Export to the ledger', milestone: 'M2 Reports' } }
-  assert.equal(grade(q, 'RISPOSTA: Export to the ledger → M2 Reports', ctx).status, 'correct')
-  assert.equal(grade(q, 'RISPOSTA: Export to the ledger', ctx).status, 'wrong')
+test('deferred and update are graded on the letter, like why', () => {
+  const order = ['A → M2', 'Export to the ledger → M2 Reports', 'non risulta', 'B → M2', 'C → M3']
+  const q = { cat: 'deferred', answer: 'Export to the ledger → M2 Reports', options: order }
+  assert.equal(grade(q, 'RISPOSTA: B', { ...ctx, order }).status, 'correct')
+  const u = { cat: 'update', answer: 'Cache for parsed suppliers', options: ['Cache for parsed suppliers', 'Store suppliers in SQLite', 'x', 'y', 'non risulta'] }
+  assert.equal(grade(u, 'RISPOSTA: B', { ...ctx, order: u.options }).status, 'wrong')
 })
 
 test('why is graded on the letter of the shuffled option', () => {
