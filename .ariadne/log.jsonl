@@ -74,3 +74,8 @@
 {"at":"2026-11-14T11:20Z","id":null,"op":"relink","text":"ricollegato scripts/ariadne/validate.mjs → src/validate.mjs in 1 nodi (m2.8)"}
 {"at":"2026-11-14T11:20Z","id":"m3.11","op":"fill","text":"prova per m3.11: file docs/implementazione.md#m3.11","proof":[{"type":"file","ref":"docs/implementazione.md#m3.11"}]}
 {"at":"2026-11-14T11:20Z","id":"m3.11","op":"close","text":"chiuso m3.11 Nodi agganciati a file e sezioni: prove file con sezione, validate segnala i riferimenti rotti, relink, avviso in close","proof":[{"type":"commit","ref":"1afef7a"}]}
+{"at":"2026-11-14T11:24Z","id":"m3","op":"close","text":"chiuso m3 M3 Implementazione: M3 chiusa: CLI e riassunto, operazioni e diario, viewer, banda nella mod con Apri il grafo, nodi agganciati a file e sezioni; scribe, osservatore e segnalibri rinviati","proof":[{"type":"file","ref":"docs/implementazione.md"}]}
+{"at":"2026-11-14T11:24Z","id":"m4","op":"start","text":"iniziato m4 M4 Revisione e feedback"}
+{"at":"2026-11-14T11:24Z","id":"m4","op":"start","text":"iniziato m4 M4 Revisione e feedback"}
+{"at":"2026-11-14T11:24Z","id":"m4.1","op":"start","text":"iniziato m4.1 Misurare il costo dell’osservatore"}
+{"at":"2026-11-14T11:25Z","id":"m3.4","op":"confirm","text":"confermato m3.4 Segnalibri nella chat"}
