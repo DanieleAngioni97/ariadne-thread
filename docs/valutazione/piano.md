@@ -136,8 +136,10 @@ e contiene conversazioni private. Serve solo per E4 e per i casi naturali di E2,
 
 **Due set (P22):**
 
-- *Sviluppo:* 6 scenari scritti dall'autore (2 brevi da ~15 eventi, 2 medi da ~40, 2 lunghi da ~120), per
-  costruire l'harness e per il pilota.
+- *Sviluppo:* 6 scenari (2 brevi da ~15 eventi, 2 medi da ~40, 2 lunghi da ~120), per costruire l'harness e
+  per il pilota. *Cambiato il 2026-11-14 (passo `m4.4.4`):* il primo (`dev-01`) è scritto a mano; gli altri 5 li
+  bozza un modello dal brief degli scenari di test (`eval/brief.md`), con il controllo di coerenza. Così il
+  pilota stima soffitto e varianza su scenari fatti come quelli di test, e il brief si collauda prima che conti.
 - *Test:* almeno 16 scenari (il numero finale lo decide la simulazione di potenza, § 6), **bozzati da un
   modello** da un brief fisso con requisiti di struttura. Il generatore ne controlla la coerenza da solo;
   l'autore legge solo il rapporto di coerenza, non le domande. Un revisore con contesto pulito ne controlla 4
