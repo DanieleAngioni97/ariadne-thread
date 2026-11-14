@@ -67,10 +67,11 @@ function commitsUpTo(sha) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const root = fileURLToPath(new URL('..', import.meta.url))
   process.chdir(root)
-  const sha = git('rev-parse', process.argv[2] ?? 'HEAD').trim()
+  const ref = process.argv[2] ?? 'HEAD'
+  const sha = git('rev-parse', ref).trim()
   mkdirSync('eval/out', { recursive: true })
   const bundle = `eval/out/archive-${sha.slice(0, 12)}.bundle`
-  git('bundle', 'create', '-q', bundle, sha)
+  git('bundle', 'create', '-q', bundle, ref)
 
   const commits = commitsUpTo(sha)
   const touches = c => c.files.includes('STATE.md')
