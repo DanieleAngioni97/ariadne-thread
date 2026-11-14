@@ -2,7 +2,7 @@
 // A stand-in for `claude -p` in the runner tests: runs the hooks from --settings like the real CLI and
 // prints a stream-json flow. FAKE_ANSWER is the reply, FAKE_TOOL_PATH a Read it pretends to make,
 // FAKE_WRITE a file it creates in the working folder, FAKE_HANDOFF writes STATE.md and LOG.md, FAKE_CHECK is
-// the reply to a fact-check prompt.
+// the reply to a fact-check prompt, FAKE_ERROR an API error such as the usage limit.
 
 import { execSync } from 'node:child_process'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
@@ -27,4 +27,5 @@ if (process.env.FAKE_HANDOFF && !checking) {
 }
 const answer = checking ? (process.env.FAKE_CHECK ?? '{"changes":[]}') : process.env.FAKE_ANSWER ?? 'done'
 emit({ type: 'assistant', message: { content: [{ type: 'text', text: answer }] } })
+if (process.env.FAKE_ERROR) { emit({ type: 'result', subtype: 'error', is_error: true, result: 'usage limit' }); process.exit(1) }
 emit({ type: 'result', subtype: 'success', is_error: false, result: answer, total_cost_usd: 0.01, usage: { input_tokens: 10, cache_creation_input_tokens: 100, cache_read_input_tokens: 1000, output_tokens: 5 } })

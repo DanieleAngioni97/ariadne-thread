@@ -144,26 +144,47 @@ export function schedule({ questions, reps, seed }) {
   return shuffle(all, random).map(t => ({ ...t, seed: Math.floor(random() * 2 ** 31) }))
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const { positionals: [fixture], values } = parseArgs({ allowPositionals: true, options: {
-    model: { type: 'string' }, reps: { type: 'string', default: '3' }, seed: { type: 'string', default: '1' },
-    out: { type: 'string' }, paraphrase: { type: 'boolean' }, bin: { type: 'string', default: 'claude' },
-  } })
-  if (!fixture || !values.model || !values.out) {
-    console.error('uso: node eval/run.mjs <cartella della fixture> --model <id> --out <cartella> [--reps 3] [--seed 1] [--paraphrase]')
-    process.exit(2)
-  }
-  const dir = resolve(fixture)
+/**
+ * Runs every scheduled trial of one fixture into `out/results.jsonl`, skipping the ids already there. An API
+ * error, such as the usage limit, stops the run without recording the trial: the next run does it again.
+ */
+export function runFixture({ dir, model, reps, seed, out, phrasing = 'original', bin = 'claude', env = {}, log = () => {} }) {
   const questions = JSON.parse(readFileSync(join(dir, 'questions.json'), 'utf8'))
   const key = JSON.parse(readFileSync(join(dir, 'key.json'), 'utf8'))
-  const out = resolve(values.out)
+  const name = dir.split('/').at(-1)
   mkdirSync(out, { recursive: true })
-  const phrasing = values.paraphrase ? 'paraphrase' : 'original'
-  const trials = schedule({ questions, reps: Number(values.reps), seed: Number(values.seed) })
-  for (const [n, t] of trials.entries()) {
-    const id = `${phrasing}-q${t.index}-${t.condition}-r${t.rep}`
-    const r = trial({ fixture: dir, condition: t.condition, q: questions[t.index], key, model: values.model, seed: t.seed, bin: values.bin, raw: join(out, 'raw'), id, phrasing })
-    appendFileSync(join(out, 'results.jsonl'), JSON.stringify({ fixture: dir.split('/').at(-1), index: t.index, rep: t.rep, ...r }) + '\n')
-    console.log(`${n + 1}/${trials.length} ${id}: ${r.status}${r.excluded ? ` (escluso: ${r.excluded})` : ''}`)
+  const file = join(out, 'results.jsonl')
+  const recorded = new Set(existsSync(file) ? readFileSync(file, 'utf8').split('\n').filter(Boolean).map(l => JSON.parse(l).id) : [])
+  const trials = schedule({ questions, reps, seed })
+  let done = 0
+  let skipped = 0
+  for (const t of trials) {
+    const id = `${name}-${phrasing}-q${t.index}-${t.condition}-r${t.rep}`
+    if (recorded.has(id)) { skipped++; continue }
+    const r = trial({ fixture: dir, condition: t.condition, q: questions[t.index], key, model, seed: t.seed, bin, env, raw: join(out, 'raw'), id, phrasing })
+    if (r.excluded === 'error') {
+      log(`${id}: errore dell'API (limite d'uso?), mi fermo; rilancia lo stesso comando per riprendere`)
+      return { done, skipped, stopped: true }
+    }
+    appendFileSync(file, JSON.stringify({ fixture: name, index: t.index, rep: t.rep, ...r }) + '\n')
+    done++
+    log(`${done + skipped}/${trials.length} ${id}: ${r.status}${r.excluded ? ` (escluso: ${r.excluded})` : ''}`)
+  }
+  return { done, skipped, stopped: false }
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const { positionals: fixtures, values } = parseArgs({ allowPositionals: true, options: {
+    model: { type: 'string' }, reps: { type: 'string', default: '2' }, seed: { type: 'string', default: '1' },
+    out: { type: 'string' }, paraphrase: { type: 'boolean' }, bin: { type: 'string', default: 'claude' },
+  } })
+  if (fixtures.length === 0 || !values.model || !values.out) {
+    console.error('uso: node eval/run.mjs <cartelle delle fixture>… --model <id> --out <cartella> [--reps 2] [--seed 1] [--paraphrase]')
+    process.exit(2)
+  }
+  for (const fixture of fixtures) {
+    const r = runFixture({ dir: resolve(fixture), model: values.model, reps: Number(values.reps), seed: Number(values.seed), out: resolve(values.out),
+      phrasing: values.paraphrase ? 'paraphrase' : 'original', bin: values.bin, log: line => console.log(line) })
+    if (r.stopped) process.exit(3)
   }
 }

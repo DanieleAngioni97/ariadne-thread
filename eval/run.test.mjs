@@ -6,7 +6,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 import { generate } from './generate.mjs'
-import { promptFor, schedule, settingsFor, trial } from './run.mjs'
+import { promptFor, runFixture, schedule, settingsFor, trial } from './run.mjs'
 
 const scenario = JSON.parse(readFileSync(new URL('./scenarios/dev/dev-01.json', import.meta.url), 'utf8'))
 const FAKE = fileURLToPath(new URL('./fakes/fake-claude.mjs', import.meta.url))
@@ -67,4 +67,18 @@ test('the schedule is seeded, interleaves conditions and covers every question, 
   assert.equal(a.length, fixture.questions.length * 2 * 3)
   assert.equal(new Set(a.map(t => `${t.index}/${t.condition}/${t.rep}`)).size, a.length)
   assert.ok(a.slice(0, 6).some(t => t.condition === 'prima') && a.slice(0, 6).some(t => t.condition === 'ariadne'))
+})
+
+test('a run stops at an API error without recording it, and the next run skips what is already recorded', () => {
+  const out = mkdtempSync(join(tmpdir(), 'ariadne-runs-'))
+  const opts = { dir: fixture.dir, model: 'fake', reps: 1, seed: 2, out, bin: FAKE }
+  const stopped = runFixture({ ...opts, env: { FAKE_ERROR: '1' } })
+  assert.deepEqual([stopped.done, stopped.stopped], [0, true])
+  const first = runFixture({ ...opts, env: { FAKE_ANSWER: 'RISPOSTA: non risulta' } })
+  assert.deepEqual([first.done, first.skipped, first.stopped], [fixture.questions.length * 2, 0, false])
+  const again = runFixture({ ...opts, env: { FAKE_ANSWER: 'RISPOSTA: non risulta' } })
+  assert.deepEqual([again.done, again.skipped], [0, fixture.questions.length * 2])
+  const lines = readFileSync(join(out, 'results.jsonl'), 'utf8').trimEnd().split('\n').map(l => JSON.parse(l))
+  assert.equal(new Set(lines.map(l => l.id)).size, lines.length)
+  assert.ok(lines.every(l => l.id.startsWith(`${fixture.dir.split('/').at(-1)}-original-`)))
 })

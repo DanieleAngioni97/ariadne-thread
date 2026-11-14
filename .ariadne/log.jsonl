@@ -126,3 +126,5 @@
 {"at":"2026-11-14T14:25Z","id":"m4.4.4","op":"fill","text":"prova per m4.4.4: commit 5e6ef82","proof":[{"type":"commit","ref":"5e6ef82"}]}
 {"at":"2026-11-14T14:32Z","id":"m4.4.4","op":"close","text":"chiuso m4.4.4 Scenari di sviluppo e condizione prima: 6 scenari di sviluppo (1 a mano, 5 dal brief) e prima congelata: 13 handoff, 1 correzione di fatto, ~3,5 $","proof":[{"type":"commit","ref":"bf83d03"}]}
 {"at":"2026-11-14T14:32Z","id":"m4.4.5","op":"start","text":"iniziato m4.4.5 Pilota di E1 ed E2"}
+{"at":"2026-11-14T14:41Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit b2eab83","proof":[{"type":"commit","ref":"b2eab83"}]}
+{"at":"2026-11-14T14:41Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 6fc444b","proof":[{"type":"commit","ref":"6fc444b"}]}
