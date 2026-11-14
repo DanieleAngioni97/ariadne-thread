@@ -3,7 +3,41 @@
 *Versione 3.1 del 2026-11-14 (passo `m4.3.5`), riscritta dopo due revisioni indipendenti
 (`revisione-1.md`, `revisione-2.md`) e corretta dopo un'ultima rilettura. Si giudica contro `principi.md`
 (P1–P28); le fonti sono in `ricerca-metodi.md` (M) e `ricerca-usabilita.md` (U). Le §§ 13–14 rispondono a
-ogni rilievo.*
+ogni rilievo.* *Versione 3.2 del 2026-11-14 (passo `m4.4.5`): la § 0 riduce la valutazione per stare nella
+quota di un account base, e prevale sulle sezioni che seguono.*
+
+## 0. Versione snella (2026-11-14, approvata dall'utente)
+
+L'utente ha un account base: il vincolo è la quota per finestra di 5 ore, non il costo in dollari. Restano
+le due domande principali, D1 (l'agente) e D2 (la persona); il resto si riduce o si toglie.
+
+| Parte | Versione 3.1 | Versione snella |
+|---|---|---|
+| Pilota (§ 6) | 6 scenari × 2 ripetizioni, Opus e Sonnet: 336 prove | 6 scenari × 1 ripetizione, solo Haiku: 84 prove |
+| E1, soggetto (§ 6) | Opus se il budget lo consente, altrimenti Sonnet; Haiku secondario | solo Sonnet 5.5; Opus su 2–3 scenari come controllo, se resta quota |
+| E1, dimensione (§ 6) | ≥ 16 scenari, 3 ripetizioni + 3 sulla parafrasi | 12 scenari, 2 ripetizioni; parafrasi con 1 ripetizione su 4 scenari |
+| H1b (§ 6) | pass^3 | pass^2 |
+| Potenza (§ 6) | simulazione per 15 punti con potenza 0,8 | la simulazione del pilota dichiara la differenza rilevabile con 12 scenari e 2 ripetizioni (attesa: 20–25 punti) |
+| E1b (§ 6) | 672 prove | tolto; il ritardo del filo è un limite dichiarato |
+| E2 (§ 7) | varianti A, B, C su 40 checkpoint | solo la variante A (Haiku sull'ultimo turno), 20 checkpoint, 2 ripetizioni; la regola di decisione resta, con i limiti ricalcolati su 20 F0 e 80 errori |
+| D4 (§ 10) | criteri e schede da un modello terzo, due giudici esterni, 50 etichette | confronto descrittivo sui criteri di § 10, senza giudici né etichette |
+| E3 (§ 8) | 8 sessioni | invariato |
+
+*Cosa si perde, da dichiarare nel rapporto:* il test vede solo differenze grandi; il risultato vale per
+Sonnet, non per Opus che l'utente usa; l'affidabilità si misura con 2 ripetizioni.
+
+*Ripresa:* il runner salta le prove già registrate, così una prova interrotta dal limite d'uso si rifà nella
+finestra successiva invece di andare persa.
+
+**Procedura snella** (sostituisce la § 15 dal punto 5):
+
+1. Pilota di E1 su Haiku; potenza per simulazione; quota per prova e numero di finestre per E1.
+2. Scenari di test (12) e di E3 (8) bozzati dal brief e congelati; trascrizioni di E2 (20 checkpoint).
+3. Commit di pre-registrazione.
+4. E1 su Sonnet ed E2 variante A; analisi.
+5. E3 con l'utente; KLM; valutazione euristica.
+6. D4 descrittivo.
+7. `rapporto.md`.
 
 ## 1. Cos'è ariadne, in breve
 
