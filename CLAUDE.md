@@ -30,7 +30,7 @@ prompt. Non frenare il lavoro per il grafo: traccia quello che fai già.
 
 ## Note operative
 
-- Verifica: `node --test src/ bin/ scripts/ariadne/ viewer/` · `node bin/ariadne.mjs validate`.
+- Verifica: `node --test src/ bin/ scripts/ariadne/ viewer/ eval/` · `node bin/ariadne.mjs validate`.
 - `docs/process-trace.md` è congelato; 25 nodi storici sono `uncertain`.
 - Prototipi da far provare: pulsanti con nomi e una riga di guida; aprirli con `open`, non con
   `human-review`. UI del grafo nel terminale bocciata. Viewer: `ariadne view`, porta 8790

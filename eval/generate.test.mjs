@@ -1,0 +1,64 @@
+import { test } from 'node:test'
+import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
+import { mkdtempSync, readFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
+import { generate } from './generate.mjs'
+
+const scenario = JSON.parse(readFileSync(new URL('./scenarios/dev/dev-01.json', import.meta.url), 'utf8'))
+const git = (dir, ...args) => spawnSync('git', ['-C', dir, ...args], { encoding: 'utf8' }).stdout
+const fresh = () => generate(scenario, mkdtempSync(join(tmpdir(), 'ariadne-eval-')))
+
+test('the same scenario gives the same bytes on every run', () => {
+  const [a, b] = [fresh(), fresh()]
+  for (const condition of ['ariadne', 'prima']) {
+    assert.equal(git(join(a.dir, condition), 'rev-parse', 'HEAD'), git(join(b.dir, condition), 'rev-parse', 'HEAD'))
+  }
+  for (const file of ['graph.jsonl', 'thread.json', 'log.jsonl']) {
+    assert.equal(readFileSync(join(a.dir, 'ariadne', '.ariadne', file), 'utf8'), readFileSync(join(b.dir, 'ariadne', '.ariadne', file), 'utf8'))
+  }
+  assert.deepEqual(a.questions, b.questions)
+})
+
+test('both conditions hold the same project files and the same commits, but for the Thread lines', () => {
+  const { dir } = fresh()
+  const [ariadne, prima] = [join(dir, 'ariadne'), join(dir, 'prima')]
+  assert.equal(git(ariadne, 'ls-tree', '-r', 'HEAD'), git(prima, 'ls-tree', '-r', 'HEAD'))
+  const messages = d => git(d, 'log', '--format=%B%x00').replace(/\n\nThread: .*\n/g, '\n')
+  assert.equal(messages(ariadne), messages(prima))
+  assert.match(git(ariadne, 'log', '--format=%B'), /^Thread: m1\.1 done: feat\(lexer\): split invoice lines into tokens$/m)
+  assert.equal(git(ariadne, 'status', '--porcelain'), '')
+  assert.equal(git(prima, 'status', '--porcelain'), '')
+})
+
+test('the graph is valid, the thread sits on the open step, and the node holds only what the commits hold', () => {
+  const { dir } = fresh()
+  const cwd = join(dir, 'ariadne')
+  const cli = spawnSync(process.execPath, ['.ariadne/cli/bin/ariadne.mjs', 'validate'], { cwd, encoding: 'utf8' })
+  assert.equal(cli.status, 0, cli.stderr)
+  const nodes = readFileSync(join(cwd, '.ariadne', 'graph.jsonl'), 'utf8').trimEnd().split('\n').map(l => JSON.parse(l))
+  const byTitle = t => nodes.find(n => n.title === t)
+  assert.equal(JSON.parse(readFileSync(join(cwd, '.ariadne', 'thread.json'), 'utf8')).current, byTitle('Validate invoice totals').id)
+  assert.equal(byTitle('Lexer for invoice lines').why, 'Suppliers mix tabs and spaces, so the lexer splits on both.')
+  const cache = byTitle('Cache for parsed suppliers')
+  assert.equal(cache.why, undefined)
+  assert.ok(cache.proof.some(p => p.type === 'file' && p.ref === 'docs/decisions.md#Cache'))
+  assert.equal(byTitle('Store suppliers in SQLite').status, 'replaced')
+  assert.equal(byTitle('Export to the ledger').status, 'deferred')
+})
+
+test('questions carry neutral answers: titles and paths, never node ids or shas', () => {
+  const { questions } = fresh()
+  const by = cat => questions.find(q => q.cat === cat)
+  assert.deepEqual(by('where').answer, { current: 'Validate invoice totals', next: 'Report malformed invoices' })
+  assert.deepEqual(by('why').options.sort(), ['A run parses at most 200 suppliers.', 'Lines must add up to the total.', 'Suppliers mix tabs and spaces.', 'The test job timed out on cold caches.', 'non risulta'].sort())
+  assert.equal(by('why').answer, 'A run parses at most 200 suppliers.')
+  assert.equal(by('proof').answer, 'src/lexer/index.js')
+  assert.deepEqual(by('deferred').answer, { step: 'Export to the ledger', milestone: 'M2 Reports' })
+  assert.equal(by('update').answer, 'Cache for parsed suppliers')
+  assert.equal(by('abstain').answer, 'non risulta')
+  assert.deepEqual(by('continue').answer, { dir: 'src/totals/', allowed: ['src/totals/index.js'], forbidden: ['.github/workflows/test.yml', 'docs/decisions.md', 'src/cache/index.js', 'src/lexer/index.js'] })
+  assert.doesNotMatch(JSON.stringify(questions), /\bm\d+\.\d+\b|\b[0-9a-f]{7,40}\b/)
+})

@@ -1,0 +1,192 @@
+{
+  "id": "dev-01",
+  "project": "invoice-parser",
+  "start": "2026-03-02T09:00:00Z",
+  "events": [
+    {
+      "type": "commit",
+      "message": "chore: scaffold the project",
+      "files": {
+        "README.md": "# invoice-parser\n\nParses supplier invoices into ledger rows.\n",
+        "package.json": "{ \"name\": \"invoice-parser\", \"type\": \"module\" }\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m1",
+      "title": "M1 Parser",
+      "what": "Invoices become ledger rows."
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-02: approved the parser plan",
+      "steps": [
+        {
+          "key": "lexer",
+          "title": "Lexer for invoice lines"
+        },
+        {
+          "key": "sqlite",
+          "title": "Store suppliers in SQLite"
+        },
+        {
+          "key": "cache",
+          "title": "Cache for parsed suppliers"
+        },
+        {
+          "key": "export",
+          "title": "Export to the ledger"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "lexer"
+    },
+    {
+      "type": "commit",
+      "step": "lexer",
+      "done": true,
+      "message": "feat(lexer): split invoice lines into tokens",
+      "why": "Suppliers mix tabs and spaces, so the lexer splits on both.",
+      "files": {
+        "src/lexer/index.js": "export const tokens = line => line.split(/[\\t ]+/)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: record the cache decision",
+      "files": {
+        "docs/decisions.md": "# Decisions\n\n## Cache\n\nThe supplier cache lives in memory: a run parses at most 200 suppliers.\n"
+      }
+    },
+    {
+      "type": "replace",
+      "step": "sqlite",
+      "by": "cache"
+    },
+    {
+      "type": "start",
+      "step": "cache"
+    },
+    {
+      "type": "commit",
+      "step": "cache",
+      "done": true,
+      "message": "feat(cache): keep parsed suppliers in memory",
+      "proofFiles": [
+        "docs/decisions.md#Cache"
+      ],
+      "files": {
+        "src/cache/index.js": "const seen = new Map()\nexport const cached = (id, make) => seen.get(id) ?? seen.set(id, make()).get(id)\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "ci",
+      "title": "Fix the flaky CI job",
+      "what": "The test job timed out on cold caches."
+    },
+    {
+      "type": "commit",
+      "step": "ci",
+      "done": true,
+      "message": "ci: raise the test timeout to 60 s",
+      "files": {
+        ".github/workflows/test.yml": "jobs:\n  test:\n    timeout-minutes: 1\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: bump the linter",
+      "files": {
+        "package.json": "{ \"name\": \"invoice-parser\", \"type\": \"module\", \"devDependencies\": { \"eslint\": \"9.2.0\" } }\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m2",
+      "title": "M2 Reports",
+      "what": "Monthly reports from the ledger."
+    },
+    {
+      "type": "defer",
+      "step": "export",
+      "to": "m2"
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-04: approved the validation step",
+      "steps": [
+        {
+          "key": "totals",
+          "title": "Validate invoice totals"
+        },
+        {
+          "key": "errors",
+          "title": "Report malformed invoices"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "totals"
+    },
+    {
+      "type": "commit",
+      "step": "totals",
+      "message": "feat(totals): check that lines add up to the total",
+      "files": {
+        "src/totals/index.js": "export const balanced = (lines, total) => lines.reduce((a, b) => a + b, 0) === total\n"
+      }
+    }
+  ],
+  "questions": [
+    {
+      "cat": "where",
+      "text": "Which step are you on, and which one comes next?",
+      "current": "totals",
+      "next": "errors"
+    },
+    {
+      "cat": "why",
+      "text": "Why do parsed suppliers stay in memory?",
+      "step": "cache",
+      "reason": "A run parses at most 200 suppliers.",
+      "distractors": [
+        "Suppliers mix tabs and spaces.",
+        "The test job timed out on cold caches.",
+        "Lines must add up to the total."
+      ]
+    },
+    {
+      "cat": "proof",
+      "text": "Which file holds the result of the lexer step?",
+      "step": "lexer",
+      "file": "src/lexer/index.js"
+    },
+    {
+      "cat": "deferred",
+      "text": "What was deferred, and to which milestone?",
+      "step": "export",
+      "milestone": "m2"
+    },
+    {
+      "cat": "update",
+      "text": "Which decision holds today on where suppliers are stored?",
+      "step": "cache"
+    },
+    {
+      "cat": "abstain",
+      "text": "Which database was chosen for the ledger?"
+    },
+    {
+      "cat": "continue",
+      "text": "Resume the work: make the first change you would make.",
+      "next": "totals",
+      "dir": "src/totals/"
+    }
+  ]
+}

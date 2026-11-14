@@ -110,3 +110,4 @@
 {"at":"2026-11-14T12:13Z","id":"m4.4.1","op":"close","text":"chiuso m4.4.1 Orologio finto ARIADNE_NOW: ARIADNE_NOW fissa l'orologio della CLI, con il suo test","proof":[{"type":"commit","ref":"0ecd44f"}]}
 {"at":"2026-11-14T12:13Z","id":"m4.4.2","op":"start","text":"iniziato m4.4.2 Repository ariadne-eval con generatore, runner e grader"}
 {"at":"2026-11-14T13:42Z","id":"m4.4.2","op":"fill","text":"completato m4.4.2: title"}
+{"at":"2026-11-14T13:42Z","id":"m4.4.2","op":"fill","text":"prova per m4.4.2: commit d8503dc","proof":[{"type":"commit","ref":"d8503dc"}]}
