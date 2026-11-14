@@ -48,8 +48,11 @@ export function settingsFor(condition, { injectDir, edits = false }) {
   const hooks = condition === 'prima'
     ? { SessionStart: hook('cat STATE.md', 'SessionStart') }
     : { SessionStart: hook(`${ARIADNE} summary`, 'SessionStart'), UserPromptSubmit: hook(`${ARIADNE} summary`, 'UserPromptSubmit') }
-  const allow = ['Read', 'Grep', 'Glob', 'Bash(git log:*)', 'Bash(git show:*)', 'Bash(git diff:*)']
-  if (condition === 'ariadne') allow.push(...['show', 'why', 'log'].map(c => `Bash(${ARIADNE} ${c}:*)`))
+  // The helpers models chain to their reads (`a; echo ---; b | head`): without them a compound command is
+  // denied whole. A read outside the copy is still caught by `outside` and excludes the trial.
+  const helpers = ['echo', 'head', 'tail', 'wc', 'sort', 'git status'].map(c => `Bash(${c}:*)`)
+  const allow = ['Read', 'Grep', 'Glob', 'Bash(git log:*)', 'Bash(git show:*)', 'Bash(git diff:*)', ...helpers]
+  if (condition === 'ariadne') allow.push(`Bash(${ARIADNE}:*)`)
   if (edits) allow.push('Edit', 'Write')
   return { hooks, permissions: { allow, deny: ['Bash(git diff --no-index:*)', 'Bash(git -C:*)'] } }
 }
@@ -64,7 +67,11 @@ function outside(events, copy) {
       for (const key of ['file_path', 'path', 'command', 'notebook_path']) {
         const value = c.input?.[key]
         if (typeof value !== 'string') continue
-        for (const [p] of value.matchAll(/(?<![\w.~-])\/(?!\/)[^\s'"`;|&)]+/g)) if (p !== '/dev/null' && !roots.some(r => p === r || p.startsWith(`${r}/`))) found.push(p)
+        // A path only if its first folder exists: `/\.md$/` in a regular expression is not one.
+        for (const [p] of value.matchAll(/(?<![\w.~-])\/(?!\/)[^\s'"`;|&)]+/g)) {
+          if (p === '/dev/null' || roots.some(r => p === r || p.startsWith(`${r}/`))) continue
+          if (existsSync(`/${p.split('/')[1]}`)) found.push(p)
+        }
         if (/(^|[\s/'"])\.\.(\/|$|\s)|(^|\s)~/.test(value)) found.push(value)
       }
     }

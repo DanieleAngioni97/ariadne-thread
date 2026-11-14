@@ -35,7 +35,8 @@ test('settings give each condition its hooks and allowed commands; Continua adds
   assert.match(prima.hooks.SessionStart[0].hooks[0].command, /cat STATE\.md/)
   const ariadne = settingsFor('ariadne', { injectDir: '/runs/x', edits: true })
   assert.deepEqual(Object.keys(ariadne.hooks), ['SessionStart', 'UserPromptSubmit'])
-  assert.ok(ariadne.permissions.allow.includes('Bash(node .ariadne/cli/bin/ariadne.mjs why:*)'))
+  assert.ok(ariadne.permissions.allow.includes('Bash(node .ariadne/cli/bin/ariadne.mjs:*)'))
+  for (const c of ['echo', 'head', 'tail', 'wc', 'sort', 'git status']) assert.ok(prima.permissions.allow.includes(`Bash(${c}:*)`) && ariadne.permissions.allow.includes(`Bash(${c}:*)`))
   assert.ok(!prima.permissions.allow.some(r => r.includes('ariadne')))
   assert.ok(ariadne.permissions.allow.includes('Edit') && !prima.permissions.allow.includes('Edit'))
   assert.ok(prima.permissions.deny.includes('Bash(git diff --no-index:*)'))
@@ -52,6 +53,8 @@ test('a trial grades the answer, checks the injection and counts tokens as if no
 test('a trial is excluded when a tool reaches outside the copy, or when nothing was injected', () => {
   assert.equal(at('ariadne', q('proof'), { FAKE_TOOL_PATH: '/etc/hosts', FAKE_ANSWER: 'RISPOSTA: src/lexer/index.js' }).excluded, 'outside')
   assert.equal(at('ariadne', q('proof'), { FAKE_TOOL_PATH: '//', FAKE_ANSWER: 'RISPOSTA: src/lexer/index.js' }).excluded, null)
+  assert.equal(at('ariadne', q('proof'), { FAKE_TOOL_PATH: '/[\\/.]/g,', FAKE_ANSWER: 'RISPOSTA: src/lexer/index.js' }).excluded, null)
+  assert.equal(at('ariadne', q('proof'), { FAKE_TOOL_PATH: '/\\.md$/,', FAKE_ANSWER: 'RISPOSTA: src/lexer/index.js' }).excluded, null)
   const bare = generate(scenario, mkdtempSync(join(tmpdir(), 'ariadne-eval-')))
   rmSync(join(bare.dir, 'prima', 'STATE.md'), { force: true })
   const r = trial({ fixture: bare.dir, condition: 'prima', q: q('proof'), key: bare.key, model: 'fake', bin: FAKE, env: { FAKE_ANSWER: 'RISPOSTA: src/lexer/index.js' }, seed: 1 })

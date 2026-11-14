@@ -32,6 +32,17 @@ Aggiornamento e Rinvio diventano a scelta tra 5 opzioni come Perché (la rispost
 sostituita o i passi e le milestone più simili, «non risulta»; il caso dà il 20%); il prompt chiede l'inglese.
 Dove resta aperta. Il primo pilota resta in `eval/runs/pilot-haiku/` come registro.
 
+*Dopo il secondo pilota (2026-11-14):*
+- Continua con *ariadne* faceva 0 su 5: l'agente concatena i comandi (`ariadne log; echo ---; … | head`) e
+  Claude Code nega l'intero comando composto. In entrambe le condizioni si ammettono `echo`, `head`, `tail`, `wc`,
+  `sort` e `git status`; in *ariadne* tutta la CLI, come nell'uso vero. Una lettura fuori dalla copia resta
+  esclusa dal controllo dei percorsi.
+- Il pilota ha trovato un bug di ariadne: chiudere un passo avviava il passo rinviato nella milestone invece del
+  successivo del piano (`c73faca`). Si corregge prima della pre-registrazione, che fissa lo sha di ariadne; il
+  rapporto lo riporta tra i risultati.
+- Da riportare come osservazione sul prodotto: con una modifica in coda («Da confermare») l'agente di *ariadne*
+  tende a fermarsi e chiedere la conferma invece di riprendere il lavoro.
+
 *Ripresa:* il runner salta le prove già registrate, così una prova interrotta dal limite d'uso si rifà nella
 finestra successiva invece di andare persa.
 
