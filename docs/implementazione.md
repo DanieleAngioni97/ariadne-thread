@@ -142,6 +142,22 @@ fork della sessione; decide anche il modello dello scribe.
 Da dettagliare all'avvio. Prompt, ingresso e uscita in specifica § Scribe; `note` chiama il modello,
 valida, ritenta una volta, poi segnala.
 
+## m3.9 — Task tools come sorgente
+Verifica del 2026-11-14 su Claude Code 2.1.302 (Opus 5.5), dai tipi della build e da questa sessione.
+
+- **Esistono nel catalogo della build:** `TaskCreate` (subject, description), `TaskUpdate` (status
+  `pending | in_progress | completed | deleted`, `addBlockedBy`, `addBlocks`), `TaskGet`, `TaskList`,
+  e il più vecchio `TodoWrite`. Hook `TaskCreated` e `TaskCompleted`: solo id, subject, description.
+- **Non sono esposti all'agente in questa sessione:** né tra i tool né in ToolSearch;
+  `~/.claude/tasks` non esiste, quindi non sono mai stati usati qui. La condizione che li attiva non è
+  verificata.
+- **Come sorgente valgono poco:** stato e dipendenze sì (`completed` → `done`, `blockedBy` → `after`),
+  ma niente prova, perché, deviazioni, rinvii né posizione; li scrive il modello (il rischio di piani
+  inventati della ricerca § 7.1) e stanno fuori da git.
+- **Esito:** non diventano una sorgente. Resta un adattatore possibile, non pianificato: un hook della
+  mod su `tool.call` di `TaskUpdate` con `status: completed` che mette in coda di conferma un `close`
+  sul nodo con lo stesso titolo. Per la valutazione, «Claude Code Tasks» è uno dei termini di confronto.
+
 ## m3.2 — viewer
 Riparte da `spikes/viewer/` (base visiva approvata in `m1.2`), spostato in `viewer/`; legge
 `.ariadne/`, comportamento in specifica § Viewer; include il layout stabile (`m2.6`).
