@@ -8,6 +8,8 @@ import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, write
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { normalize } from './grade.mjs'
+
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const FROZEN = fileURLToPath(new URL('./frozen', import.meta.url))
 const CLI = '.ariadne/cli/bin/ariadne.mjs'
@@ -44,6 +46,8 @@ function copyCli(dir) {
  * `until` stops before that event and leaves out the frozen STATE.md and LOG.md: the handoffs of prima start there.
  */
 export function generate(scenario, dir, { until } = {}) {
+  const errors = check(scenario)
+  if (errors.length) throw new Error(`${scenario.id}: ${errors.join('; ')}`)
   const ariadne = join(dir, 'ariadne')
   const prima = join(dir, 'prima')
   init(ariadne, ['.ariadne/'])
@@ -128,6 +132,66 @@ export function generate(scenario, dir, { until } = {}) {
   }
   writeFileSync(join(dir, 'key.json'), JSON.stringify(key, null, 2) + '\n')
   return { dir, questions, key }
+}
+
+const CATEGORIES = ['where', 'why', 'proof', 'deferred', 'update', 'abstain', 'continue']
+
+/** What a scenario breaks: references, steps without a file of their own, answers the events contradict. */
+export function check(scenario) {
+  const errors = []
+  const titles = {}
+  const plans = []
+  const status = {}
+  const reentry = {}
+  let current = null
+  const known = key => key in titles || errors.push(`unknown key: ${key}`)
+  for (const e of scenario.events) {
+    for (const k of [e.step, e.milestone, e.to, e.by].filter(Boolean)) known(k)
+    if (e.type === 'milestone') titles[e.key] = e.title
+    if (e.type === 'plan') {
+      for (const s of e.steps) { titles[s.key] = s.title; status[s.key] = 'todo' }
+      plans.push(e.steps.map(s => s.key))
+    }
+    if (e.type === 'start') { current = e.step; status[e.step] = 'active' }
+    if (e.type === 'detour') { titles[e.key] = e.title; reentry[e.key] = current; current = e.key; status[e.key] = 'active' }
+    if (e.type === 'defer') status[e.step] = 'deferred'
+    if (e.type === 'replace') status[e.step] = 'replaced'
+    if (e.type === 'commit' && e.done) {
+      status[e.step] = 'done'
+      if (e.step === current) {
+        const plan = plans.find(p => p.includes(e.step))
+        current = e.step in reentry ? reentry[e.step] : plan?.slice(plan.indexOf(e.step) + 1).find(k => status[k] === 'todo') ?? null
+        if (current && status[current] === 'todo') status[current] = 'active'
+      }
+    }
+  }
+  const values = Object.values(titles)
+  for (const t of new Set(values.filter((t, i) => values.indexOf(t) !== i))) errors.push(`title used twice: ${t}`)
+
+  const stepsWithCommits = [...new Set(scenario.events.filter(e => e.type === 'commit' && e.step).map(e => e.step))]
+  for (const key of stepsWithCommits) {
+    const others = new Set(stepsWithCommits.filter(k => k !== key).flatMap(k => filesOf(scenario, k)))
+    if (!filesOf(scenario, key).some(f => !others.has(f))) errors.push(`${key}: no file of its own`)
+  }
+
+  const missing = CATEGORIES.filter(c => !scenario.questions.some(q => q.cat === c))
+  if (missing.length) errors.push(`missing categories: ${missing.join(', ')}`)
+  const texts = scenario.events.filter(e => e.type === 'commit').flatMap(e => [e.message, e.why ?? '', ...Object.values(e.files)])
+  for (const q of scenario.questions) {
+    if (q.cat === 'where') {
+      if (q.current !== current) errors.push(`where: "${q.current}" is not the open step (${current})`)
+      if (status[q.next] !== 'todo') errors.push(`where: next "${q.next}" is not a step still to do`)
+    }
+    if (q.cat === 'deferred' && !scenario.events.some(e => e.type === 'defer' && e.step === q.step && e.to === q.milestone)) errors.push(`deferred: "${q.step}" was not deferred to ${q.milestone}`)
+    if (q.cat === 'proof' && !filesOf(scenario, q.step).includes(q.file)) errors.push(`proof: ${q.file} is not a file of "${q.step}"`)
+    if (q.cat === 'why') {
+      if (!texts.some(t => normalize(t).includes(normalize(q.reason)))) errors.push('why: the reason is in no document or commit')
+      if (q.distractors?.length !== 3 || q.distractors.includes(q.reason)) errors.push('why: needs 3 distractors other than the reason')
+    }
+    if (q.cat === 'update' && !scenario.events.some(e => e.type === 'replace' && e.by === q.step)) errors.push(`update: "${q.step}" replaces nothing`)
+    if (q.cat === 'continue' && q.next !== current) errors.push(`continue: "${q.next}" is not the open step (${current})`)
+  }
+  return errors
 }
 
 /** The files a step's commits touched, with the files its proofs point to. */

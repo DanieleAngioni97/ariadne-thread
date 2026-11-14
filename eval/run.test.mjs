@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -50,6 +50,7 @@ test('a trial grades the answer, checks the injection and counts tokens as if no
 test('a trial is excluded when a tool reaches outside the copy, or when nothing was injected', () => {
   assert.equal(at('ariadne', q('proof'), { FAKE_TOOL_PATH: '/etc/hosts', FAKE_ANSWER: 'RISPOSTA: src/lexer/index.js' }).excluded, 'outside')
   const bare = generate(scenario, mkdtempSync(join(tmpdir(), 'ariadne-eval-')))
+  rmSync(join(bare.dir, 'prima', 'STATE.md'), { force: true })
   const r = trial({ fixture: bare.dir, condition: 'prima', q: q('proof'), key: bare.key, model: 'fake', bin: FAKE, env: { FAKE_ANSWER: 'RISPOSTA: src/lexer/index.js' }, seed: 1 })
   assert.equal(r.excluded, 'no-injection')
 })

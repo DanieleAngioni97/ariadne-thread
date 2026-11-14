@@ -5,7 +5,7 @@ import { mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { generate } from './generate.mjs'
+import { check, generate } from './generate.mjs'
 
 const scenario = JSON.parse(readFileSync(new URL('./scenarios/dev/dev-01.json', import.meta.url), 'utf8'))
 const git = (dir, ...args) => spawnSync('git', ['-C', dir, ...args], { encoding: 'utf8' }).stdout
@@ -72,4 +72,20 @@ test('a generation can stop at an event, for the handoffs of prima; a handoff ev
   assert.equal(git(join(full.dir, 'prima'), 'rev-list', '--count', 'HEAD').trim(), '7')
   const part = generate(withHandoff, mkdtempSync(join(tmpdir(), 'ariadne-eval-')), { until: 5 })
   assert.equal(git(join(part.dir, 'prima'), 'log', '--format=%s'), 'chore: scaffold the project\n')
+})
+
+test('check accepts a coherent scenario and names what breaks one', () => {
+  assert.deepEqual(check(scenario), [])
+  const broken = structuredClone(scenario)
+  broken.questions.find(q => q.cat === 'where').current = 'cache'
+  broken.questions.find(q => q.cat === 'deferred').milestone = 'm1'
+  broken.questions.find(q => q.cat === 'proof').file = 'src/cache/index.js'
+  broken.questions.find(q => q.cat === 'why').reason = 'Nowhere in the project.'
+  broken.questions.find(q => q.cat === 'update').step = 'lexer'
+  broken.questions = broken.questions.filter(q => q.cat !== 'abstain')
+  broken.events.find(e => e.step === 'cache' && e.type === 'commit').files = { 'src/lexer/index.js': 'shared' }
+  const errors = check(broken)
+  for (const pattern of [/where: .*cache.* is not the open step/, /deferred: .*export.* to m1/, /proof: src\/cache\/index\.js/, /why: the reason is in no document/, /update: .*lexer.* replaces nothing/, /missing categories: abstain/, /lexer: no file of its own/]) {
+    assert.ok(errors.some(e => pattern.test(e)), `${pattern} not in ${errors.join(' | ')}`)
+  }
 })

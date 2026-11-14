@@ -120,3 +120,4 @@
 {"at":"2026-11-14T13:55Z","id":"m4.4.3","op":"close","text":"chiuso m4.4.3 E4 sull'archivio congelato: E4 a 0d59d44: 9% dei commit senza Thread, 8 prompt mediani per sessione su 8, 1 nodo chiuso con un solo messaggio, 0 riferimenti rotti","proof":[{"type":"commit","ref":"ecacd94"}]}
 {"at":"2026-11-14T13:55Z","id":"m4.4.4","op":"start","text":"iniziato m4.4.4 Scenari di sviluppo e condizione prima"}
 {"at":"2026-11-14T13:59Z","id":"m4.4.4","op":"fill","text":"prova per m4.4.4: commit f5e1e96","proof":[{"type":"commit","ref":"f5e1e96"}]}
+{"at":"2026-11-14T13:59Z","id":"m4.4.4","op":"fill","text":"prova per m4.4.4: commit 033ff8a","proof":[{"type":"commit","ref":"033ff8a"}]}
