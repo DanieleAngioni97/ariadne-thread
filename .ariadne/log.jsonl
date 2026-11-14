@@ -103,3 +103,4 @@
 {"at":"2026-11-14T11:56Z","id":"m4.3.5","op":"fill","text":"prova per m4.3.5: commit 8a30b82","proof":[{"type":"commit","ref":"8a30b82"}]}
 {"at":"2026-11-14T11:57Z","id":"m4.3.5","op":"fill","text":"completato m4.3.5: detail, file docs/valutazione/piano.md","proof":[{"type":"file","ref":"docs/valutazione/piano.md"}]}
 {"at":"2026-11-14T11:57Z","id":"m4.3.5","op":"fill","text":"prova per m4.3.5: file docs/valutazione/principi.md","proof":[{"type":"file","ref":"docs/valutazione/principi.md"}]}
+{"at":"2026-11-14T12:00Z","id":"","op":"confirm","text":"confermate 1 modifiche"}
