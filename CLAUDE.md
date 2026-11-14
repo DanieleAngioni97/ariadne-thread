@@ -37,6 +37,6 @@ prompt. Non frenare il lavoro per il grafo: traccia quello che fai già.
   (8765 occupata), dopo modifiche Cmd+Shift+R.
 - Screenshot: `uv run --with playwright`, `executable_path` sul Chromium in
   `~/Library/Caches/ms-playwright/chromium_headless_shell-1243/`.
-- Spike della mod fuori dal repo: `~/.claude/dev-mods/9491e746-5169-4bed-8881-53945d893b0b/ariadne-spike/`
+- Spike della mod fuori dal repo: archiviato in `~/.claude/dev-mods-archive/ariadne-spike/` (la mod viva è `mod/`, collegata nella cartella delle mod della sessione)
   (`claude plugin test`); API delle mod in early access, verifiche aperte in `m2.7`.
 - Push solo su richiesta; PR nessuna per scelta dell'utente.
