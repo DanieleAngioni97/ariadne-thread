@@ -107,6 +107,17 @@ test('close writes the graph, moves the thread on and appends a readable log lin
   assert.equal(run(dir, 'log').stdout.split('\n').filter(Boolean).length, 2)
 })
 
+test('ARIADNE_NOW fixes the time written to the graph and the log, so a generated fixture is byte-identical', () => {
+  const dir = project({ graph: PLAN, thread: { project: 'p', current: 'a', profile: 'standard' } })
+  const at = '2030-01-02T03:04Z'
+  const runAt = (...args) => spawnSync(process.execPath, [CLI, ...args], { cwd: dir, encoding: 'utf8', env: { ...process.env, ARIADNE_NOW: at } })
+  assert.equal(runAt('close', 'a', 'A is done.', '--file', 'src/a.mjs').status, 0)
+  const r = runAt('add', 'detour', 'D', '--what', 'A detour.', '--id', 'd')
+  assert.equal(r.status, 0, r.stderr)
+  assert.equal(nodesOf(dir).find(x => x.id === 'd').at, at)
+  assert.ok(read(dir, 'log.jsonl').trimEnd().split('\n').every(l => JSON.parse(l).at === at))
+})
+
 test('a refused operation exits 1 and leaves every file as it was', () => {
   const dir = project({ graph: PLAN, thread: { current: 'a' } })
   const before = read(dir, 'graph.jsonl')

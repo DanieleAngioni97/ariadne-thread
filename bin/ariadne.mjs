@@ -46,7 +46,8 @@ const FLAGS = {
 }
 const USER_OPS = ['move', 'undo', 'confirm', 'reject']
 
-const now = () => new Date().toISOString().slice(0, 16) + 'Z'
+// ARIADNE_NOW fixes the clock, so the evaluation generator writes the same bytes on every run.
+const now = () => process.env.ARIADNE_NOW || new Date().toISOString().slice(0, 16) + 'Z'
 
 function readThread(nodes) {
   if (existsSync(THREAD)) return JSON.parse(readFileSync(THREAD, 'utf8'))
