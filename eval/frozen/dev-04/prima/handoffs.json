@@ -1,0 +1,28 @@
+{
+  "model": "claude-opus-5-5",
+  "checker": "claude-sonnet-5-5",
+  "handoffs": [
+    {
+      "point": 16,
+      "today": "2026-03-02",
+      "before": {
+        "STATE.md": "# State — gatekeeper\nUpdated: 2026-11-14 · Branch: `main` · PR: none (no git remote configured)\n\n## Milestone\nM1 \"Core limiting\": reject requests over the per-key and per-IP limits on a single replica.\nAll four planned tasks are committed (bucket → keys → window → headers). HEAD `0fa4b35`.\nNot verified as a whole yet: tests were not run during the handoff.\n\n## Next\n1. Run `go test ./...` and fix anything that fails.\n2. Add tests for `src/window/` and `src/headers/`. Only `bucket` and `keys` have `_test.go`\n   files right now.\n3. Wire the pieces into `cmd/gatekeeper/main.go`. It only logs one line at the moment: no\n   handler calls bucket, keys, proxy, window or headers yet. Without this, M1 is not done end to end.\n4. Ask the user what M2 is (multi-replica/shared counters is the likely candidate, see design.md).\n\n## Open decisions and risks\n- `X-Forwarded-For` is trusted only from the load balancer (`src/proxy/trusted.go`). Without\n  that, every anonymous client got the LB IP and one noisy user throttled everyone. Keep it.\n- API key: the header wins over the query parameter (that is tested).\n- Counters live in process memory, one map per replica (`docs/design.md`). This only holds\n  while there is a single replica.\n- STATE.md and LOG.md stay out of git (user's choice; they are listed in `.git/info/exclude`).\n  Do not commit them.\n\n## Pointers\n- Design: `docs/design.md` · Verify: `go test ./...` → not run in this session\n- Code: `src/{bucket,keys,proxy,window,headers}/`, entry `cmd/gatekeeper/main.go`\n- History: `LOG.md` (grep it), `git log --oneline`\n- Suggested skills: `commit-checkpoint` for code commits, `handoff` at the end of the next milestone\n",
+        "LOG.md": "# Log\n- 2026-11-14 · M1 Core limiting: all 4 planned tasks committed (bucket, keys, window, headers) plus the trusted-proxy XFF fix · 0fa4b35\n"
+      },
+      "applied": [],
+      "rejected": [],
+      "cost": 0.145705
+    },
+    {
+      "point": 38,
+      "today": "2026-03-02",
+      "before": {
+        "STATE.md": "# State — gatekeeper\nUpdated: 2026-11-14 · Branch: `main` (clean at `916cc5e`) · PR: none (no git remote configured)\n\n## Milestone\nM2 \"Shared state\": several replicas enforce the same limits from shared counters.\nDone: Redis counters (Lua token bucket), policy cache (Postgres on miss), bucket-state cache\n(local lease + renew). In progress: \"Cache invalidation on policy update\". Only the publisher\nexists so far (`src/invalidation/pubsub.go`). Left after it: \"Per-key rejection metrics\".\n\n## Next\n1. Finish invalidation: subscribe to `invalidation.Channel` on every replica and evict the key\n   from `policycache.Cache`. The cache has only `Get` today, so add a `Delete`/`Invalidate`.\n   Also call `Publish` wherever policies get updated.\n2. Remove `src/memcache/`. Memcached was dropped for Redis (`docs/storage.md`), and the package\n   imports `gomemcache`, which is missing from `go.mod`, so `go build ./...` probably fails.\n   Ask the user first if unsure.\n3. Run `go vet ./... && go test ./...` (same as CI) and fix what fails.\n4. Per-key rejection metrics, the last M2 task.\n5. Then M3 \"Operations\" (operator tools to inspect/tune limits). It now includes \"Admin\n   dashboard for limits\", which the user moved from M2. M3 has no approved plan yet: propose one.\n\n## Open decisions and risks\n- Redis over Memcached is settled: Memcached can't do atomic check-and-decrement, so don't retry it.\n- Still open from M1: `cmd/gatekeeper/main.go` only logs one line. Nothing is wired end to end.\n  `src/window/`, `src/headers/` and the M2 packages have no tests.\n- `X-Forwarded-For` is trusted only from the LB (`src/proxy/trusted.go`). Keep it that way.\n- STATE.md and LOG.md stay out of git (`.git/info/exclude`). Never commit them.\n\n## Pointers\n- Storage decision: `docs/storage.md` · Design: `docs/design.md` · CI: `.github/workflows/ci.yml`\n- Verify: `go vet ./... && go test ./...` → not run (Bash was unavailable in the last session)\n- Code: `src/{redis,policycache,bucketcache,invalidation}/` (M2), `src/{bucket,keys,proxy,window,headers}/` (M1)\n- History: `LOG.md` (grep it), `git log --oneline`\n- Suggested skills: `commit-checkpoint` for code commits, `handoff` when M2 closes\n",
+        "LOG.md": "# Log\n- 2026-11-14 · M1 Core limiting: all 4 planned tasks committed (bucket, keys, window, headers) plus the trusted-proxy XFF fix · 0fa4b35\n- 2026-11-14 · M2 Shared state: Redis counters, policy cache, bucket-state cache done; invalidation publisher only (Memcached dropped, admin dashboard moved to M3) · 916cc5e\n"
+      },
+      "applied": [],
+      "rejected": [],
+      "cost": 0.2022836
+    }
+  ]
+}

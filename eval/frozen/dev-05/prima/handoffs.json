@@ -1,0 +1,46 @@
+{
+  "model": "claude-opus-5-5",
+  "checker": "claude-sonnet-5-5",
+  "handoffs": [
+    {
+      "point": 40,
+      "today": "2026-03-02",
+      "before": {
+        "STATE.md": "# State — fieldsync\nUpdated: 2026-03-02 · Branch: `main` @ `efa59ec` · PR: none (no git remote configured)\n\n## Milestone\nM1 \"Sync core\" is done: devices push and pull inspection records through a server that\ntolerates intermittent connectivity. All six steps of the approved plan are closed:\nschema → device registration → device outbox → push endpoint → delta cursor → pull endpoint.\n\n## Next\n1. Run `npm test` (vitest) and confirm it is green. The tests were not re-run at handoff\n   because shell access was denied in that session.\n2. Ask the user for the next milestone (M2) and its plan; nothing is planned past M1 yet.\n3. If the user wants the work published: no remote exists, so ask where to push before\n   opening a PR.\n\n## Open decisions and risks\n- `STATE.md` and `LOG.md` are kept out of git on purpose (`.git/info/exclude`). Never commit them.\n- Detour already fixed: double-tap Submit created duplicate inspections. Push now dedupes on the\n  client id (`src/dedupe/`). Don't re-open it.\n- Limits already in place: push body capped at 2 MB, oversized batches get split, and large pull\n  deltas are gzipped.\n- `lodash` is a dependency, but nothing in this session used it. Check whether it's needed.\n\n## Pointers\n- Spec: `docs/sync-protocol.md` (Push, Pull, Cursor choice) · Dev setup: `README.md`\n- Code: `src/{schema,devices,outbox,dedupe,push,cursor,pull}/`, each with a `*.test.ts`\n- Verify: `npm test` → not run at handoff, so the result is unknown (each step was closed by a test commit)\n- Suggested skills: `commit-checkpoint` for code commits, `handoff` at the end of M2 steps\n",
+        "LOG.md": "# Log\n- 2026-03-02 · M1 Sync core done (schema, devices, outbox, push, cursor, pull) · efa59ec\n"
+      },
+      "applied": [],
+      "rejected": [],
+      "cost": 0.171648
+    },
+    {
+      "point": 79,
+      "today": "2026-03-02",
+      "before": {
+        "STATE.md": "# State — fieldsync\nUpdated: 2026-03-02 · Branch: `main` @ `9468101` · PR: none (no git remote configured)\n\n## Milestone\nM2 \"Offline resilience\" is done. Sync now survives dead zones, large photos and two inspectors\nediting the same form. Closed: photo retry queue → push backoff → background scheduler →\nper-field merge (replaced LWW) → expired-token retry. Changelog for 0.2.0 is written.\nM3 \"Field rollout\" is opened but not planned. Goal: the service is ready for a multi-tenant field\nrollout with attachment storage, migrations for old app versions and on-device cleanup.\n\n## Next\n1. Run `npm test` (vitest) and confirm it is green. It was not run at handoff because shell\n   access was denied in that session.\n2. Tidy up 0.2.0: `package.json` still says `0.1.0`, and `CHANGELOG.md` 0.2.0 leaves out the\n   background scheduler (fixed interval, photos only on wifi, skipped under 15% battery).\n   Ask the user before bumping the version or tagging.\n3. Ask the user whether to remove the dropped last-write-wins code (`src/conflict/`, including\n   `lww.test.ts`). Per-field merge in `src/merge/` replaced it, and `docs/conflicts.md` already\n   describes per-field merge.\n4. Propose a step plan for M3 and get it approved before coding. It must include the deferred\n   \"Sync health dashboard for supervisors\", plus multi-tenancy, attachment storage,\n   migrations for old app versions and on-device cleanup.\n\n## Open decisions and risks\n- `STATE.md` and `LOG.md` are kept out of git on purpose (`.git/info/exclude`). Never commit them.\n- The user dropped LWW conflict resolution for per-field merge. Don't bring LWW back.\n  Same-field edits are flagged for review, not auto-resolved.\n- Already settled, don't reopen: photos upload in 512 KB chunks and resume from the last acked\n  chunk. Push backoff is exponential with full jitter, capped at 5 min. Token refresh is tried\n  once and the pending push is then replayed once.\n- `lodash` was removed (`db3cf92`), so that M1 question is closed.\n- There is no remote, so ask where to push before opening any PR. CI runs tests on PRs.\n\n## Pointers\n- Specs: `docs/sync-protocol.md`, `docs/conflicts.md` (per-field merge) · Release: `CHANGELOG.md`\n- Code: `src/{schema,devices,outbox,dedupe,push,cursor,pull,photos,backoff,scheduler,merge,auth}/`,\n  each with a `*.test.ts`. `src/conflict/` is the leftover LWW code.\n- Verify: `npm test` → not run at handoff, result unknown (each step was closed by a test commit)\n- Suggested skills: `commit-checkpoint` for code commits, `handoff` at the end of M3 steps\n",
+        "LOG.md": "# Log\n- 2026-03-02 · M1 Sync core done (schema, devices, outbox, push, cursor, pull) · efa59ec\n- 2026-03-02 · M2 Offline resilience done (photo queue, backoff, scheduler, per-field merge, token retry); M3 opened · 9468101\n"
+      },
+      "applied": [],
+      "rejected": [],
+      "cost": 0.20644679999999999
+    },
+    {
+      "point": 113,
+      "today": "2026-03-02",
+      "before": {
+        "STATE.md": "# State — fieldsync\nUpdated: 2026-03-02 · Branch: `main` @ `16f963c` · PR: none (no git remote configured)\n\n## Milestone\nM3 \"Field rollout\", approved plan (7 steps): tenant isolation ✓ → report export ✓ → attachment\nstorage ✓ → audit log ✓ → schema migrations ✓ → **purge of synced records on device (in\nprogress)** → sync failure telemetry. Context: `docs/rollout.md`.\n\n## Next\n1. Run `npm test` (vitest) and confirm it is green. It was not run at this handoff either\n   (shell access denied), so the result is unknown.\n2. Finish \"Purge of synced records on device\". Done so far: `src/purge/select.ts` (records the\n   server has acknowledged, `25416e1`) and `src/purge/retention.ts` (synced inspections are kept\n   for the tenant retention window, `16f963c`). Still missing: the purge itself and its closing\n   test commit (`test(purge): …`, e.g. a record is not purged before it is acked or inside the\n   retention window).\n3. Then the last step: \"Sync failure telemetry\".\n4. At the end of M3, hand off and log it.\n\n## Open decisions and risks\n- `STATE.md` and `LOG.md` are kept out of git on purpose (`.git/info/exclude`). Never commit them.\n- The approved M3 plan does **not** include the \"Sync health dashboard for supervisors\" that the\n  last handoff wanted in it. Ask the user whether it is dropped or moves to a later milestone.\n- Still open from M2: `CHANGELOG.md` 0.2.0 still leaves out the background scheduler (fixed\n  interval, photos only on wifi, skipped under 15% battery). `package.json` is now `0.2.0`.\n  Ask before tagging.\n- Still open from M2: the dropped LWW code (`src/conflict/`, with `lww.test.ts`) is still there.\n  Ask the user whether to remove it. Don't bring LWW back; per-field merge (`src/merge/`) is the\n  rule and same-field edits are flagged for review.\n- Already settled, don't reopen: 512 KB photo chunks resumed from the last acked chunk; push\n  backoff is exponential with full jitter, capped at 5 min; token refresh once, then one replay.\n  M3: temp chunks expire after 24 h; inspector notes are redacted in the audit log; apps older\n  than v1.4 are rejected; v1 records are upgraded to v2 on push, pull payloads downgraded.\n- There is no remote, so ask where to push before opening any PR. CI runs tests on PRs.\n\n## Pointers\n- Specs: `docs/sync-protocol.md`, `docs/conflicts.md`, `docs/rollout.md` · Release: `CHANGELOG.md`\n- Code: one dir per feature under `src/`, each with a `*.test.ts`. M3 added\n  `src/{tenant,export,attach,audit,migrate,purge}/` (`purge` has no test yet).\n- Verify: `npm test` → not run at handoff, result unknown (each closed step has a test commit)\n- Suggested skills: `commit-checkpoint` for code commits, `handoff` at the end of M3\n",
+        "LOG.md": "# Log\n- 2026-03-02 · M1 Sync core done (schema, devices, outbox, push, cursor, pull) · efa59ec\n- 2026-03-02 · M2 Offline resilience done (photo queue, backoff, scheduler, per-field merge, token retry); M3 opened · 9468101\n- 2026-03-02 · M3 Field rollout 5/7 done (tenant, export, attach, audit, migrate); purge in progress · 16f963c\n"
+      },
+      "applied": [
+        {
+          "file": "STATE.md",
+          "find": "The approved M3 plan does **not** include the \"Sync health dashboard for supervisors\" that the\n  last handoff wanted in it. Ask the user whether it is dropped or moves to a later milestone.",
+          "replace": "The user deferred \"Sync health dashboard for supervisors\" to M3, but the approved M3 plan does\n  **not** include it. Ask the user whether it should be added to the M3 plan.",
+          "reason": "The user said 'let's defer \"Sync health dashboard for supervisors\" to \"M3 Field rollout\"'. It was moved to M3, not dropped, and not to a later milestone. The approved 7-step M3 plan leaves it out."
+        }
+      ],
+      "rejected": [],
+      "cost": 0.1823922
+    }
+  ]
+}

@@ -1,0 +1,1004 @@
+{
+  "id": "dev-05",
+  "project": "fieldsync",
+  "start": "2026-03-02T09:00:00Z",
+  "events": [
+    {
+      "type": "commit",
+      "message": "chore: scaffold fieldsync service",
+      "files": {
+        "package.json": "{\n  \"name\": \"fieldsync\",\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"test\": \"vitest run\", \"start\": \"node dist/index.js\" },\n  \"dependencies\": { \"fastify\": \"^4.28.0\", \"better-sqlite3\": \"^11.1.0\", \"lodash\": \"^4.17.21\" }\n}\n",
+        "README.md": "# fieldsync\n\nOffline-first sync service for the field-inspection mobile app.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add tsconfig and eslint config",
+      "files": {
+        "tsconfig.json": "{\n  \"compilerOptions\": { \"target\": \"ES2022\", \"module\": \"NodeNext\", \"strict\": true, \"outDir\": \"dist\" },\n  \"include\": [\"src\"]\n}\n",
+        ".eslintrc.json": "{\n  \"root\": true,\n  \"parser\": \"@typescript-eslint/parser\",\n  \"extends\": [\"eslint:recommended\", \"plugin:@typescript-eslint/recommended\"]\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add .editorconfig",
+      "files": {
+        ".editorconfig": "root = true\n\n[*]\nindent_style = space\nindent_size = 2\nend_of_line = lf\ninsert_final_newline = true\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m1",
+      "title": "M1 Sync core",
+      "what": "Devices push and pull inspection records through a server that tolerates intermittent connectivity."
+    },
+    {
+      "type": "commit",
+      "message": "docs: draft sync protocol",
+      "files": {
+        "docs/sync-protocol.md": "# Sync protocol\n\n## Push\nDevices send batches of outbox entries to POST /sync/push.\n\n## Pull\nDevices fetch changes after their cursor from GET /sync/pull.\n\n## Cursor choice\nDevice clocks drift by minutes after days offline and inspectors cross time zones between sites, so changes are ordered by a server-assigned sequence number, never by device timestamps.\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-02: approved the sync core steps",
+      "steps": [
+        {
+          "key": "schema",
+          "title": "Inspection record schema"
+        },
+        {
+          "key": "reg",
+          "title": "Device registration"
+        },
+        {
+          "key": "outbox",
+          "title": "Device outbox store"
+        },
+        {
+          "key": "push",
+          "title": "Push endpoint for inspection batches"
+        },
+        {
+          "key": "cursor",
+          "title": "Delta cursor by server sequence"
+        },
+        {
+          "key": "pull",
+          "title": "Pull endpoint for changed records"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "schema"
+    },
+    {
+      "type": "commit",
+      "step": "schema",
+      "message": "feat(schema): define inspection record type",
+      "files": {
+        "src/schema/inspection.ts": "export interface Inspection {\n  id: string;\n  siteId: string;\n  inspectorId: string;\n  status: 'draft' | 'submitted';\n  fields: Record<string, string | number | boolean>;\n  updatedSeq?: number;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "schema",
+      "message": "feat(schema): validate incoming records",
+      "files": {
+        "src/schema/validate.ts": "import type { Inspection } from './inspection.js';\n\nexport function validate(r: Partial<Inspection>): string[] {\n  const errors: string[] = [];\n  if (!r.id) errors.push('id is required');\n  if (!r.siteId) errors.push('siteId is required');\n  if (r.status && !['draft', 'submitted'].includes(r.status)) errors.push('bad status');\n  return errors;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "schema",
+      "message": "feat(schema): add checklist item type",
+      "files": {
+        "src/schema/checklist.ts": "export interface ChecklistItem {\n  itemId: string;\n  label: string;\n  result: 'pass' | 'fail' | 'n/a';\n  note?: string;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "schema",
+      "message": "feat(schema): add photo reference type",
+      "files": {
+        "src/schema/photo.ts": "export interface PhotoRef {\n  photoId: string;\n  inspectionId: string;\n  bytes: number;\n  sha256: string;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "schema",
+      "message": "test(schema): cover validation errors",
+      "done": true,
+      "files": {
+        "src/schema/validate.test.ts": "import { expect, test } from 'vitest';\nimport { validate } from './validate.js';\n\ntest('missing site is rejected', () => {\n  expect(validate({ id: 'a1' })).toContain('siteId is required');\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "reg",
+      "message": "feat(devices): register a device for an inspector",
+      "files": {
+        "src/devices/register.ts": "import { randomUUID } from 'node:crypto';\n\nexport function registerDevice(db: any, inspectorId: string) {\n  const deviceId = randomUUID();\n  db.prepare('INSERT INTO devices (id, inspector_id) VALUES (?, ?)').run(deviceId, inspectorId);\n  return deviceId;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "reg",
+      "message": "feat(devices): issue device tokens",
+      "files": {
+        "src/devices/token.ts": "import { createHmac } from 'node:crypto';\n\nexport function issueToken(deviceId: string, secret: string, ttlSec = 86400) {\n  const exp = Math.floor(Date.now() / 1000) + ttlSec;\n  const sig = createHmac('sha256', secret).update(`${deviceId}.${exp}`).digest('hex');\n  return `${deviceId}.${exp}.${sig}`;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "reg",
+      "message": "feat(devices): revoke lost devices",
+      "files": {
+        "src/devices/revoke.ts": "export function revokeDevice(db: any, deviceId: string) {\n  db.prepare('UPDATE devices SET revoked_at = ? WHERE id = ?').run(Date.now(), deviceId);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "reg",
+      "message": "test(devices): registered device gets a token",
+      "done": true,
+      "files": {
+        "src/devices/register.test.ts": "import { expect, test } from 'vitest';\nimport { issueToken } from './token.js';\n\ntest('token carries device id', () => {\n  expect(issueToken('dev-1', 's3cret').startsWith('dev-1.')).toBe(true);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "outbox",
+      "message": "feat(outbox): sqlite-backed outbox store",
+      "files": {
+        "src/outbox/store.ts": "import Database from 'better-sqlite3';\n\nexport function openOutbox(path: string) {\n  const db = new Database(path);\n  db.exec('CREATE TABLE IF NOT EXISTS outbox (seq INTEGER PRIMARY KEY, record TEXT, sent INTEGER DEFAULT 0)');\n  return db;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "outbox",
+      "message": "feat(outbox): enqueue local edits",
+      "files": {
+        "src/outbox/enqueue.ts": "export function enqueue(db: any, record: object) {\n  db.prepare('INSERT INTO outbox (record) VALUES (?)').run(JSON.stringify(record));\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump better-sqlite3 to 11.3.0",
+      "files": {
+        "package.json": "{\n  \"name\": \"fieldsync\",\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"test\": \"vitest run\", \"start\": \"node dist/index.js\" },\n  \"dependencies\": { \"fastify\": \"^4.28.0\", \"better-sqlite3\": \"^11.3.0\", \"lodash\": \"^4.17.21\" }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "outbox",
+      "message": "feat(outbox): flush pending entries in order",
+      "files": {
+        "src/outbox/flush.ts": "export function pending(db: any, limit = 50) {\n  return db.prepare('SELECT seq, record FROM outbox WHERE sent = 0 ORDER BY seq LIMIT ?').all(limit);\n}\n\nexport function markSent(db: any, upTo: number) {\n  db.prepare('UPDATE outbox SET sent = 1 WHERE seq <= ?').run(upTo);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "outbox",
+      "message": "feat(outbox): compact sent entries",
+      "files": {
+        "src/outbox/compact.ts": "export function compact(db: any) {\n  db.prepare('DELETE FROM outbox WHERE sent = 1').run();\n  db.exec('VACUUM');\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "outbox",
+      "message": "test(outbox): flush keeps insertion order",
+      "done": true,
+      "files": {
+        "src/outbox/flush.test.ts": "import { expect, test } from 'vitest';\nimport { openOutbox } from './store.js';\nimport { enqueue } from './enqueue.js';\nimport { pending } from './flush.js';\n\ntest('entries come back in order', () => {\n  const db = openOutbox(':memory:');\n  enqueue(db, { id: 'a' }); enqueue(db, { id: 'b' });\n  expect(pending(db).map((r: any) => JSON.parse(r.record).id)).toEqual(['a', 'b']);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "push",
+      "message": "feat(push): accept inspection batches",
+      "files": {
+        "src/push/handler.ts": "import { validate } from '../schema/validate.js';\n\nexport async function pushHandler(req: any) {\n  const records = req.body.records ?? [];\n  const rejected = records.filter((r: any) => validate(r).length > 0);\n  return { accepted: records.length - rejected.length, rejected: rejected.map((r: any) => r.id) };\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "push",
+      "message": "feat(push): split oversized batches",
+      "files": {
+        "src/push/batch.ts": "export function split<T>(items: T[], max = 100): T[][] {\n  const out: T[][] = [];\n  for (let i = 0; i < items.length; i += max) out.push(items.slice(i, i + max));\n  return out;\n}\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "dupfix",
+      "title": "Duplicate inspections on double-tap submit",
+      "what": "Field testers report duplicate inspections when Submit is tapped twice on a slow connection, which blocks testing the push endpoint."
+    },
+    {
+      "type": "commit",
+      "step": "dupfix",
+      "message": "fix(dedupe): ignore repeated submit with same client id",
+      "files": {
+        "src/dedupe/idempotency.ts": "const seen = new Map<string, number>();\n\nexport function isDuplicate(clientOpId: string, ttlMs = 10 * 60_000): boolean {\n  const now = Date.now();\n  const at = seen.get(clientOpId);\n  seen.set(clientOpId, now);\n  return at !== undefined && now - at < ttlMs;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "dupfix",
+      "message": "test(dedupe): double submit stores one record",
+      "done": true,
+      "files": {
+        "src/dedupe/idempotency.test.ts": "import { expect, test } from 'vitest';\nimport { isDuplicate } from './idempotency.js';\n\ntest('second submit is a duplicate', () => {\n  expect(isDuplicate('op-1')).toBe(false);\n  expect(isDuplicate('op-1')).toBe(true);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "push",
+      "message": "feat(push): return per-record ack",
+      "files": {
+        "src/push/ack.ts": "export interface Ack {\n  id: string;\n  ok: boolean;\n  seq?: number;\n  error?: string;\n}\n\nexport const ackOk = (id: string, seq: number): Ack => ({ id, ok: true, seq });\nexport const ackErr = (id: string, error: string): Ack => ({ id, ok: false, error });\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "push",
+      "message": "feat(push): limit request body to 2 MB",
+      "files": {
+        "src/push/limits.ts": "export const PUSH_BODY_LIMIT = 2 * 1024 * 1024;\nexport const PUSH_MAX_RECORDS = 500;\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "push",
+      "message": "test(push): batch ack covers every record",
+      "done": true,
+      "files": {
+        "src/push/handler.test.ts": "import { expect, test } from 'vitest';\nimport { pushHandler } from './handler.js';\n\ntest('invalid record is reported', async () => {\n  const res = await pushHandler({ body: { records: [{ id: 'x' }] } });\n  expect(res.rejected).toEqual(['x']);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cursor",
+      "message": "feat(cursor): assign server sequence on write",
+      "proofFiles": [
+        "docs/sync-protocol.md#Cursor choice"
+      ],
+      "files": {
+        "src/cursor/sequence.ts": "export function nextSeq(db: any): number {\n  const row = db.prepare('UPDATE counters SET value = value + 1 WHERE name = ? RETURNING value').get('seq');\n  return row.value;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cursor",
+      "message": "feat(cursor): persist last sequence per device",
+      "files": {
+        "src/cursor/store.ts": "export function saveCursor(db: any, deviceId: string, seq: number) {\n  db.prepare('INSERT INTO cursors (device_id, seq) VALUES (?, ?) ON CONFLICT(device_id) DO UPDATE SET seq = excluded.seq').run(deviceId, seq);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cursor",
+      "message": "feat(cursor): reset cursor on app reinstall",
+      "files": {
+        "src/cursor/reset.ts": "export function resetCursor(db: any, deviceId: string) {\n  db.prepare('DELETE FROM cursors WHERE device_id = ?').run(deviceId);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cursor",
+      "message": "test(cursor): sequence is strictly increasing",
+      "done": true,
+      "files": {
+        "src/cursor/sequence.test.ts": "import { expect, test } from 'vitest';\nimport { nextSeq } from './sequence.js';\nimport { testDb } from '../../test/db.js';\n\ntest('each write gets a higher seq', () => {\n  const db = testDb();\n  expect(nextSeq(db)).toBeLessThan(nextSeq(db));\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pull",
+      "message": "feat(pull): return changes after cursor",
+      "files": {
+        "src/pull/handler.ts": "export async function pullHandler(req: any, db: any) {\n  const after = Number(req.query.after ?? 0);\n  const rows = db.prepare('SELECT * FROM inspections WHERE updated_seq > ? ORDER BY updated_seq LIMIT 200').all(after);\n  return { records: rows, cursor: rows.at(-1)?.updated_seq ?? after };\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pull",
+      "message": "feat(pull): paginate delta responses",
+      "files": {
+        "src/pull/page.ts": "export function page<T extends { updated_seq: number }>(rows: T[], size: number) {\n  const items = rows.slice(0, size);\n  return { items, more: rows.length > size, cursor: items.at(-1)?.updated_seq };\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: document local dev setup",
+      "files": {
+        "README.md": "# fieldsync\n\nOffline-first sync service for the field-inspection mobile app.\n\n## Local setup\n\n    npm install\n    npm test\n    npm start\n\nThe server listens on port 8080 and stores data in ./data/fieldsync.db.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pull",
+      "message": "feat(pull): include tombstones for deleted records",
+      "files": {
+        "src/pull/tombstones.ts": "export function tombstones(db: any, after: number) {\n  return db.prepare('SELECT id, deleted_seq FROM tombstones WHERE deleted_seq > ?').all(after);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pull",
+      "message": "feat(pull): gzip large delta responses",
+      "files": {
+        "src/pull/compress.ts": "import { gzipSync } from 'node:zlib';\n\nexport function maybeGzip(body: string, threshold = 8192) {\n  return body.length > threshold ? { body: gzipSync(body), encoding: 'gzip' } : { body, encoding: 'identity' };\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pull",
+      "message": "test(pull): pages resume from cursor",
+      "done": true,
+      "files": {
+        "src/pull/handler.test.ts": "import { expect, test } from 'vitest';\nimport { page } from './page.js';\n\ntest('cursor points at last item', () => {\n  const p = page([{ updated_seq: 3 }, { updated_seq: 5 }, { updated_seq: 9 }], 2);\n  expect(p).toMatchObject({ cursor: 5, more: true });\n});\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "milestone",
+      "key": "m2",
+      "title": "M2 Offline resilience",
+      "what": "Sync survives dead zones, large photos and two inspectors editing the same form."
+    },
+    {
+      "type": "commit",
+      "message": "docs: conflict policy draft",
+      "files": {
+        "docs/conflicts.md": "# Conflict policy (draft)\n\nWhen two devices edit the same inspection, the write with the higher server sequence wins and replaces the whole record.\nThe losing version is kept in history for support.\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-23: approved the offline resilience steps",
+      "steps": [
+        {
+          "key": "pq",
+          "title": "Retry queue for photo uploads"
+        },
+        {
+          "key": "backoff",
+          "title": "Retry backoff for inspection pushes"
+        },
+        {
+          "key": "sched",
+          "title": "Background sync scheduler"
+        },
+        {
+          "key": "lww",
+          "title": "Last-write-wins conflict resolution"
+        },
+        {
+          "key": "dash",
+          "title": "Sync health dashboard for supervisors"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "pq"
+    },
+    {
+      "type": "commit",
+      "step": "pq",
+      "message": "feat(photos): separate upload queue for photos",
+      "why": "Photos are large and fail far more often than form data on weak signal, so they get their own queue and one stuck photo no longer blocks inspection records.",
+      "files": {
+        "src/photos/queue.ts": "export interface PhotoJob { photoId: string; attempts: number; nextAt: number }\n\nexport class PhotoQueue {\n  private jobs: PhotoJob[] = [];\n  add(photoId: string) { this.jobs.push({ photoId, attempts: 0, nextAt: 0 }); }\n  due(now = Date.now()) { return this.jobs.filter(j => j.nextAt <= now); }\n  fail(job: PhotoJob, delayMs: number) { job.attempts++; job.nextAt = Date.now() + delayMs; }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pq",
+      "message": "feat(photos): chunk uploads into 512 KB parts",
+      "files": {
+        "src/photos/chunk.ts": "export const CHUNK_SIZE = 512 * 1024;\n\nexport function chunks(size: number): Array<[number, number]> {\n  const out: Array<[number, number]> = [];\n  for (let start = 0; start < size; start += CHUNK_SIZE) out.push([start, Math.min(start + CHUNK_SIZE, size)]);\n  return out;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pq",
+      "message": "feat(photos): resume from last acknowledged chunk",
+      "files": {
+        "src/photos/resume.ts": "import { chunks } from './chunk.js';\n\nexport function remaining(size: number, ackedBytes: number) {\n  return chunks(size).filter(([, end]) => end > ackedBytes);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "ci: run tests on pull requests",
+      "files": {
+        ".github/workflows/ci.yml": "name: ci\non: [pull_request]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with: { node-version: 20 }\n      - run: npm ci && npm test\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pq",
+      "message": "feat(photos): drop photos of deleted inspections",
+      "files": {
+        "src/photos/orphans.ts": "export function dropOrphans(queue: { photoId: string; inspectionId: string }[], live: Set<string>) {\n  return queue.filter(job => live.has(job.inspectionId));\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pq",
+      "message": "test(photos): stuck photo does not block records",
+      "done": true,
+      "files": {
+        "src/photos/queue.test.ts": "import { expect, test } from 'vitest';\nimport { PhotoQueue } from './queue.js';\n\ntest('failed photo is not due right away', () => {\n  const q = new PhotoQueue();\n  q.add('p1');\n  q.fail(q.due()[0], 60_000);\n  expect(q.due()).toHaveLength(0);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "backoff",
+      "message": "feat(backoff): exponential backoff for pushes",
+      "why": "When a crew leaves a dead zone every device reconnects at the same moment, so jittered backoff spreads the retries instead of hitting the server all at once.",
+      "files": {
+        "src/backoff/policy.ts": "export function delayFor(attempt: number, baseMs = 1000): number {\n  return baseMs * 2 ** attempt;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "backoff",
+      "message": "feat(backoff): add full jitter",
+      "files": {
+        "src/backoff/jitter.ts": "import { delayFor } from './policy.js';\n\nexport function jittered(attempt: number, rand = Math.random): number {\n  return Math.floor(rand() * delayFor(attempt));\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "backoff",
+      "message": "feat(backoff): cap delay at five minutes",
+      "files": {
+        "src/backoff/policy.ts": "export const MAX_DELAY_MS = 5 * 60_000;\n\nexport function delayFor(attempt: number, baseMs = 1000): number {\n  return Math.min(baseMs * 2 ** attempt, MAX_DELAY_MS);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "backoff",
+      "message": "test(backoff): delays stay under cap",
+      "done": true,
+      "files": {
+        "src/backoff/jitter.test.ts": "import { expect, test } from 'vitest';\nimport { jittered } from './jitter.js';\nimport { MAX_DELAY_MS } from './policy.js';\n\ntest('jitter never exceeds cap', () => {\n  expect(jittered(30, () => 0.999)).toBeLessThan(MAX_DELAY_MS);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sched",
+      "message": "feat(scheduler): run sync on a fixed interval",
+      "files": {
+        "src/scheduler/run.ts": "export function schedule(sync: () => Promise<void>, everyMs = 15 * 60_000) {\n  let busy = false;\n  return setInterval(async () => {\n    if (busy) return;\n    busy = true;\n    try { await sync(); } finally { busy = false; }\n  }, everyMs);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sched",
+      "message": "feat(scheduler): upload photos only on wifi",
+      "files": {
+        "src/scheduler/conditions.ts": "export interface DeviceState { network: 'wifi' | 'cellular' | 'none'; battery: number; charging: boolean }\n\nexport const canSyncRecords = (s: DeviceState) => s.network !== 'none';\nexport const canSyncPhotos = (s: DeviceState) => s.network === 'wifi';\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sched",
+      "message": "feat(scheduler): skip photo sync under 15% battery",
+      "files": {
+        "src/scheduler/battery.ts": "import type { DeviceState } from './conditions.js';\n\nexport const batteryOk = (s: DeviceState) => s.charging || s.battery >= 0.15;\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sched",
+      "message": "test(scheduler): no photo upload on cellular",
+      "done": true,
+      "files": {
+        "src/scheduler/run.test.ts": "import { expect, test } from 'vitest';\nimport { canSyncPhotos } from './conditions.js';\n\ntest('cellular blocks photos', () => {\n  expect(canSyncPhotos({ network: 'cellular', battery: 1, charging: false })).toBe(false);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "lww",
+      "message": "feat(conflict): resolve by latest server sequence",
+      "files": {
+        "src/conflict/lww.ts": "import type { Inspection } from '../schema/inspection.js';\n\nexport function resolve(a: Inspection, b: Inspection): Inspection {\n  return (a.updatedSeq ?? 0) >= (b.updatedSeq ?? 0) ? a : b;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "lww",
+      "message": "feat(conflict): keep losing copy in history",
+      "files": {
+        "src/conflict/history.ts": "export function keepLoser(db: any, loser: object) {\n  db.prepare('INSERT INTO conflict_history (record, at) VALUES (?, ?)').run(JSON.stringify(loser), Date.now());\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "lww",
+      "message": "test(conflict): newer write wins",
+      "files": {
+        "src/conflict/lww.test.ts": "import { expect, test } from 'vitest';\nimport { resolve } from './lww.js';\n\ntest('higher seq wins', () => {\n  const a = { id: '1', updatedSeq: 4 } as any, b = { id: '1', updatedSeq: 7 } as any;\n  expect(resolve(a, b)).toBe(b);\n});\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-04-08: approved switching to per-field merge and adding token retry",
+      "steps": [
+        {
+          "key": "fieldmerge",
+          "title": "Per-field merge for inspection forms"
+        },
+        {
+          "key": "tokretry",
+          "title": "Retry on expired device tokens"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "lww",
+      "by": "fieldmerge"
+    },
+    {
+      "type": "start",
+      "step": "fieldmerge"
+    },
+    {
+      "type": "commit",
+      "step": "fieldmerge",
+      "message": "feat(merge): merge inspection forms field by field",
+      "why": "Two inspectors often fill in different sections of the same form, and last-write-wins silently discarded the answers of whoever synced first.",
+      "files": {
+        "src/merge/fields.ts": "type Fields = Record<string, unknown>;\n\nexport function mergeFields(base: Fields, mine: Fields, theirs: Fields) {\n  const out: Fields = { ...base };\n  for (const k of new Set([...Object.keys(mine), ...Object.keys(theirs)])) {\n    out[k] = mine[k] !== base[k] ? mine[k] : theirs[k];\n  }\n  return out;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "fieldmerge",
+      "message": "feat(merge): track base version per field",
+      "files": {
+        "src/merge/base.ts": "export interface FieldVersion { field: string; seq: number }\n\nexport function baseFor(versions: FieldVersion[], field: string): number {\n  return versions.find(v => v.field === field)?.seq ?? 0;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: replace conflict policy with per-field merge",
+      "files": {
+        "docs/conflicts.md": "# Conflict policy\n\nSupersedes the last-write-wins draft.\n\nInspection forms are merged field by field against the base version each device started from.\nEdits to different fields both survive; edits to the same field are flagged for supervisor review.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "fieldmerge",
+      "message": "feat(merge): merge checklist items by item id",
+      "files": {
+        "src/merge/checklist.ts": "import type { ChecklistItem } from '../schema/checklist.js';\n\nexport function mergeChecklist(mine: ChecklistItem[], theirs: ChecklistItem[]) {\n  const byId = new Map(theirs.map(i => [i.itemId, i]));\n  for (const i of mine) byId.set(i.itemId, i);\n  return [...byId.values()];\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "fieldmerge",
+      "message": "feat(merge): flag same-field edits for review",
+      "files": {
+        "src/merge/review.ts": "export function sameFieldEdits(base: Record<string, unknown>, mine: Record<string, unknown>, theirs: Record<string, unknown>) {\n  return Object.keys(base).filter(k => mine[k] !== base[k] && theirs[k] !== base[k] && mine[k] !== theirs[k]);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "fieldmerge",
+      "message": "test(merge): edits to different fields both survive",
+      "done": true,
+      "files": {
+        "src/merge/fields.test.ts": "import { expect, test } from 'vitest';\nimport { mergeFields } from './fields.js';\n\ntest('both answers kept', () => {\n  const base = { roof: '', wiring: '' };\n  expect(mergeFields(base, { roof: 'ok', wiring: '' }, { roof: '', wiring: 'fail' })).toEqual({ roof: 'ok', wiring: 'fail' });\n});\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m3",
+      "title": "M3 Field rollout",
+      "what": "The service is ready for a multi-tenant field rollout with attachment storage, migrations for old app versions and on-device cleanup."
+    },
+    {
+      "type": "defer",
+      "step": "dash",
+      "to": "m3"
+    },
+    {
+      "type": "commit",
+      "step": "tokretry",
+      "message": "feat(auth): refresh expired device token once",
+      "why": "Device tokens expire during long offline shifts, so the client refreshes once and replays the request instead of failing the whole sync.",
+      "files": {
+        "src/auth/refresh.ts": "export async function withRefresh<T>(call: () => Promise<Response>, refresh: () => Promise<void>) {\n  let res = await call();\n  if (res.status === 401) {\n    await refresh();\n    res = await call();\n  }\n  return res;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tokretry",
+      "message": "feat(auth): replay pending push after refresh",
+      "files": {
+        "src/auth/replay.ts": "export async function replayPending(pending: Array<() => Promise<unknown>>) {\n  for (const job of pending) await job();\n  pending.length = 0;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: remove unused lodash dependency",
+      "files": {
+        "package.json": "{\n  \"name\": \"fieldsync\",\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"test\": \"vitest run\", \"start\": \"node dist/index.js\" },\n  \"dependencies\": { \"fastify\": \"^4.28.0\", \"better-sqlite3\": \"^11.3.0\" }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tokretry",
+      "message": "feat(auth): count refresh failures per device",
+      "files": {
+        "src/auth/failures.ts": "const failures = new Map<string, number>();\n\nexport function recordFailure(deviceId: string) {\n  failures.set(deviceId, (failures.get(deviceId) ?? 0) + 1);\n  return failures.get(deviceId)!;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tokretry",
+      "message": "test(auth): expired token replays once",
+      "done": true,
+      "files": {
+        "src/auth/refresh.test.ts": "import { expect, test, vi } from 'vitest';\nimport { withRefresh } from './refresh.js';\n\ntest('401 triggers one refresh', async () => {\n  const call = vi.fn().mockResolvedValueOnce({ status: 401 }).mockResolvedValueOnce({ status: 200 });\n  const refresh = vi.fn().mockResolvedValue(undefined);\n  expect((await withRefresh(call, refresh)).status).toBe(200);\n  expect(refresh).toHaveBeenCalledTimes(1);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: changelog for 0.2.0",
+      "files": {
+        "CHANGELOG.md": "# Changelog\n\n## 0.2.0\n- Separate photo upload queue with chunked resume\n- Jittered backoff for pushes\n- Per-field merge for inspection forms\n- Token refresh and replay\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "commit",
+      "message": "docs: field rollout checklist",
+      "files": {
+        "docs/rollout.md": "# Field rollout\n\n- Each customer is a tenant; no record may cross tenants.\n- Photos move out of the database into object storage.\n- Old app versions (v1.x) stay supported for one season.\n- Devices must free space once records are safely on the server.\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m3",
+      "ref": "chat 2026-04-27: approved the field rollout steps",
+      "steps": [
+        {
+          "key": "tenant",
+          "title": "Tenant isolation for inspection data"
+        },
+        {
+          "key": "export",
+          "title": "Inspection report export"
+        },
+        {
+          "key": "attach",
+          "title": "Attachment storage on object store"
+        },
+        {
+          "key": "audit",
+          "title": "Audit log of sync writes"
+        },
+        {
+          "key": "migrate",
+          "title": "Schema migrations for old app versions"
+        },
+        {
+          "key": "purge",
+          "title": "Purge of synced records on device"
+        },
+        {
+          "key": "telemetry",
+          "title": "Sync failure telemetry"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "tenant"
+    },
+    {
+      "type": "commit",
+      "step": "tenant",
+      "message": "feat(tenant): scope queries by tenant id",
+      "files": {
+        "src/tenant/scope.ts": "export function scoped(sql: string): string {\n  return sql.includes('WHERE') ? sql.replace('WHERE', 'WHERE tenant_id = @tenant AND') : `${sql} WHERE tenant_id = @tenant`;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tenant",
+      "message": "feat(tenant): resolve tenant from device token",
+      "files": {
+        "src/tenant/resolve.ts": "export function tenantOf(db: any, deviceId: string): string {\n  const row = db.prepare('SELECT tenant_id FROM devices WHERE id = ?').get(deviceId);\n  if (!row) throw new Error('unknown device');\n  return row.tenant_id;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tenant",
+      "message": "feat(tenant): reject cross-tenant record ids",
+      "files": {
+        "src/tenant/guard.ts": "export function assertSameTenant(db: any, tenant: string, recordId: string) {\n  const row = db.prepare('SELECT tenant_id FROM inspections WHERE id = ?').get(recordId);\n  if (row && row.tenant_id !== tenant) throw Object.assign(new Error('forbidden'), { status: 403 });\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tenant",
+      "message": "feat(tenant): per-tenant retention setting",
+      "files": {
+        "src/tenant/settings.ts": "export interface TenantSettings { retentionDays: number; photoMaxMb: number }\n\nexport const defaults: TenantSettings = { retentionDays: 30, photoMaxMb: 12 };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tenant",
+      "message": "test(tenant): other tenant's record is forbidden",
+      "done": true,
+      "files": {
+        "src/tenant/guard.test.ts": "import { expect, test } from 'vitest';\nimport { assertSameTenant } from './guard.js';\n\ntest('cross-tenant write throws', () => {\n  const db = { prepare: () => ({ get: () => ({ tenant_id: 'acme' }) }) };\n  expect(() => assertSameTenant(db, 'globex', 'r1')).toThrow('forbidden');\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "export",
+      "message": "feat(export): csv export of inspections",
+      "files": {
+        "src/export/csv.ts": "export function toCsv(rows: Array<Record<string, unknown>>): string {\n  if (rows.length === 0) return '';\n  const cols = Object.keys(rows[0]);\n  const esc = (v: unknown) => `\"${String(v ?? '').replace(/\"/g, '\"\"')}\"`;\n  return [cols.join(','), ...rows.map(r => cols.map(c => esc(r[c])).join(','))].join('\\n');\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "export",
+      "message": "feat(export): filter reports by site and date",
+      "files": {
+        "src/export/filter.ts": "export interface ExportFilter { siteId?: string; from?: string; to?: string }\n\nexport function whereClause(f: ExportFilter): string {\n  const parts = ['1 = 1'];\n  if (f.siteId) parts.push('site_id = @siteId');\n  if (f.from) parts.push('submitted_at >= @from');\n  if (f.to) parts.push('submitted_at < @to');\n  return parts.join(' AND ');\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: format with prettier",
+      "files": {
+        ".prettierrc": "{\n  \"singleQuote\": true,\n  \"printWidth\": 110,\n  \"trailingComma\": \"all\"\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "export",
+      "message": "feat(export): include photos as signed links",
+      "files": {
+        "src/export/photos.ts": "export function photoColumn(photoIds: string[], sign: (id: string) => string): string {\n  return photoIds.map(sign).join(' ');\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "export",
+      "message": "feat(export): GET /reports/export route",
+      "files": {
+        "src/export/route.ts": "import { toCsv } from './csv.js';\nimport { whereClause } from './filter.js';\n\nexport async function exportRoute(req: any, db: any) {\n  const rows = db.prepare(`SELECT * FROM inspections WHERE ${whereClause(req.query)}`).all(req.query);\n  return { contentType: 'text/csv', body: toCsv(rows) };\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "export",
+      "message": "test(export): quotes are escaped in csv",
+      "done": true,
+      "files": {
+        "src/export/csv.test.ts": "import { expect, test } from 'vitest';\nimport { toCsv } from './csv.js';\n\ntest('escapes quotes', () => {\n  expect(toCsv([{ note: 'say \"hi\"' }])).toBe('note\\n\"say \"\"hi\"\"\"');\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "attach",
+      "message": "feat(attach): store photos in object storage",
+      "files": {
+        "src/attach/s3.ts": "import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';\n\nconst s3 = new S3Client({});\n\nexport async function putPhoto(bucket: string, key: string, body: Buffer) {\n  await s3.send(new PutObjectCommand({ Bucket: bucket, Key: key, Body: body, ContentType: 'image/jpeg' }));\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "attach",
+      "message": "feat(attach): signed download urls",
+      "files": {
+        "src/attach/sign.ts": "import { GetObjectCommand, S3Client } from '@aws-sdk/client-s3';\nimport { getSignedUrl } from '@aws-sdk/s3-request-presigner';\n\nexport function signedUrl(s3: S3Client, bucket: string, key: string, ttlSec = 900) {\n  return getSignedUrl(s3, new GetObjectCommand({ Bucket: bucket, Key: key }), { expiresIn: ttlSec });\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): add @aws-sdk/client-s3 3.620",
+      "files": {
+        "package.json": "{\n  \"name\": \"fieldsync\",\n  \"version\": \"0.2.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"test\": \"vitest run\", \"start\": \"node dist/index.js\" },\n  \"dependencies\": { \"fastify\": \"^4.28.0\", \"better-sqlite3\": \"^11.3.0\", \"@aws-sdk/client-s3\": \"^3.620.0\", \"@aws-sdk/s3-request-presigner\": \"^3.620.0\" }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "attach",
+      "message": "feat(attach): move finished chunks out of temp",
+      "files": {
+        "src/attach/finalize.ts": "import { putPhoto } from './s3.js';\n\nexport async function finalize(bucket: string, tenant: string, photoId: string, parts: Buffer[]) {\n  await putPhoto(bucket, `${tenant}/photos/${photoId}.jpg`, Buffer.concat(parts));\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "attach",
+      "message": "feat(attach): expire temp chunks after 24 hours",
+      "files": {
+        "src/attach/expire.ts": "export const TEMP_TTL_MS = 24 * 60 * 60_000;\n\nexport function expired(createdAt: number, now = Date.now()) {\n  return now - createdAt > TEMP_TTL_MS;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "attach",
+      "message": "test(attach): temp chunks expire after a day",
+      "done": true,
+      "files": {
+        "src/attach/expire.test.ts": "import { expect, test } from 'vitest';\nimport { expired, TEMP_TTL_MS } from './expire.js';\n\ntest('chunk older than ttl is expired', () => {\n  expect(expired(0, TEMP_TTL_MS + 1)).toBe(true);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "audit",
+      "message": "feat(audit): append-only audit log table",
+      "files": {
+        "src/audit/log.ts": "export function initAudit(db: any) {\n  db.exec('CREATE TABLE IF NOT EXISTS audit_log (id INTEGER PRIMARY KEY, tenant_id TEXT, device_id TEXT, record_id TEXT, action TEXT, at INTEGER)');\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "audit",
+      "message": "feat(audit): record every accepted push",
+      "files": {
+        "src/audit/write.ts": "export function audit(db: any, e: { tenant: string; device: string; record: string; action: 'create' | 'update' | 'delete' }) {\n  db.prepare('INSERT INTO audit_log (tenant_id, device_id, record_id, action, at) VALUES (?, ?, ?, ?, ?)')\n    .run(e.tenant, e.device, e.record, e.action, Date.now());\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "audit",
+      "message": "feat(audit): redact inspector notes in log",
+      "files": {
+        "src/audit/redact.ts": "const SENSITIVE = ['note', 'signature', 'phone'];\n\nexport function redact(fields: Record<string, unknown>) {\n  return Object.fromEntries(Object.entries(fields).map(([k, v]) => [k, SENSITIVE.includes(k) ? '[redacted]' : v]));\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "audit",
+      "message": "feat(audit): query history of one inspection",
+      "files": {
+        "src/audit/query.ts": "export function historyOf(db: any, tenant: string, recordId: string) {\n  return db.prepare('SELECT * FROM audit_log WHERE tenant_id = ? AND record_id = ? ORDER BY at').all(tenant, recordId);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "audit",
+      "message": "test(audit): notes are redacted",
+      "done": true,
+      "files": {
+        "src/audit/redact.test.ts": "import { expect, test } from 'vitest';\nimport { redact } from './redact.js';\n\ntest('note is hidden', () => {\n  expect(redact({ note: 'gate code 4411', roof: 'ok' })).toEqual({ note: '[redacted]', roof: 'ok' });\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "migrate",
+      "message": "feat(migrate): read schema version header on push",
+      "files": {
+        "src/migrate/version.ts": "export function schemaVersion(headers: Record<string, string | undefined>): number {\n  return Number(headers['x-fieldsync-schema'] ?? 1);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "migrate",
+      "message": "feat(migrate): upgrade v1 records to v2 on push",
+      "files": {
+        "src/migrate/v1-to-v2.ts": "export function upgradeV1(r: any) {\n  const { answers, ...rest } = r;\n  return { ...rest, fields: answers ?? {}, schema: 2 };\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "migrate",
+      "message": "feat(migrate): downgrade pull payloads for old apps",
+      "files": {
+        "src/migrate/downgrade.ts": "export function downgradeToV1(r: any) {\n  const { fields, schema, ...rest } = r;\n  return { ...rest, answers: fields };\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: pin node 20 in .nvmrc",
+      "files": {
+        ".nvmrc": "20\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "migrate",
+      "message": "feat(migrate): reject apps older than v1.4",
+      "files": {
+        "src/migrate/minimum.ts": "export const MIN_APP_VERSION = [1, 4];\n\nexport function supported(appVersion: string): boolean {\n  const [maj, min] = appVersion.split('.').map(Number);\n  return maj > MIN_APP_VERSION[0] || (maj === MIN_APP_VERSION[0] && min >= MIN_APP_VERSION[1]);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "migrate",
+      "message": "test(migrate): v1 round-trips through v2",
+      "done": true,
+      "files": {
+        "src/migrate/migrate.test.ts": "import { expect, test } from 'vitest';\nimport { upgradeV1 } from './v1-to-v2.js';\nimport { downgradeToV1 } from './downgrade.js';\n\ntest('round trip keeps answers', () => {\n  const v1 = { id: 'r1', answers: { roof: 'ok' } };\n  expect(downgradeToV1(upgradeV1(v1))).toEqual(v1);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "purge",
+      "message": "feat(purge): select records acknowledged by server",
+      "files": {
+        "src/purge/select.ts": "export function purgeable(db: any, ackedUpTo: number) {\n  return db.prepare(\"SELECT id FROM local_inspections WHERE status = 'submitted' AND server_seq <= ?\").all(ackedUpTo);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "purge",
+      "message": "feat(purge): keep synced inspections for the tenant retention window",
+      "files": {
+        "src/purge/retention.ts": "export function olderThan(days: number, now = Date.now()): number {\n  return now - days * 24 * 60 * 60_000;\n}\n"
+      }
+    }
+  ],
+  "questions": [
+    {
+      "cat": "where",
+      "text": "Which part of the field rollout are we working on right now, and what comes after it?",
+      "current": "purge",
+      "next": "telemetry"
+    },
+    {
+      "cat": "why",
+      "text": "Why do inspection pushes back off with jitter when they retry?",
+      "step": "backoff",
+      "reason": "When a crew leaves a dead zone every device reconnects at the same moment, so jittered backoff spreads the retries instead of hitting the server all at once.",
+      "distractors": [
+        "Photos are large and fail far more often than form data on weak signal, so they get their own queue and one stuck photo no longer blocks inspection records.",
+        "Device tokens expire during long offline shifts, so the client refreshes once and replays the request instead of failing the whole sync.",
+        "Two inspectors often fill in different sections of the same form, and last-write-wins silently discarded the answers of whoever synced first."
+      ]
+    },
+    {
+      "cat": "proof",
+      "text": "Which file holds the result of the separate retry queue for photo uploads?",
+      "step": "pq",
+      "file": "src/photos/queue.ts"
+    },
+    {
+      "cat": "deferred",
+      "text": "The sync health dashboard for supervisors was planned for offline resilience. Where is it now?",
+      "step": "dash",
+      "milestone": "m3"
+    },
+    {
+      "cat": "update",
+      "text": "Which decision holds today on resolving conflicting edits to the same inspection?",
+      "step": "fieldmerge"
+    },
+    {
+      "cat": "abstain",
+      "text": "Which push notification provider did we choose to alert inspectors when their form has a conflict?"
+    },
+    {
+      "cat": "continue",
+      "text": "Resume the work: make the first change you would make.",
+      "next": "purge",
+      "dir": "src/purge/"
+    }
+  ]
+}

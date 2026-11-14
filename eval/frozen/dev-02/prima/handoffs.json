@@ -1,0 +1,17 @@
+{
+  "model": "claude-opus-5-5",
+  "checker": "claude-sonnet-5-5",
+  "handoffs": [
+    {
+      "point": 16,
+      "today": "2026-03-02",
+      "before": {
+        "STATE.md": "# State — tally (tally-timesheet CLI)\nUpdated: 2026-03-02 · Branch: `main` @ `dee9ed1` · PR: none (no remote configured)\n\n## Milestone\nM1 Tracking core: record time entries reliably and print the reports a freelancer needs\nbefore invoicing. Done: SQLite storage (`bcd3643`), weekly report from Monday (`a9dc6a3`),\nmidnight-split fix (`ee7aee5`). In progress: Report by project (`139137b`, not yet declared\nclosed). Left: CSV export of reports.\nNext milestone: M2 Invoicing (turn tracked hours into per-client invoices); it now also\nowns \"Report by client\", which the user deferred out of M1.\n\n## Next\n1. Finish \"Report by project\" (`src/report-project/project.js`): it sums raw `stop - start`\n   and does not use `splitAtMidnight` (`src/time-split/midnight.js`), so a project total\n   over a week range would repeat the midnight bug. Decide with the user whether to split\n   first, then mark the step closed.\n2. \"CSV export of reports\": last M1 step.\n3. Close M1, then plan M2 Invoicing starting from \"Report by client\".\n\n## Open decisions and risks\n- Dropped: JSON file storage. Concurrent `tally start` lost an entry; see `docs/storage.md`.\n  Don't go back to it.\n- `docs/design.md` still says entries live in `~/.tally/entries.json`. That is stale,\n  superseded by `docs/storage.md`; worth fixing.\n- No test suite and no `test` script in `package.json`, so nothing has been verified by tests.\n- STATE.md and LOG.md stay out of git (user's choice; listed in `.git/info/exclude`). Never commit them.\n\n## Pointers\n- Docs: `docs/design.md`, `docs/storage.md` · Code: `src/storage-sqlite/`, `src/report-week/`,\n  `src/report-project/`, `src/time-split/` · CLI: `bin/tally.js`\n- Verify: no test command yet → not run\n- Suggested skills: `commit-checkpoint` for each step's commit; `handoff` when M1 closes.\n",
+        "LOG.md": "# Log\n- 2026-03-02 · M1 Tracking core: SQLite storage, weekly report, midnight split done; project report in progress; client report deferred to M2 · dee9ed1\n"
+      },
+      "applied": [],
+      "rejected": [],
+      "cost": 0.16338119999999998
+    }
+  ]
+}

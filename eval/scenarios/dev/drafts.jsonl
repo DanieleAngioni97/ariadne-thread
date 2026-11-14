@@ -2,3 +2,4 @@
 {"id":"dev-04","start":"2026-03-02T09:00:00Z","events":40,"domain":"a rate limiter service in front of a public REST API","model":"claude-opus-5-5","rounds":1,"cost":0.19120040000000002}
 {"id":"dev-03","start":"2026-03-02T09:00:00Z","events":40,"domain":"a static site generator for technical documentation","model":"claude-opus-5-5","rounds":2,"cost":0.3860768}
 {"id":"dev-06","start":"2026-03-02T09:00:00Z","events":120,"domain":"a data pipeline that cleans and aggregates readings from greenhouse sensors","model":"claude-opus-5-5","rounds":1,"cost":0.5984484}
+{"id":"dev-05","start":"2026-03-02T09:00:00Z","events":120,"domain":"an offline-first sync service for a field-inspection mobile app","model":"claude-opus-5-5","rounds":1,"cost":0.5496646}
