@@ -39,7 +39,7 @@ function copyCli(dir) {
   }
 }
 
-/** Builds `<dir>/ariadne`, `<dir>/prima` and the questions; returns `{ dir, questions }`. */
+/** Builds `<dir>/ariadne`, `<dir>/prima`, the questions and the grading key; returns `{ dir, questions, key }`. */
 export function generate(scenario, dir) {
   const ariadne = join(dir, 'ariadne')
   const prima = join(dir, 'prima')
@@ -113,7 +113,10 @@ export function generate(scenario, dir) {
   }
   const questions = scenario.questions.map(q => ({ cat: q.cat, text: q.text, ...answer(q, scenario, titles) }))
   writeFileSync(join(dir, 'questions.json'), JSON.stringify(questions, null, 2) + '\n')
-  return { dir, questions }
+  // What the graders need besides each answer: every title, to catch an answer that names the wrong one.
+  const key = { titles: Object.values(titles), aliases: scenario.aliases ?? {} }
+  writeFileSync(join(dir, 'key.json'), JSON.stringify(key, null, 2) + '\n')
+  return { dir, questions, key }
 }
 
 /** The files a step's commits touched, with the files its proofs point to. */
