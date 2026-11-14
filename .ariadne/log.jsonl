@@ -57,3 +57,11 @@
 {"at":"2026-11-14T10:08Z","id":"m3.1.4","op":"close","text":"chiuso m3.1.4 Pulsante Apri il grafo nella banda: «Apri il grafo» sulla riga dove; apre il viewer e lo avvia se spento","proof":[{"type":"commit","ref":"40b72ea"}]}
 {"at":"2026-11-14T10:21Z","id":"m3.1.5","op":"start","text":"iniziato m3.1.5 Banda distinta dal testo della chat"}
 {"at":"2026-11-14T10:22Z","id":"m3.1.5","op":"close","text":"chiuso m3.1.5 Banda distinta dal testo della chat: linea «── ariadne» nel colore subtle del tema sopra la banda; omessa se farebbe scorrere","proof":[{"type":"commit","ref":"72cfde6"}]}
+{"at":"2026-11-14T10:29Z","id":"m4","op":"plan","text":"piano per M4 Revisione e feedback: Progetto della valutazione → Esecuzione della valutazione"}
+{"at":"2026-11-14T10:29Z","id":"m3.9","op":"move","text":"spostato m3.9 sotto m3 (correzione tua)"}
+{"at":"2026-11-14T10:29Z","id":"m3.4","op":"move","text":"spostato m3.4 sotto m3 (correzione tua)"}
+{"at":"2026-11-14T10:29Z","id":"m4.3","op":"move","text":"spostato m4.3 sotto m4 (correzione tua)"}
+{"at":"2026-11-14T10:29Z","id":"m4.2","op":"move","text":"spostato m4.2 sotto m4 (correzione tua)"}
+{"at":"2026-11-14T10:29Z","id":"m3.1.3","op":"close","text":"chiuso m3.1.3 Banda provata nella sessione: banda usata dal vivo: Approva tutto dalla banda, Apri il grafo e linea separatrice approvati dall'utente","proof":[{"type":"message","ref":"chat 2026-11-14: «Ok va benissimo così»"}]}
+{"at":"2026-11-14T10:29Z","id":"m3.1","op":"close","text":"chiuso m3.1 Banda nella mod: banda nella mod: dove, contesto, coda, esito, Apri il grafo, linea separatrice; provata nella sessione","proof":[{"type":"commit","ref":"72cfde6"}]}
+{"at":"2026-11-14T10:29Z","id":"m3.9","op":"start","text":"iniziato m3.9 Task tools come sorgente"}
