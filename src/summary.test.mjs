@@ -93,3 +93,8 @@ test('over the token limit the farthest dependencies go first, the other lines s
   assert.doesNotMatch(text, /^- a /m)
   for (const line of ['Sei in:', 'Rientri in sospeso:', 'Prossimo:', 'Per approfondire:']) assert.ok(text.includes(line), line)
 })
+
+test('a useful file with a section shows the section, so the agent opens the right part', () => {
+  const nodes = NODES.map(x => (x.id === 'd' ? { ...x, proof: [{ type: 'file', ref: 'docs/implementazione.md#m3.9' }] } : x))
+  assert.match(summarize(nodes, { current: 'd' }), /\nFile utili: docs\/implementazione\.md § m3\.9\n/)
+})

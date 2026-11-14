@@ -2,6 +2,7 @@
 // Format: docs/ux/allineamento/specifica.md § Riassunto per l'agente.
 
 import { makeGraph } from './graph.mjs'
+import { showRef } from './refs.mjs'
 
 export const LIMIT = 300
 const MAX_DEPENDENCIES = 3
@@ -12,7 +13,7 @@ const PATH = /[\w.-]+(?:\/[\w.-]+)*\.[a-z]{1,5}\b/g
 function usefulFiles(g, id) {
   const files = []
   for (const n of [id, ...g.containers(id)].map(g.get)) {
-    const own = [...(n.proof ?? []).filter(p => p.type === 'file').map(p => p.ref), ...(n.detail?.match(PATH) ?? [])]
+    const own = [...(n.proof ?? []).filter(p => p.type === 'file').map(p => showRef(p.ref)), ...(n.detail?.match(PATH) ?? [])]
     for (const f of own) if (!files.includes(f)) files.push(f)
   }
   return files.slice(0, MAX_FILES)

@@ -7,6 +7,7 @@ import ELK from 'elkjs'
 import htm from 'htm'
 
 import { parse } from '../src/graph.mjs'
+import { fileRef, showRef } from '../src/refs.mjs'
 import { summarize } from '../src/summary.mjs'
 import { validate } from '../src/validate.mjs'
 import { lang, t } from './i18n.js'
@@ -268,8 +269,9 @@ const Chip = ({ node, onSelect }) => html`
 /** One proof: a commit sha, a file that opens in the editor, or the message that approved it. */
 function Proof({ proof }) {
   if (proof.type === 'file') {
-    const path = proof.ref.startsWith('~') || !ROOT ? proof.ref : `${ROOT}/${proof.ref}`
-    return html`<a href=${`vscode://file/${path}`}><code>${proof.ref}</code></a>`
+    const { path: ref } = fileRef(proof.ref)
+    const path = ref.startsWith('~') || !ROOT ? ref : `${ROOT}/${ref}`
+    return html`<a href=${`vscode://file/${path}`}><code>${showRef(proof.ref)}</code></a>`
   }
   return proof.type === 'commit' ? html`<code>${proof.ref}</code>` : html`<span>${proof.ref}</span>`
 }

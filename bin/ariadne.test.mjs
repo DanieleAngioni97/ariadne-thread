@@ -64,10 +64,21 @@ test('show and why print a node; an unknown node fails', () => {
 })
 
 test('validate reports ok or the broken rules', () => {
-  assert.equal(run(project({ graph: GOOD }), 'validate').stdout, '.ariadne/graph.jsonl: ok\n')
+  const ok = project({ graph: GOOD })
+  writeFileSync(join(ok, 'x.md'), '# X\n')
+  assert.equal(run(ok, 'validate').stdout, '.ariadne/graph.jsonl: ok\n')
   const r = run(project({ graph: [n('a', { what: '' })] }), 'validate')
   assert.equal(r.status, 1)
   assert.match(r.stderr, /^\.ariadne\/graph\.jsonl:1 a \[what\] /)
+})
+
+test('validate reports a file proof whose file is gone or whose section is not in it', () => {
+  const dir = project({ graph: [n('a'), n('b', { proof: [{ type: 'file', ref: 'x.md#Piano' }] }), n('c', { proof: [{ type: 'file', ref: 'gone.md' }] })] })
+  writeFileSync(join(dir, 'x.md'), '# Piano di lavoro\n')
+  assert.equal(run(dir, 'validate').status, 1)
+  assert.equal(run(dir, 'validate').stderr, '.ariadne/graph.jsonl:3 c [file-ref] gone.md: file not found (spostato? ariadne relink <vecchio> <nuovo>)\n')
+  writeFileSync(join(dir, 'x.md'), '# Altro\n')
+  assert.match(run(dir, 'validate').stderr, /:2 b \[file-ref\] x\.md#Piano: section not found\n/)
 })
 
 test('an unknown command or a missing id prints the usage', () => {
@@ -186,4 +197,14 @@ test('open on a port held by another server says so, exits 1 and opens nothing',
   other.close()
   assert.equal(status, 1)
   assert.match(stderr, /occupata da un altro server/)
+})
+
+test('close with only a chat message as proof warns that no file holds the result', () => {
+  const chatOnly = { proof: [{ type: 'message', ref: 'chat' }] }
+  const graph = [PLAN[0], { ...PLAN[1], ...chatOnly }, { ...PLAN[2], ...chatOnly }]
+  const dir = project({ graph, thread: { project: 'p', current: 'a', profile: 'standard' } })
+  const r = run(dir, 'close', 'a', 'A is done.', '--message', 'chat')
+  assert.equal(r.status, 0, r.stderr)
+  assert.match(r.stderr, /^ariadne: ⚠ a si chiude senza file né commit: dove sta il risultato\? ariadne fill a --file <percorso>\[#sezione\]\n$/)
+  assert.equal(run(dir, 'close', 'b', 'B is done.', '--file', 'src/b.mjs').stderr, '')
 })

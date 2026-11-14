@@ -196,3 +196,19 @@ test('an unreadable graph is refused before any operation', () => {
   assert.equal(r.ok, false)
   assert.equal(r.errors[0], 'grafo non valido alla riga 6: correggilo prima di cambiarlo')
 })
+
+test('relink points the file proofs of a moved file or folder to where it is now, sections kept', () => {
+  const nodes = [
+    n('x', { proof: [{ type: 'file', ref: 'spikes/viewer' }, { type: 'commit', ref: 'abc' }] }),
+    n('y', { proof: [{ type: 'file', ref: 'spikes/viewer/app.js#Proof' }, { type: 'file', ref: 'spikes/viewerx.md' }] }),
+    n('z'),
+  ]
+  const text = nodes.map(x => JSON.stringify(x)).join('\n') + '\n'
+  const r = ok([{ op: 'relink', from: 'spikes/viewer', to: 'viewer' }], { text, thread: { current: 'z' } })
+  const [x, y] = parse(r.text)
+  assert.deepEqual(x.proof, [{ type: 'file', ref: 'viewer' }, { type: 'commit', ref: 'abc' }])
+  assert.deepEqual(y.proof, [{ type: 'file', ref: 'viewer/app.js#Proof' }, { type: 'file', ref: 'spikes/viewerx.md' }])
+  assert.equal(r.text.split('\n')[2], JSON.stringify(nodes[2]))
+  assert.deepEqual(r.log.map(e => e.text), ['ricollegato spikes/viewer → viewer in 2 nodi (x, y)'])
+  assert.match(run([{ op: 'relink', from: 'nowhere', to: 'x' }], { text }).errors[0], /nessuna prova punta a nowhere/)
+})

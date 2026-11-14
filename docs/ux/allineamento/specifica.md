@@ -33,7 +33,7 @@ Schema di `concetti.md` § Schema, allineato al validatore attuale, più tre cam
 | `status` | `todo` · `active` · `done` · `deferred` · `replaced` | mai cancellare (R15) |
 | `parent`, `after[]` | contenitore; ordine e prerequisiti | |
 | `what`, `why`, `detail` | decisione o risultato in una riga (R5); perché; dettaglio libero | |
-| `proof[]` | `{type: commit\|file\|message, ref}` | un nodo `todo` ha come prova il messaggio del piano approvato |
+| `proof[]` | `{type: commit\|file\|message, ref}`; un `file` può puntare a una sezione: `percorso#inizio del titolo` | un nodo `todo` ha come prova il messaggio del piano approvato; `ariadne validate` segnala file spariti e sezioni non trovate (`file-ref`); `close` avvisa se mancano file e commit |
 | `uncertain` | motivo, se la prova non è verificabile (R17) | |
 | `by`, `at` | `agent` / `user`; data o data-ora ISO (R16) | |
 | `confirmed` | `{at, ref}` per i nodi strutturali (R2) | `ref`: `banda`, `chat`, `revisione al rientro` |
@@ -77,6 +77,7 @@ L'unico modo di cambiare il grafo. Ogni operazione nomina i nodi per id.
 | `defer {id, to}` | `deferred` + crea il nodo che lo riprende in una milestone successiva (vincolo m1.2) | struttura |
 | `replace {id, by}` | `replaced`, punta al successore (R15) | struttura |
 | `move {id, parent, after?}` | correzione tua (R10) | struttura, firmata da te |
+| `relink {from, to}` | le prove `file` di un file o cartella spostati puntano al nuovo percorso, sezioni comprese | dettaglio |
 | `confirm {id}` · `reject {id}` | esito di una proposta o di una voce in coda | tua scelta |
 | `none` | il checkpoint non cambia il grafo | — |
 

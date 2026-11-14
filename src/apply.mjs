@@ -116,6 +116,18 @@ export function apply({ text, thread, ops, at, by = 'agent' }) {
       log(id, 'fill', changed.length ? `completato ${id}: ${parts.join(', ')}` : `prova per ${id}: ${parts.join(', ')}`, fresh)
     },
 
+    // A file or folder moved: its file proofs follow it, sections kept, so refs say where memory is now.
+    relink({ from, to }) {
+      const moved = ref => ref === from || ref.startsWith(`${from}/`) || ref.startsWith(`${from}#`)
+      const relinked = nodes.filter(n => (n.proof ?? []).some(p => p.type === 'file' && moved(p.ref)))
+      if (relinked.length === 0) refuse(`relink: nessuna prova punta a ${from}`)
+      for (const n of relinked) {
+        n.proof = n.proof.map(p => (p.type === 'file' && moved(p.ref) ? { ...p, ref: to + p.ref.slice(from.length) } : p))
+        touch(n)
+      }
+      log(null, 'relink', `ricollegato ${from} → ${to} in ${relinked.length} ${relinked.length === 1 ? 'nodo' : 'nodi'} (${relinked.map(n => n.id).join(', ')})`)
+    },
+
     add({ node }) {
       const here = state.thread.current && get(state.thread.current)
       const { start: startNow, ...fields } = node

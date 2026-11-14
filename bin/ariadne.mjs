@@ -4,7 +4,9 @@
 // never block the prompt or a tool call.
 
 import { spawn, spawnSync } from 'node:child_process'
-import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { homedir } from 'node:os'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 
@@ -13,6 +15,7 @@ import { band } from '../src/band.mjs'
 import { parse } from '../src/graph.mjs'
 import { show, why } from '../src/inspect.mjs'
 import { openViewer } from '../src/open.mjs'
+import { brokenRefs } from '../src/refs.mjs'
 import { summarize } from '../src/summary.mjs'
 import { serve } from '../src/serve.mjs'
 import { opsFromCommits, untracked } from '../src/trailers.mjs'
@@ -29,7 +32,7 @@ const USAGE = `uso: ariadne <comando>
   start <id> · close <id> "<esito>" (--commit sha | --file path | --message testo)
   add <kind> "<titolo>" --what "…" [--under id] [--after a,b] [--why …] [--detail …] [--reentry id] [--id x] [--start | --done]
   fill <id> [--what|--why|--detail|--title …] [--commit|--file|--message …]
-  defer <id> <milestone> · replace <id> <successore>
+  defer <id> <milestone> · replace <id> <successore> · relink <vecchio percorso> <nuovo>
   move <id> <parent> [--after a,b] · undo · confirm <id>|--all · reject <id> [successore]
   apply <ops.json> · sync [--hook] · view [--port n] · open [id] [--port n] · band [--review i]
   --by user: l'azione viene da te (move, undo, confirm e reject lo sono sempre)`
@@ -85,6 +88,13 @@ function run(ops, by) {
     process.exit(1)
   }
   for (const l of r.log) console.log(`↺ ${l.text}`)
+  // The memory lives in files: a result held by the chat alone is lost at the next /clear.
+  const closed = r.log.filter(l => l.op === 'close').map(l => parse(r.text).find(n => n.id === l.id))
+  for (const n of closed) {
+    if (!(n.proof ?? []).some(p => p.type === 'file' || p.type === 'commit')) {
+      console.error(`ariadne: ⚠ ${n.id} si chiude senza file né commit: dove sta il risultato? ariadne fill ${n.id} --file <percorso>[#sezione]`)
+    }
+  }
 }
 
 /** The band's rows as JSON for the mod (specifica § Banda); `review` is the queue item shown one at a time. */
@@ -144,8 +154,24 @@ function inspect(fn, id) {
   console.log(text)
 }
 
+/** A file proof's target on disk: its text, '' for a folder, null when missing (`~` is the home folder). */
+function readRef(path) {
+  const full = path.startsWith('~/') ? join(homedir(), path.slice(2)) : path
+  try {
+    return statSync(full).isDirectory() ? '' : readFileSync(full, 'utf8')
+  } catch {
+    return null
+  }
+}
+
 function check(file = GRAPH) {
-  const errors = validate(readFileSync(file, 'utf8'))
+  const text = readFileSync(file, 'utf8')
+  const errors = validate(text)
+  const lines = text.split('\n')
+  const idOf = l => { try { return JSON.parse(l).id } catch { return null } }
+  const lineOf = id => lines.findIndex(l => idOf(l) === id) + 1
+  const nodes = errors.length > 0 ? [] : parse(text)
+  for (const b of brokenRefs(nodes, { read: readRef })) errors.push({ line: lineOf(b.id), id: b.id, rule: 'file-ref', message: `${b.ref}: ${b.reason}${b.reason === 'file not found' ? ' (spostato? ariadne relink <vecchio> <nuovo>)' : ''}` })
   for (const e of errors) console.error(`${file}:${e.line} ${e.id ?? ''} [${e.rule}] ${e.message}`)
   if (errors.length > 0) process.exit(1)
   console.log(`${file}: ok`)
@@ -182,6 +208,7 @@ function operation(command, args, v) {
       return { op: 'add', node }
     }
     case 'defer': return a && b ? { op: 'defer', id: a, to: b } : null
+    case 'relink': return a && b ? { op: 'relink', from: a, to: b } : null
     case 'replace': return a && b ? { op: 'replace', id: a, by: b } : null
     case 'move': return a && b ? { op: 'move', id: a, parent: b, after: list(v.after) } : null
     case 'undo': return { op: 'undo' }

@@ -158,6 +158,18 @@ Verifica del 2026-11-14 su Claude Code 2.1.302 (Opus 5.5), dai tipi della build 
   mod su `tool.call` di `TaskUpdate` con `status: completed` che mette in coda di conferma un `close`
   sul nodo con lo stesso titolo. Per la valutazione, «Claude Code Tasks» è uno dei termini di confronto.
 
+## m3.11 — nodi agganciati a file e sezioni
+La memoria sta nei file, non nella chat (chat 2026-11-14): ogni nodo deve dire dove sta il suo risultato.
+
+- **Sezioni:** una prova `file` è `percorso#inizio del titolo` (`docs/implementazione.md#m3.9`);
+  `src/refs.mjs` la legge e la mostra come `percorso § sezione` nel riassunto e nel viewer.
+- **Riferimenti rotti:** `ariadne validate` controlla che i file esistano e che la sezione sia un titolo
+  markdown del file (regola `file-ref`); il validatore puro resta senza disco, per il viewer e la banda.
+- **File spostati:** `ariadne relink <vecchio> <nuovo>` aggiorna tutte le prove che ci puntano.
+- **Chiusure senza file:** `close` con solo un messaggio come prova avvisa e suggerisce `fill --file`.
+- **Misura di partenza (2026-11-14):** 67 nodi, 24 prove `file`, 0 con sezione, 2 file spariti (riparati
+  con `relink`); 13 nodi chiusi su 48 senza file né commit.
+
 ## m3.2 — viewer
 Riparte da `spikes/viewer/` (base visiva approvata in `m1.2`), spostato in `viewer/`; legge
 `.ariadne/`, comportamento in specifica § Viewer; include il layout stabile (`m2.6`).
