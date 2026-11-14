@@ -88,14 +88,17 @@ Termini statistici, in ordine d'uso:
 
 ## 4. Dove vive la valutazione e con cosa
 
-**Scelta:** un repository separato, `~/Sviluppo/Personal/ariadne-eval`, locale e senza remote: scenari,
-generatore, runner, grader, analisi e uscite grezze. Il rapporto finale torna qui, in `docs/valutazione/rapporto.md`.
+**Scelta (cambiata il 2026-11-14, passo `m4.4.2`):** una cartella `eval/` in questo repo: scenari,
+generatore, runner, grader, analisi. Il rapporto finale va in `docs/valutazione/rapporto.md`.
 
-- *Perché separato:* i progetti finti sono repository git e non devono finire annidati in quello del
-  prodotto; la storia della valutazione non muove quella di ariadne. Era la richiesta dell'utente.
-- *Alternativa scartata:* una cartella `eval/` in questo repo, più comoda ma con repository annidati e
-  commit di valutazione nella storia del prodotto.
-- *Isolamento:* ogni prova gira su una copia temporanea della fixture, mai dentro `ariadne-eval` (P21, § 6).
+- *Niente repository annidati:* i progetti finti non si committano. Il generatore li ricrea, identici, in
+  `eval/out/`, che git ignora; si committano gli scenari, i testi congelati e i loro hash.
+- *Uscite grezze* delle prove in `eval/runs/`, anch'essa ignorata da git; si committano solo i riassunti e i
+  loro hash.
+- *Perché è cambiata:* un repository fuori da questo chiedeva un'approvazione per ogni scrittura, e avrebbe
+  diviso il filo di ariadne in due posti. Il prezzo sono i commit di valutazione nella storia del prodotto.
+- *Alternativa scartata:* il repository separato `~/Sviluppo/Personal/ariadne-eval` della versione 3.
+- *Isolamento:* ogni prova gira su una copia temporanea della fixture fuori da questo repo (P21, § 6).
 
 **Strumenti:**
 
@@ -610,7 +613,7 @@ I prezzi sono di listino; con l'abbonamento si consuma quota, non denaro.
 ## 15. Procedura (passo `m4.4`)
 
 1. In ariadne: la variabile `ARIADNE_NOW` per l'orologio finto, con il suo test.
-2. Creare `ariadne-eval`; scrivere generatore, runner, grader e test dei grader.
+2. Creare `eval/` con il suo `.gitignore`; scrivere generatore, runner, grader e test dei grader.
 3. E4 sull'archivio congelato: tassi e N, committati.
 4. Scrivere i 6 scenari di sviluppo; generare; scrivere e correggere *prima*; generare le trascrizioni dei
    checkpoint di sviluppo per il pilota di E2.
