@@ -48,7 +48,8 @@ test('why is graded on the letter of the shuffled option', () => {
 })
 
 test('proof compares normalized paths; abstain accepts only non risulta', () => {
-  const proof = { cat: 'proof', answer: 'src/lexer/index.js' }
+  const proof = { cat: 'proof', answer: ['src/lexer/index.js', 'src/lexer/split.js'] }
+  assert.equal(grade(proof, 'RISPOSTA: src/lexer/split.js', ctx).status, 'correct')
   assert.equal(grade(proof, 'RISPOSTA: `./src/lexer/index.js`', ctx).status, 'correct')
   assert.equal(grade(proof, 'RISPOSTA: src/lexer/', ctx).status, 'wrong')
   const abstain = { cat: 'abstain', answer: 'non risulta' }

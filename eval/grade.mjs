@@ -50,7 +50,7 @@ export function grade(q, output, ctx) {
     case 'where': return gradeTitles(value, [q.answer.current, q.answer.next], ctx)
     case 'proof': {
       const path = cleanPath(value)
-      if (path === q.answer) return result('correct', value)
+      if (q.answer.includes(path)) return result('correct', value)
       return result(/[/.]/.test(path) ? 'wrong' : 'unrecognized', value)
     }
     case 'abstain': return result(normalize(value) === normalize(NONE) ? 'correct' : 'unrecognized', value)

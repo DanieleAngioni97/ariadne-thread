@@ -200,12 +200,6 @@ function filesOf(scenario, key) {
   return commits.flatMap(e => [...Object.keys(e.files), ...(e.proofFiles ?? []).map(f => f.split('#')[0])])
 }
 
-/** Steps that are over: closed by a commit, deferred or replaced. */
-function finished(scenario) {
-  const keys = scenario.events.flatMap(e => (e.type === 'commit' && e.done ? [e.step] : e.type === 'defer' || e.type === 'replace' ? [e.step] : []))
-  return [...new Set(keys)]
-}
-
 const milestoneKeys = scenario => scenario.events.filter(e => e.type === 'milestone').map(e => e.key)
 
 /** The other steps, the most alike in words first; ties keep the scenario order. */
@@ -222,7 +216,11 @@ function answer(q, scenario, titles) {
   switch (q.cat) {
     case 'where': return { answer: { current: titles[q.current], next: titles[q.next] } }
     case 'why': return { answer: q.reason, options: [q.reason, ...q.distractors, NONE] }
-    case 'proof': return { answer: q.file }
+    case 'proof': {
+      // Any file of the step's own is right: a step may hold its result in several.
+      const others = new Set(Object.keys(titles).filter(k => k !== q.step).flatMap(k => filesOf(scenario, k)))
+      return { answer: [...new Set(filesOf(scenario, q.step).filter(f => !others.has(f)))].sort() }
+    }
     case 'deferred': {
       const others = milestoneKeys(scenario).filter(k => k !== q.milestone)
       const [a, b, c] = similar(scenario, titles, q.step)
@@ -239,7 +237,10 @@ function answer(q, scenario, titles) {
     case 'abstain': return { answer: NONE }
     case 'continue': {
       const sorted = files => [...new Set(files)].sort()
-      return { answer: { dir: q.dir, allowed: sorted(filesOf(scenario, q.next)), forbidden: sorted(finished(scenario).flatMap(k => filesOf(scenario, k))) } }
+      // Finished steps' files are allowed: the open step may build on them. Set-aside work is not.
+      const allowed = sorted(filesOf(scenario, q.next))
+      const aside = scenario.events.filter(e => e.type === 'defer' || e.type === 'replace').map(e => e.step)
+      return { answer: { dir: q.dir, allowed, forbidden: sorted(aside.flatMap(k => filesOf(scenario, k))).filter(f => !allowed.includes(f)) } }
     }
     default: throw new Error(`${scenario.id}: unknown question category ${q.cat}`)
   }

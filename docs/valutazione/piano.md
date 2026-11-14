@@ -43,6 +43,14 @@ Dove resta aperta. Il primo pilota resta in `eval/runs/pilot-haiku/` come regist
 - Da riportare come osservazione sul prodotto: con una modifica in coda («Da confermare») l'agente di *ariadne*
   tende a fermarsi e chiedere la conferma invece di riprendere il lavoro.
 
+*Dopo il terzo pilota (2026-11-14):*
+- Continua chiede «the first code change»: l'agente di *ariadne* faceva come prima modifica `ariadne close`
+  sul passo aperto, e si fermava lì. Da riportare come osservazione sul prodotto (contabilità del grafo prima
+  del lavoro, chiusure premature).
+- Continua vieta solo i file dei passi rinviati o sostituiti: il passo aperto può dover toccare i file di un
+  passo finito (in `dev-04` l'invalidazione della cache tocca la cache).
+- Prova accetta qualsiasi file proprio del passo: un passo può tenere il risultato in più file.
+
 *Ripresa:* il runner salta le prove già registrate, così una prova interrotta dal limite d'uso si rifà nella
 finestra successiva invece di andare persa.
 

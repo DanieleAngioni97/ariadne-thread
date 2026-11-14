@@ -25,6 +25,7 @@ test('the prompt asks for one RISPOSTA line; why lists the shuffled options by l
   const order = ['X', 'Y', 'Z', 'W', 'non risulta']
   assert.match(promptFor(q('why'), order), /\nA\) X\nB\) Y\nC\) Z\nD\) W\nE\) non risulta\n/)
   assert.doesNotMatch(promptFor(q('continue')), /RISPOSTA/)
+  assert.match(promptFor(q('continue')), /first code change/)
   assert.match(promptFor(q('update'), q('update').options), /\nA\) /)
   assert.match(promptFor(q('proof')), /Answer in English/)
 })

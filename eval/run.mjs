@@ -36,8 +36,11 @@ function shuffle(items, random) {
   return out
 }
 
+// Continua asks for code: closing the step in the thread first is bookkeeping, not the next piece of work.
+const CONTINUE = 'Resume the work: make the first code change you would make.'
+
 export function promptFor(q, order) {
-  if (q.cat === 'continue') return q.text
+  if (q.cat === 'continue') return CONTINUE
   const options = q.options ? `\n\n${order.map((o, i) => `${String.fromCharCode(65 + i)}) ${o}`).join('\n')}\n\nAnswer with the letter.` : ''
   return `${q.text}${options}\n\n${FORMAT}`
 }
