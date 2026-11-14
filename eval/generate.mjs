@@ -39,8 +39,11 @@ function copyCli(dir) {
   }
 }
 
-/** Builds `<dir>/ariadne`, `<dir>/prima`, the questions and the grading key; returns `{ dir, questions, key }`. */
-export function generate(scenario, dir) {
+/**
+ * Builds `<dir>/ariadne`, `<dir>/prima`, the questions and the grading key; returns `{ dir, questions, key }`.
+ * `until` stops before that event and leaves out the frozen STATE.md and LOG.md: the handoffs of prima start there.
+ */
+export function generate(scenario, dir, { until } = {}) {
   const ariadne = join(dir, 'ariadne')
   const prima = join(dir, 'prima')
   init(ariadne, ['.ariadne/'])
@@ -61,7 +64,7 @@ export function generate(scenario, dir) {
     ids[key] = idOf(title)
   }
 
-  scenario.events.forEach((e, i) => {
+  scenario.events.slice(0, until).forEach((e, i) => {
     clock = new Date(t0 + i * 60_000).toISOString().replace('.000', '')
     switch (e.type) {
       case 'milestone':
@@ -85,6 +88,8 @@ export function generate(scenario, dir) {
       case 'replace':
         cli('replace', ids[e.step], ids[e.by], '--by', 'user')
         break
+      case 'handoff':
+        break
       case 'commit': {
         const message = [e.message, e.why].filter(Boolean).join('\n\n')
         const thread = e.step ? `\n\nThread: ${ids[e.step]}${e.done ? ` done: ${e.message}` : ''}` : ''
@@ -107,7 +112,7 @@ export function generate(scenario, dir) {
     }
   })
 
-  for (const f of ['STATE.md', 'LOG.md']) {
+  for (const f of until === undefined ? ['STATE.md', 'LOG.md'] : []) {
     const frozen = join(FROZEN, scenario.id, 'prima', f)
     if (existsSync(frozen)) cpSync(frozen, join(prima, f))
   }

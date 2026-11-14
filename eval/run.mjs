@@ -81,7 +81,7 @@ function changedFiles(copy) {
   }
 }
 
-function launch(bin, args, cwd, env) {
+export function launch(bin, args, cwd, env) {
   const [cmd, pre] = bin.endsWith('.mjs') ? [process.execPath, [bin]] : [bin, []]
   return spawnSync(cmd, [...pre, ...args], { cwd, input: '', timeout: TIMEOUT_MS, maxBuffer: 256 * 1024 * 1024, encoding: 'utf8', env: { ...process.env, ...env } })
 }

@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 // A stand-in for `claude -p` in the runner tests: runs the hooks from --settings like the real CLI and
 // prints a stream-json flow. FAKE_ANSWER is the reply, FAKE_TOOL_PATH a Read it pretends to make,
-// FAKE_WRITE a file it creates in the working folder.
+// FAKE_WRITE a file it creates in the working folder, FAKE_HANDOFF writes STATE.md and LOG.md, FAKE_CHECK is
+// the reply to a fact-check prompt.
 
 import { execSync } from 'node:child_process'
-import { readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 
 const args = process.argv.slice(2)
-const settings = JSON.parse(readFileSync(args[args.indexOf('--settings') + 1], 'utf8'))
+const settings = args.includes('--settings') ? JSON.parse(readFileSync(args[args.indexOf('--settings') + 1], 'utf8')) : {}
 const emit = e => console.log(JSON.stringify(e))
 const run = event => (settings.hooks?.[event] ?? []).flatMap(m => m.hooks).map(h => execSync(h.command, { encoding: 'utf8', shell: '/bin/sh' }))
 
@@ -18,6 +19,12 @@ if (process.env.FAKE_TOOL_PATH) {
   emit({ type: 'assistant', message: { content: [{ type: 'tool_use', id: 't1', name: 'Read', input: { file_path: process.env.FAKE_TOOL_PATH } }] } })
 }
 if (process.env.FAKE_WRITE) writeFileSync(process.env.FAKE_WRITE, 'x\n')
-const answer = process.env.FAKE_ANSWER ?? 'done'
+const prompt = args[args.indexOf('-p') + 1]
+const checking = prompt.startsWith('Fact-check')
+if (process.env.FAKE_HANDOFF && !checking) {
+  writeFileSync('STATE.md', `# State\n\nNext: ${prompt.match(/I start "([^"]+)"/g)?.at(-1) ?? 'none'}\n`)
+  writeFileSync('LOG.md', (existsSync('LOG.md') ? readFileSync('LOG.md', 'utf8') : '# Log\n') + '- a milestone\n')
+}
+const answer = checking ? (process.env.FAKE_CHECK ?? '{"changes":[]}') : process.env.FAKE_ANSWER ?? 'done'
 emit({ type: 'assistant', message: { content: [{ type: 'text', text: answer }] } })
 emit({ type: 'result', subtype: 'success', is_error: false, result: answer, total_cost_usd: 0.01, usage: { input_tokens: 10, cache_creation_input_tokens: 100, cache_read_input_tokens: 1000, output_tokens: 5 } })

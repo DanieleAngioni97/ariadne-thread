@@ -65,3 +65,11 @@ test('questions carry neutral answers: titles and paths, never node ids or shas'
   assert.deepEqual(by('continue').answer, { dir: 'src/totals/', allowed: ['src/totals/index.js'], forbidden: ['.github/workflows/test.yml', 'docs/decisions.md', 'src/cache/index.js', 'src/lexer/index.js'] })
   assert.doesNotMatch(JSON.stringify(questions), /\bm\d+\.\d+\b|\b[0-9a-f]{7,40}\b/)
 })
+
+test('a generation can stop at an event, for the handoffs of prima; a handoff event changes no file', () => {
+  const withHandoff = { ...scenario, events: [...scenario.events.slice(0, 4), { type: 'handoff' }, ...scenario.events.slice(4)] }
+  const full = generate(withHandoff, mkdtempSync(join(tmpdir(), 'ariadne-eval-')))
+  assert.equal(git(join(full.dir, 'prima'), 'rev-list', '--count', 'HEAD').trim(), '7')
+  const part = generate(withHandoff, mkdtempSync(join(tmpdir(), 'ariadne-eval-')), { until: 5 })
+  assert.equal(git(join(part.dir, 'prima'), 'log', '--format=%s'), 'chore: scaffold the project\n')
+})
