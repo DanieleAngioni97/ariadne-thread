@@ -89,3 +89,6 @@
 {"at":"2026-11-14T11:36Z","id":"m4.3.2","op":"start","text":"iniziato m4.3.2 Principi di valutazione"}
 {"at":"2026-11-14T11:36Z","id":"m4.3.1","op":"fill","text":"prova per m4.3.1: file docs/valutazione/ricerca-metodi.md","proof":[{"type":"file","ref":"docs/valutazione/ricerca-metodi.md"}]}
 {"at":"2026-11-14T11:36Z","id":"m4.3.1","op":"fill","text":"prova per m4.3.1: file docs/valutazione/ricerca-usabilita.md","proof":[{"type":"file","ref":"docs/valutazione/ricerca-usabilita.md"}]}
+{"at":"2026-11-14T11:37Z","id":"m4.3.2","op":"fill","text":"prova per m4.3.2: file docs/valutazione/principi.md","proof":[{"type":"file","ref":"docs/valutazione/principi.md"}]}
+{"at":"2026-11-14T11:37Z","id":"m4.3.2","op":"close","text":"chiuso m4.3.2 Principi di valutazione: 20 principi in 7 gruppi, ognuno con fonte; glossario prima dei principi","proof":[{"type":"commit","ref":"52bc011"}]}
+{"at":"2026-11-14T11:37Z","id":"m4.3.3","op":"start","text":"iniziato m4.3.3 Piano di valutazione"}
