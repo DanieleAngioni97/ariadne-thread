@@ -82,6 +82,18 @@ test('next is the first todo in the same container whose prerequisites are done 
   assert.equal(g.next('d'), 'e')
 })
 
+test('next follows the plan before a deferred step that landed earlier in the milestone', () => {
+  const nodes = [
+    n('m3', { kind: 'milestone', status: 'active' }),
+    n('m3.1', { parent: 'm3', status: 'todo', continues: 'm2.5' }),
+    n('m3.2', { parent: 'm3', status: 'active' }),
+    n('m3.3', { parent: 'm3', status: 'todo', after: ['m3.2'] }),
+  ]
+  const g = makeGraph(nodes)
+  assert.equal(g.next('m3.2'), 'm3.3')
+  assert.equal(makeGraph(nodes.slice(0, 3)).next('m3.2'), 'm3.1')
+})
+
 test('next climbs a level when the container has nothing ready', () => {
   const g = makeGraph(NODES.map(x => (x.id === 'f' ? { ...x, status: 'done' } : x.id === 'e' ? { ...x, status: 'active' } : x)))
   assert.equal(g.next('e'), 'm3')

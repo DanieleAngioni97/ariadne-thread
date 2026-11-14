@@ -66,12 +66,17 @@ export function makeGraph(nodes) {
     return out
   }
 
-  /** The first todo, in file order, whose prerequisites are done or are where you stand; climbs a level if none. */
+  /**
+   * The todo that follows `current` in its plan; else the first todo, in file order, whose prerequisites are
+   * done or are where you stand; climbs a level if none. The plan comes first: a step deferred into the
+   * milestone sits earlier in the file but was not planned after anything.
+   */
   function next(current) {
     const here = new Set([current, ...containers(current)])
     const ready = n => n.status === 'todo' && (n.after ?? []).every(a => here.has(a) || get(a)?.status === 'done')
     for (const level of [get(current)?.parent, ...containers(current).map(c => get(c).parent)]) {
-      const found = childrenOf(level).find(ready)
+      const kids = childrenOf(level)
+      const found = kids.find(k => ready(k) && (k.after ?? []).some(a => here.has(a))) ?? kids.find(ready)
       if (found) return found.id
       if (level === undefined) break
     }
