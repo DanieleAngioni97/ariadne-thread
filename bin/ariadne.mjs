@@ -3,14 +3,16 @@
 // Commands: docs/implementazione.md § m3.5 and § m3.6. `summary` and `sync` always exit 0: a hook must
 // never block the prompt or a tool call.
 
-import { spawnSync } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 
 import { apply } from '../src/apply.mjs'
 import { band } from '../src/band.mjs'
 import { parse } from '../src/graph.mjs'
 import { show, why } from '../src/inspect.mjs'
+import { openViewer } from '../src/open.mjs'
 import { summarize } from '../src/summary.mjs'
 import { serve } from '../src/serve.mjs'
 import { opsFromCommits, untracked } from '../src/trailers.mjs'
@@ -29,7 +31,7 @@ const USAGE = `uso: ariadne <comando>
   fill <id> [--what|--why|--detail|--title …] [--commit|--file|--message …]
   defer <id> <milestone> · replace <id> <successore>
   move <id> <parent> [--after a,b] · undo · confirm <id>|--all · reject <id> [successore]
-  apply <ops.json> · sync [--hook] · view [--port n] · band [--review i]
+  apply <ops.json> · sync [--hook] · view [--port n] · open [id] [--port n] · band [--review i]
   --by user: l'azione viene da te (move, undo, confirm e reject lo sono sempre)`
 
 const FLAGS = {
@@ -229,6 +231,19 @@ else if (command === 'view') {
     .on('listening', () => console.log(`ariadne: viewer su http://127.0.0.1:${port}/ (Ctrl+C per chiudere)`))
     .on('error', error => {
       console.error(`ariadne: viewer non avviato (${error.code === 'EADDRINUSE' ? `porta ${port} occupata, prova --port` : error.message})`)
+      process.exitCode = 1
+    })
+}
+else if (command === 'open') {
+  const port = Number(values.port) || VIEW_PORT
+  const probe = () => fetch(`http://127.0.0.1:${port}/root`).then(r => r.text(), () => null)
+  // The viewer outlives this command: detached, like an `ariadne view` started by hand.
+  const start = () => spawn(process.execPath, [fileURLToPath(import.meta.url), 'view', '--port', String(port)], { detached: true, stdio: 'ignore' }).unref()
+  const launch = url => spawnSync('open', [url])
+  openViewer({ root: process.cwd(), port, id: args[0], probe, start, launch })
+    .then(url => console.log(`ariadne: viewer su ${url}`))
+    .catch(error => {
+      console.error(`ariadne: ${error.message}`)
       process.exitCode = 1
     })
 }

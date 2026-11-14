@@ -1,7 +1,8 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { spawnSync } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -173,4 +174,16 @@ test('band prints the band rows as JSON, with the viewer port, and exits 0 even 
   const empty = run(project(), 'band')
   assert.equal(empty.status, 0)
   assert.equal(JSON.parse(empty.stdout).rows[0].kind, 'empty')
+})
+
+test('open on a port held by another server says so, exits 1 and opens nothing', async () => {
+  const other = createServer((_, res) => res.end('not found')).listen(0, '127.0.0.1')
+  await new Promise(resolve => other.on('listening', resolve))
+  const child = spawn(process.execPath, [CLI, 'open', '--port', String(other.address().port)], { cwd: project({ graph: GOOD }) })
+  let stderr = ''
+  child.stderr.on('data', chunk => { stderr += chunk })
+  const status = await new Promise(resolve => child.on('close', resolve))
+  other.close()
+  assert.equal(status, 1)
+  assert.match(stderr, /occupata da un altro server/)
 })
