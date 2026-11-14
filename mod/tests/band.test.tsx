@@ -90,6 +90,21 @@ describe('ariadne band', () => {
     })
   }
 
+  test('a rule in the theme subtle color sets the band apart from the chat, when a row is free for it', async ($, on) => {
+    host(on, [], [])
+    await $.session.start(start)
+    const roomy = await $.ui.mount({ plugin: 'ariadne', surface: 'terminal', ...BAND, props: { ...BAND.props, maxRows: 5 } })
+    const rule = await roomy.find({ type: 'Text', text: /^── ariadne ─+$/ })
+    expect(rule).toBeDefined()
+    expect(rule?.props.color).toBe('subtle')
+    expect(rule?.text.length).toBe(BAND.props.bodyColumns)
+    await roomy.unmount()
+
+    const full = await $.ui.mount({ plugin: 'ariadne', surface: 'terminal', ...BAND })
+    expect(await full.find({ type: 'Text', text: /── ariadne/ })).toBeUndefined()
+    await full.unmount()
+  })
+
   test('outside an ariadne project the band leaves the engine its own', async ($, on) => {
     host(on, [], [], 1)
     await $.session.start(start)

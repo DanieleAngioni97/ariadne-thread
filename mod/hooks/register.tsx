@@ -90,6 +90,18 @@ export const register: Register = on => {
       )
     }
 
-    return <Box flexDirection="column">{current.rows.map(line)}</Box>
+    // A rule in the theme's subtle color sets the band apart from the chat on any background; it
+    // takes a row, so it shows only when the band would not scroll for it.
+    const label = '── ariadne '
+    const rule = current.rows.length < e.props.maxRows && (
+      <Text color="subtle" wrap="truncate-end">{label + '─'.repeat(Math.max(0, e.props.bodyColumns - label.length))}</Text>
+    )
+
+    return (
+      <Box flexDirection="column">
+        {rule}
+        {current.rows.map(line)}
+      </Box>
+    )
   })
 }

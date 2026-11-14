@@ -128,6 +128,8 @@ L'unico modo di cambiare il grafo. Ogni operazione nomina i nodi per id.
 
 Righe in quest'ordine, al più quattro, una riga ciascuna; titoli tagliati con «…» (dove 44 caratteri
 per il nodo corrente, 24 per i contenitori, 30 per «prossimo», 38 altrove). Il viewer ha i titoli interi.
+Sopra le righe, una linea `── ariadne ───…` nel colore `subtle` del tema la separa dalla chat su ogni
+sfondo, senza riempire l'area; si omette quando la banda scorrerebbe per farle posto.
 
 1. **Dove** (sempre): `<milestone> › <passo> › **<nodo corrente>** · prossimo: <titolo> [Apri il grafo]`.
    «Apri il grafo» apre il viewer nel browser e lo avvia se è spento (`ariadne open`); anche
