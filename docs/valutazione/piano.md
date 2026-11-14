@@ -225,6 +225,7 @@ claude -p "<domanda>" --model <id> --effort medium --restricted
   --tools "Read,Grep,Glob,Bash[,Edit,Write]" --settings <condizione>.json
   --permission-mode <modo> --strict-mcp-config --disable-slash-commands
   --no-session-persistence --output-format stream-json --verbose
+  --append-system-prompt "<istruzioni della condizione>"
 ```
 
 - `--restricted` confina i tool sui file alla cartella di lavoro e ignora i file di impostazioni dell'utente.
@@ -236,10 +237,13 @@ claude -p "<domanda>" --model <id> --effort medium --restricted
   - il testo dell'hook `SessionStart` compare nel flusso come `hook_response` e il modello lo vede;
   - in modalità `--restricted` il CLAUDE.md globale dell'utente non arriva al modello (contesto di ~2.600 token,
     nessuna traccia delle sue istruzioni);
-  - una HOME temporanea non è praticabile, perché toglie il login.
+  - una HOME temporanea non è praticabile, perché toglie il login;
+  - in modalità `--restricted` non arriva nemmeno il CLAUDE.md del progetto, neanche con `--add-dir`; arriva
+    il testo passato con `--append-system-prompt` (prova con una parola segreta, passo `m4.4.2`).
 - `--settings` dà a ogni condizione i suoi hook e i comandi Bash ammessi:
   - in entrambe `git log`, `git show` e `git diff`, senza percorsi assoluti né `--no-index` (rilievo m5);
-  - in *ariadne* anche `node bin/ariadne.mjs show|why|log`;
+  - in *ariadne* anche `node .ariadne/cli/bin/ariadne.mjs show|why|log`: il generatore copia la CLI in
+    `.ariadne/cli/`, fuori dai file di progetto;
   - ogni altro comando è negato.
 - `--no-session-persistence` non lascia trascrizioni che una prova successiva potrebbe leggere.
 - Il runner scarta e riporta ogni prova in cui un tool riceve un percorso fuori dalla copia.
@@ -263,8 +267,12 @@ scrivi `RISPOSTA: non risulta`».
 - Per Astensione è giusta solo `non risulta`; le altre formule («nessuna traccia») vanno nell'elenco delle
   risposte non riconosciute (§ 5).
 
-**CLAUDE.md di condizione:** lo stesso modello di testo, con lunghezza entro ±10%, che dice solo dove sta il
-filo e come consultarlo.
+**Istruzioni di condizione** (il «CLAUDE.md di condizione» della versione 3): lo stesso modello di testo, con
+lunghezza entro ±10%, che dice solo dove sta il filo e come consultarlo.
+
+- *Come arrivano (cambiato il 2026-11-14, passo `m4.4.2`):* con `--append-system-prompt`, lo stesso
+  meccanismo nelle due condizioni, perché `--restricted` non carica il CLAUDE.md del progetto. Nell'uso vero
+  arrivano come CLAUDE.md: la differenza vale per entrambe le condizioni e si dichiara.
 
 - In *prima*: «STATE.md e LOG.md; per il perché, i messaggi di commit e i documenti».
 - In *ariadne*: «il grafo in `.ariadne/`; per il perché, `ariadne why`».
