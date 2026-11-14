@@ -44,7 +44,7 @@ export function grade(q, output, ctx) {
     case 'deferred': return gradeTitles(value, [q.answer.step, q.answer.milestone], ctx)
     case 'update': return gradeTitles(value, [q.answer], ctx)
     case 'why': {
-      const letter = /^\(?([a-z])\)?[.)]?$/i.exec(value)?.[1]
+      const letter = /^\(?([a-z])(?:\)?|[).:]\s.*)$/i.exec(value)?.[1]
       const option = letter ? ctx.order[letter.toLowerCase().charCodeAt(0) - 97] : undefined
       if (option === undefined) return result('unrecognized', value)
       return result(option === q.answer ? 'correct' : 'wrong', value)

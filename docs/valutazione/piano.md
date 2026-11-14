@@ -244,7 +244,9 @@ claude -p "<domanda>" --model <id> --effort medium --restricted
   - in entrambe `git log`, `git show` e `git diff`, senza percorsi assoluti né `--no-index` (rilievo m5);
   - in *ariadne* anche `node .ariadne/cli/bin/ariadne.mjs show|why|log`: il generatore copia la CLI in
     `.ariadne/cli/`, fuori dai file di progetto;
-  - ogni altro comando è negato.
+  - ogni altro comando è negato, salvo i comandi di sola lettura che Claude Code ammette da sé dentro la
+    cartella di lavoro (come `ls`): non escono dalla copia, e la prova canarino del 2026-11-14 lo conferma
+    (`cat` con percorso assoluto o relativo, Read e `git -C` fuori dalla copia: tutti negati).
 - `--no-session-persistence` non lascia trascrizioni che una prova successiva potrebbe leggere.
 - Il runner scarta e riporta ogni prova in cui un tool riceve un percorso fuori dalla copia.
 - Il pilota ripete la **prova canarino**: un file con una parola segreta messo fuori dalla copia, che il
@@ -257,6 +259,8 @@ claude -p "<domanda>" --model <id> --effort medium --restricted
 - In *ariadne* gli hook iniettano il riassunto all'avvio e al prompt: due volte, come nell'uso vero con un
   solo prompt.
 - Il runner cerca il testo iniettato negli eventi `hook_response` del flusso; una prova senza lo scarta e la riporta.
+  L'hook al prompt non lascia eventi nel flusso: ogni hook copia il suo output in un file della prova, fuori
+  dalla copia, e il runner controlla che non sia vuoto.
 
 **Prompt della prova.** Lo stesso modello di testo nelle due condizioni, committato con la pre-registrazione:
 la domanda, poi «Nell'ultima riga scrivi `RISPOSTA: <risposta>`; se il progetto non contiene la risposta,

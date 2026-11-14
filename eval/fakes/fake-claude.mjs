@@ -1,0 +1,23 @@
+#!/usr/bin/env node
+// A stand-in for `claude -p` in the runner tests: runs the hooks from --settings like the real CLI and
+// prints a stream-json flow. FAKE_ANSWER is the reply, FAKE_TOOL_PATH a Read it pretends to make,
+// FAKE_WRITE a file it creates in the working folder.
+
+import { execSync } from 'node:child_process'
+import { readFileSync, writeFileSync } from 'node:fs'
+
+const args = process.argv.slice(2)
+const settings = JSON.parse(readFileSync(args[args.indexOf('--settings') + 1], 'utf8'))
+const emit = e => console.log(JSON.stringify(e))
+const run = event => (settings.hooks?.[event] ?? []).flatMap(m => m.hooks).map(h => execSync(h.command, { encoding: 'utf8', shell: '/bin/sh' }))
+
+for (const output of run('SessionStart')) emit({ type: 'system', subtype: 'hook_response', hook_event: 'SessionStart', output, stdout: output })
+run('UserPromptSubmit')
+emit({ type: 'system', subtype: 'init', cwd: process.cwd(), tools: args[args.indexOf('--tools') + 1].split(',') })
+if (process.env.FAKE_TOOL_PATH) {
+  emit({ type: 'assistant', message: { content: [{ type: 'tool_use', id: 't1', name: 'Read', input: { file_path: process.env.FAKE_TOOL_PATH } }] } })
+}
+if (process.env.FAKE_WRITE) writeFileSync(process.env.FAKE_WRITE, 'x\n')
+const answer = process.env.FAKE_ANSWER ?? 'done'
+emit({ type: 'assistant', message: { content: [{ type: 'text', text: answer }] } })
+emit({ type: 'result', subtype: 'success', is_error: false, result: answer, total_cost_usd: 0.01, usage: { input_tokens: 10, cache_creation_input_tokens: 100, cache_read_input_tokens: 1000, output_tokens: 5 } })

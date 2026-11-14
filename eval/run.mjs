@@ -1,0 +1,169 @@
+// The E1 runner (docs/valutazione/piano.md § 6): one trial = an isolated copy of a fixture condition, a
+// `claude -p` subject with the condition's hooks and instructions, the raw stream kept, the answer graded.
+
+import { spawnSync } from 'node:child_process'
+import { appendFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { parseArgs } from 'node:util'
+
+import { grade, gradeContinue } from './grade.mjs'
+
+const CONDITIONS = ['prima', 'ariadne']
+const ARIADNE = 'node .ariadne/cli/bin/ariadne.mjs'
+const TIMEOUT_MS = 300_000
+const RETRIES = 2
+const FORMAT = 'In the last line write `RISPOSTA: <answer>`; if the project does not contain the answer, write `RISPOSTA: non risulta`.'
+
+/** A seeded generator in [0, 1) (mulberry32): the same seed, the same order. */
+export function rng(seed) {
+  let a = seed >>> 0
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0
+    let t = Math.imul(a ^ (a >>> 15), 1 | a)
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296
+  }
+}
+
+function shuffle(items, random) {
+  const out = [...items]
+  for (let i = out.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    [out[i], out[j]] = [out[j], out[i]]
+  }
+  return out
+}
+
+export function promptFor(q, order) {
+  if (q.cat === 'continue') return q.text
+  const options = q.cat === 'why' ? `\n\n${order.map((o, i) => `${String.fromCharCode(65 + i)}) ${o}`).join('\n')}\n\nAnswer with the letter.` : ''
+  return `${q.text}${options}\n\n${FORMAT}`
+}
+
+/** Hooks and allowed commands of a condition; each hook also copies its output to `injectDir`. */
+export function settingsFor(condition, { injectDir, edits = false }) {
+  const hook = (command, event) => [{ hooks: [{ type: 'command', command: `${command} | tee '${join(injectDir, `${event}.txt`)}'` }] }]
+  const hooks = condition === 'prima'
+    ? { SessionStart: hook('cat STATE.md', 'SessionStart') }
+    : { SessionStart: hook(`${ARIADNE} summary`, 'SessionStart'), UserPromptSubmit: hook(`${ARIADNE} summary`, 'UserPromptSubmit') }
+  const allow = ['Read', 'Grep', 'Glob', 'Bash(git log:*)', 'Bash(git show:*)', 'Bash(git diff:*)']
+  if (condition === 'ariadne') allow.push(...['show', 'why', 'log'].map(c => `Bash(${ARIADNE} ${c}:*)`))
+  if (edits) allow.push('Edit', 'Write')
+  return { hooks, permissions: { allow, deny: ['Bash(git diff --no-index:*)', 'Bash(git -C:*)'] } }
+}
+
+/** Paths a tool call names outside the copy: absolute paths elsewhere, `..` or `~`. */
+function outside(events, copy) {
+  const roots = [copy, realpathSync(copy)].flatMap(r => [r, r.replace(/^\/private/, '')])
+  const found = []
+  for (const e of events) {
+    for (const c of Array.isArray(e.message?.content) ? e.message.content : []) {
+      if (c.type !== 'tool_use') continue
+      for (const key of ['file_path', 'path', 'command', 'notebook_path']) {
+        const value = c.input?.[key]
+        if (typeof value !== 'string') continue
+        for (const [p] of value.matchAll(/(?<![\w.~-])\/[^\s'"`;|&)]+/g)) if (p !== '/dev/null' && !roots.some(r => p === r || p.startsWith(`${r}/`))) found.push(p)
+        if (/(^|[\s/'"])\.\.(\/|$|\s)|(^|\s)~/.test(value)) found.push(value)
+      }
+    }
+  }
+  return found
+}
+
+function changedFiles(copy) {
+  const r = spawnSync('git', ['status', '--porcelain', '--untracked-files=all'], { cwd: copy, encoding: 'utf8' })
+  const lines = r.stdout.split('\n').filter(Boolean)
+  return {
+    modified: lines.filter(l => !l.startsWith('??')).map(l => l.slice(3)),
+    added: lines.filter(l => l.startsWith('??')).map(l => l.slice(3)),
+  }
+}
+
+function launch(bin, args, cwd, env) {
+  const [cmd, pre] = bin.endsWith('.mjs') ? [process.execPath, [bin]] : [bin, []]
+  return spawnSync(cmd, [...pre, ...args], { cwd, input: '', timeout: TIMEOUT_MS, maxBuffer: 256 * 1024 * 1024, encoding: 'utf8', env: { ...process.env, ...env } })
+}
+
+/** Runs one trial and returns its record; `raw` is a folder for the stream, kept as it came (P2). */
+export function trial({ fixture, condition, q, key, model, seed, bin = 'claude', env = {}, raw, id = 'trial', phrasing = 'original' }) {
+  const copy = mkdtempSync(join(tmpdir(), 'ariadne-trial-'))
+  const injectDir = mkdtempSync(join(tmpdir(), 'ariadne-inject-'))
+  try {
+    cpSync(join(fixture, condition), copy, { recursive: true })
+    const edits = q.cat === 'continue'
+    const settings = join(injectDir, 'settings.json')
+    writeFileSync(settings, JSON.stringify(settingsFor(condition, { injectDir, edits })))
+    const order = q.cat === 'why' ? shuffle(q.options, rng(seed)) : undefined
+    const text = phrasing === 'paraphrase' ? { ...q, text: q.paraphrase } : q
+    const instructions = readFileSync(new URL(`./conditions/${condition}.md`, import.meta.url), 'utf8')
+    const args = ['-p', promptFor(text, order), '--model', model, '--effort', 'medium', '--restricted',
+      '--tools', `Read,Grep,Glob,Bash${edits ? ',Edit,Write' : ''}`, '--settings', settings,
+      '--permission-mode', 'dontAsk', '--strict-mcp-config', '--disable-slash-commands', '--no-session-persistence',
+      '--output-format', 'stream-json', '--verbose', '--append-system-prompt', instructions]
+
+    let r, events, result
+    let attempts = 0
+    const started = Date.now()
+    do {
+      r = launch(bin, args, copy, env)
+      events = (r.stdout ?? '').split('\n').flatMap(l => { try { return [JSON.parse(l)] } catch { return [] } })
+      result = events.find(e => e.type === 'result')
+      attempts++
+    } while ((!result || result.is_error) && attempts <= RETRIES)
+    if (raw) {
+      mkdirSync(raw, { recursive: true })
+      writeFileSync(join(raw, `${id}.jsonl`), r.stdout ?? '')
+    }
+
+    const expected = condition === 'prima' ? ['SessionStart'] : ['SessionStart', 'UserPromptSubmit']
+    const told = f => existsSync(join(injectDir, f)) && readFileSync(join(injectDir, f), 'utf8').trim() !== ''
+    const injected = Object.fromEntries(expected.map(ev => [ev, told(`${ev}.txt`) && (ev !== 'SessionStart' || events.some(e => e.subtype === 'hook_response' && e.hook_event === 'SessionStart' && e.output?.trim()))]))
+    const away = outside(events, copy)
+    const u = result?.usage ?? {}
+    const excluded = !result || result.is_error ? 'error' : away.length ? 'outside' : !Object.values(injected).every(Boolean) ? 'no-injection' : null
+    const graded = !result ? { status: 'format', value: null }
+      : edits ? (({ modified, added }) => gradeContinue(q, modified, added))(changedFiles(copy))
+      : grade(q, result.result ?? '', { ...key, order })
+    return {
+      id, condition, cat: q.cat, phrasing, model, seed, status: graded.status, value: graded.value, order, excluded, outside: away, injected, attempts,
+      tokens: (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0) + (u.output_tokens ?? 0),
+      cost: result?.total_cost_usd ?? null, ms: Date.now() - started,
+    }
+  } finally {
+    rmSync(copy, { recursive: true, force: true })
+    rmSync(injectDir, { recursive: true, force: true })
+  }
+}
+
+/** Every question × condition × repetition, in a seeded random order; each trial gets its own seed. */
+export function schedule({ questions, reps, seed }) {
+  const random = rng(seed)
+  const all = questions.flatMap((q, index) => CONDITIONS.flatMap(condition => Array.from({ length: reps }, (_, rep) => ({ index, cat: q.cat, condition, rep }))))
+  return shuffle(all, random).map(t => ({ ...t, seed: Math.floor(random() * 2 ** 31) }))
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const { positionals: [fixture], values } = parseArgs({ allowPositionals: true, options: {
+    model: { type: 'string' }, reps: { type: 'string', default: '3' }, seed: { type: 'string', default: '1' },
+    out: { type: 'string' }, paraphrase: { type: 'boolean' }, bin: { type: 'string', default: 'claude' },
+  } })
+  if (!fixture || !values.model || !values.out) {
+    console.error('uso: node eval/run.mjs <cartella della fixture> --model <id> --out <cartella> [--reps 3] [--seed 1] [--paraphrase]')
+    process.exit(2)
+  }
+  const dir = resolve(fixture)
+  const questions = JSON.parse(readFileSync(join(dir, 'questions.json'), 'utf8'))
+  const key = JSON.parse(readFileSync(join(dir, 'key.json'), 'utf8'))
+  const out = resolve(values.out)
+  mkdirSync(out, { recursive: true })
+  const phrasing = values.paraphrase ? 'paraphrase' : 'original'
+  const trials = schedule({ questions, reps: Number(values.reps), seed: Number(values.seed) })
+  for (const [n, t] of trials.entries()) {
+    const id = `${phrasing}-q${t.index}-${t.condition}-r${t.rep}`
+    const r = trial({ fixture: dir, condition: t.condition, q: questions[t.index], key, model: values.model, seed: t.seed, bin: values.bin, raw: join(out, 'raw'), id, phrasing })
+    appendFileSync(join(out, 'results.jsonl'), JSON.stringify({ fixture: dir.split('/').at(-1), index: t.index, rep: t.rep, ...r }) + '\n')
+    console.log(`${n + 1}/${trials.length} ${id}: ${r.status}${r.excluded ? ` (escluso: ${r.excluded})` : ''}`)
+  }
+}

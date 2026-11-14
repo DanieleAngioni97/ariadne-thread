@@ -3,8 +3,8 @@ import assert from 'node:assert/strict'
 
 import { extract, grade, gradeContinue, normalize } from './grade.mjs'
 
-const titles = ['Validate invoice totals', 'Report malformed invoices', 'Cache for parsed suppliers', 'Store suppliers in SQLite', 'Export to the ledger', 'M2 Reports']
-const ctx = { titles, aliases: { 'Cache for parsed suppliers': ['in-memory supplier cache'] } }
+const titles = ['Validate invoice totals', 'Report malformed invoices', 'Cache for parsed suppliers', 'Store suppliers in SQLite', 'Export to the ledger']
+const ctx = { titles, milestones: ['M1 Parser', 'M2 Reports'], aliases: { 'Cache for parsed suppliers': ['in-memory supplier cache'] } }
 
 test('normalize lowers case, unifies spaces and punctuation, drops articles and markdown', () => {
   assert.equal(normalize('  **The** Cache — for  parsed `suppliers`. '), 'cache for parsed suppliers')
@@ -21,6 +21,7 @@ test('extract takes the RISPOSTA line; none, or two that disagree, is out of for
 test('a title answer is right when it names every expected title and no other one', () => {
   const where = { cat: 'where', answer: { current: 'Validate invoice totals', next: 'Report malformed invoices' } }
   assert.equal(grade(where, 'RISPOSTA: validate invoice totals; next: report malformed invoices', ctx).status, 'correct')
+  assert.equal(grade(where, 'RISPOSTA: sono su "M1 Parser › Validate invoice totals"; il prossimo è "m1.7 Report malformed invoices"', ctx).status, 'correct')
   assert.equal(grade(where, 'RISPOSTA: Validate invoice totals', ctx).status, 'wrong')
   assert.equal(grade(where, 'RISPOSTA: Validate invoice totals, Report malformed invoices, Export to the ledger', ctx).status, 'wrong')
   const update = { cat: 'update', answer: 'Cache for parsed suppliers' }
@@ -40,6 +41,8 @@ test('why is graded on the letter of the shuffled option', () => {
   const order = ['X.', 'Right reason.', 'Y.', 'non risulta', 'Z.']
   assert.equal(grade(q, 'RISPOSTA: B', { ...ctx, order }).status, 'correct')
   assert.equal(grade(q, 'RISPOSTA: (b)', { ...ctx, order }).status, 'correct')
+  assert.equal(grade(q, 'RISPOSTA: B) Right reason.', { ...ctx, order }).status, 'correct')
+  assert.equal(grade(q, 'RISPOSTA: A run parses everything', { ...ctx, order }).status, 'unrecognized')
   assert.equal(grade(q, 'RISPOSTA: A', { ...ctx, order }).status, 'wrong')
   assert.equal(grade(q, 'RISPOSTA: F', { ...ctx, order }).status, 'unrecognized')
 })

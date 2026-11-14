@@ -51,8 +51,9 @@ test('the graph is valid, the thread sits on the open step, and the node holds o
 
 test('questions carry neutral answers: titles and paths, never node ids or shas', () => {
   const { questions, key } = fresh()
-  assert.equal(key.titles.length, 9)
+  assert.equal(key.titles.length, 7)
   assert.ok(key.titles.includes('Fix the flaky CI job'))
+  assert.deepEqual(key.milestones, ['M1 Parser', 'M2 Reports'])
   const by = cat => questions.find(q => q.cat === cat)
   assert.deepEqual(by('where').answer, { current: 'Validate invoice totals', next: 'Report malformed invoices' })
   assert.deepEqual(by('why').options.sort(), ['A run parses at most 200 suppliers.', 'Lines must add up to the total.', 'Suppliers mix tabs and spaces.', 'The test job timed out on cold caches.', 'non risulta'].sort())

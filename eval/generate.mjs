@@ -113,8 +113,14 @@ export function generate(scenario, dir) {
   }
   const questions = scenario.questions.map(q => ({ cat: q.cat, text: q.text, ...answer(q, scenario, titles) }))
   writeFileSync(join(dir, 'questions.json'), JSON.stringify(questions, null, 2) + '\n')
-  // What the graders need besides each answer: every title, to catch an answer that names the wrong one.
-  const key = { titles: Object.values(titles), aliases: scenario.aliases ?? {} }
+  // What the graders need besides each answer: every step title, to catch an answer that names the wrong one.
+  // Milestones are kept apart: an answer may name the milestone around a step without naming a wrong step.
+  const milestones = new Set(scenario.events.filter(e => e.type === 'milestone').map(e => e.key))
+  const key = {
+    titles: Object.entries(titles).filter(([k]) => !milestones.has(k)).map(([, t]) => t),
+    milestones: [...milestones].map(k => titles[k]),
+    aliases: scenario.aliases ?? {},
+  }
   writeFileSync(join(dir, 'key.json'), JSON.stringify(key, null, 2) + '\n')
   return { dir, questions, key }
 }
