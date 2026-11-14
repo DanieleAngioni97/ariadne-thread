@@ -28,6 +28,7 @@ test('the prompt asks for one RISPOSTA line; why lists the shuffled options by l
   assert.match(promptFor(q('continue')), /first code change/)
   assert.match(promptFor(q('update'), q('update').options), /\nA\) /)
   assert.match(promptFor(q('proof')), /Answer in English/)
+  assert.match(promptFor(q('where')), /RISPOSTA: <current step> \| <next step>/)
 })
 
 test('settings give each condition its hooks and allowed commands; Continua adds the edit tools', () => {
@@ -44,7 +45,7 @@ test('settings give each condition its hooks and allowed commands; Continua adds
 })
 
 test('a trial grades the answer, checks the injection and counts tokens as if nothing were cached', () => {
-  const r = at('ariadne', q('where'), { FAKE_ANSWER: 'Looked.\nRISPOSTA: Validate invoice totals, then Report malformed invoices' })
+  const r = at('ariadne', q('where'), { FAKE_ANSWER: 'Looked.\nRISPOSTA: Validate invoice totals | Report malformed invoices' })
   assert.equal(r.status, 'correct')
   assert.deepEqual(r.injected, { SessionStart: true, UserPromptSubmit: true })
   assert.equal(r.tokens, 1115)
@@ -54,6 +55,8 @@ test('a trial grades the answer, checks the injection and counts tokens as if no
 test('a trial is excluded when a tool reaches outside the copy, or when nothing was injected', () => {
   assert.equal(at('ariadne', q('proof'), { FAKE_TOOL_PATH: '/etc/hosts', FAKE_ANSWER: 'RISPOSTA: src/lexer/index.js' }).excluded, 'outside')
   assert.equal(at('ariadne', q('proof'), { FAKE_TOOL_PATH: '//', FAKE_ANSWER: 'RISPOSTA: src/lexer/index.js' }).excluded, null)
+  assert.equal(at('ariadne', q('proof'), { FAKE_TOOL_PATH: '../outside.txt', FAKE_ANSWER: 'RISPOSTA: src/lexer/index.js' }).excluded, 'outside')
+  assert.equal(at('ariadne', q('proof'), { FAKE_COMMAND: "cat > src/r.js <<'EOF'\nimport { b } from '../totals/index.js'\nEOF", FAKE_ANSWER: 'RISPOSTA: src/lexer/index.js' }).excluded, null)
   assert.equal(at('ariadne', q('proof'), { FAKE_TOOL_PATH: '/[\\/.]/g,', FAKE_ANSWER: 'RISPOSTA: src/lexer/index.js' }).excluded, null)
   assert.equal(at('ariadne', q('proof'), { FAKE_TOOL_PATH: '/\\.md$/,', FAKE_ANSWER: 'RISPOSTA: src/lexer/index.js' }).excluded, null)
   const bare = generate(scenario, mkdtempSync(join(tmpdir(), 'ariadne-eval-')))

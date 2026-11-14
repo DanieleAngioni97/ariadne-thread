@@ -42,7 +42,8 @@ const CONTINUE = 'Resume the work: make the first code change you would make.'
 export function promptFor(q, order) {
   if (q.cat === 'continue') return CONTINUE
   const options = q.options ? `\n\n${order.map((o, i) => `${String.fromCharCode(65 + i)}) ${o}`).join('\n')}\n\nAnswer with the letter.` : ''
-  return `${q.text}${options}\n\n${FORMAT}`
+  const format = q.cat === 'where' ? FORMAT.replace('<answer>', '<current step> | <next step>') : FORMAT
+  return `${q.text}${options}\n\n${format}`
 }
 
 /** Hooks and allowed commands of a condition; each hook also copies its output to `injectDir`. */
@@ -75,7 +76,8 @@ function outside(events, copy) {
           if (p === '/dev/null' || roots.some(r => p === r || p.startsWith(`${r}/`))) continue
           if (existsSync(`/${p.split('/')[1]}`)) found.push(p)
         }
-        if (/(^|[\s/'"])\.\.(\/|$|\s)|(^|\s)~/.test(value)) found.push(value)
+        // `..` and `~` only in the path of a file tool: a command may hold code with relative imports.
+        if (key !== 'command' && /(^|[\s/'"])\.\.(\/|$|\s)|(^|\s)~/.test(value)) found.push(value)
       }
     }
   }

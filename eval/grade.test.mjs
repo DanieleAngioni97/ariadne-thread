@@ -18,13 +18,18 @@ test('extract takes the RISPOSTA line; none, or two that disagree, is out of for
   assert.equal(extract('RISPOSTA: A\nRISPOSTA: B'), null)
 })
 
-test('a title answer is right when it names every expected title and no other one', () => {
+test('where has two fields; each is right when its closest step title is the expected one', () => {
   const where = { cat: 'where', answer: { current: 'Validate invoice totals', next: 'Report malformed invoices' } }
-  assert.equal(grade(where, 'RISPOSTA: validate invoice totals; next: report malformed invoices', ctx).status, 'correct')
-  assert.equal(grade(where, 'RISPOSTA: sono su "M1 Parser › Validate invoice totals"; il prossimo è "m1.7 Report malformed invoices"', ctx).status, 'correct')
-  assert.equal(grade(where, 'RISPOSTA: Validate invoice totals', ctx).status, 'wrong')
-  assert.equal(grade(where, 'RISPOSTA: Validate invoice totals, Report malformed invoices, Export to the ledger', ctx).status, 'wrong')
-  assert.equal(grade(where, 'RISPOSTA: suppliers are kept in RAM', ctx).status, 'unrecognized')
+  assert.equal(grade(where, 'RISPOSTA: validating the invoice totals | then reporting malformed invoices, later Export to the ledger', ctx).status, 'correct')
+  assert.equal(grade(where, 'RISPOSTA: "Validate invoice totals" (in progress) | "Report malformed invoices"', ctx).status, 'correct')
+  assert.equal(grade(where, 'RISPOSTA: Report malformed invoices | Export to the ledger', ctx).status, 'wrong')
+  assert.equal(grade(where, 'RISPOSTA: totals', ctx).status, 'unrecognized')
+  assert.equal(grade(where, 'RISPOSTA: something else | nothing', ctx).status, 'unrecognized')
+})
+
+test('where tolerates the milestone around a step and needs a RISPOSTA line', () => {
+  const where = { cat: 'where', answer: { current: 'Validate invoice totals', next: 'Report malformed invoices' } }
+  assert.equal(grade(where, 'RISPOSTA: sono su "M1 Parser › Validate invoice totals" | il prossimo è "m1.7 Report malformed invoices"', ctx).status, 'correct')
   assert.equal(grade(where, 'no answer line', ctx).status, 'format')
 })
 
@@ -50,6 +55,7 @@ test('why is graded on the letter of the shuffled option', () => {
 test('proof compares normalized paths; abstain accepts only non risulta', () => {
   const proof = { cat: 'proof', answer: ['src/lexer/index.js', 'src/lexer/split.js'] }
   assert.equal(grade(proof, 'RISPOSTA: src/lexer/split.js', ctx).status, 'correct')
+  assert.equal(grade(proof, 'RISPOSTA: `src/lexer/index.js` (exports `tokens`, split on tabs)', ctx).status, 'correct')
   assert.equal(grade(proof, 'RISPOSTA: `./src/lexer/index.js`', ctx).status, 'correct')
   assert.equal(grade(proof, 'RISPOSTA: src/lexer/', ctx).status, 'wrong')
   const abstain = { cat: 'abstain', answer: 'non risulta' }

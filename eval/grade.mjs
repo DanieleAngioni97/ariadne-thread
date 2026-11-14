@@ -34,6 +34,33 @@ function gradeTitles(value, expected, { titles, aliases = {} }) {
 }
 
 const cleanPath = p => p.trim().replace(/^[`'"]+|[`'".,;]+$/g, '').replace(/^\.\//, '')
+// The first path of an answer: a comment after it does not make it wrong.
+const firstPath = value => cleanPath(/(?:\.\/)?[\w.-]+(?:\/[\w.-]+)+/.exec(value.replace(/`/g, ''))?.[0] ?? value)
+
+const STOP = new Set(['of', 'for', 'in', 'on', 'to', 'by', 'and', 'with', 'from', 'di', 'del', 'dei', 'per'])
+// Words compared by their first five letters: "validating" meets "validate", "invoices" meets "invoice".
+const stems = text => new Set(normalize(text).split(' ').filter(w => w && !STOP.has(w)).map(w => w.slice(0, 5)))
+
+/** The step title closest to a phrase: the share of its words the phrase contains, at least half. */
+function closest(phrase, titles) {
+  const words = stems(phrase)
+  let best = null
+  for (const t of titles) {
+    const own = stems(t)
+    const score = [...own].filter(w => words.has(w)).length / own.size
+    if (score >= 0.5 && (!best || score > best.score)) best = { t, score }
+  }
+  return best?.t ?? null
+}
+
+/** Where: `current | next`, each field graded on its closest title; the rest of the answer does not count. */
+function gradeWhere(value, { current, next }, { titles }) {
+  const fields = value.split('|')
+  if (fields.length < 2) return result('unrecognized', value)
+  const found = [closest(fields[0], titles), closest(fields.slice(1).join('|'), titles)]
+  if (found[0] === current && found[1] === next) return result('correct', value)
+  return result(found.some((f, i) => f && f !== [current, next][i]) ? 'wrong' : 'unrecognized', value)
+}
 
 /** Grades a question answered in text; `ctx` holds the scenario titles, aliases and the shuffled why options. */
 export function grade(q, output, ctx) {
@@ -47,9 +74,9 @@ export function grade(q, output, ctx) {
     return result(option === q.answer ? 'correct' : 'wrong', value)
   }
   switch (q.cat) {
-    case 'where': return gradeTitles(value, [q.answer.current, q.answer.next], ctx)
+    case 'where': return gradeWhere(value, q.answer, ctx)
     case 'proof': {
-      const path = cleanPath(value)
+      const path = firstPath(value)
       if (q.answer.includes(path)) return result('correct', value)
       return result(/[/.]/.test(path) ? 'wrong' : 'unrecognized', value)
     }

@@ -51,6 +51,15 @@ Dove resta aperta. Il primo pilota resta in `eval/runs/pilot-haiku/` come regist
   passo finito (in `dev-04` l'invalidazione della cache tocca la cache).
 - Prova accetta qualsiasi file proprio del passo: un passo può tenere il risultato in più file.
 
+*Dopo il quarto pilota (2026-11-14):*
+- Dove si risponde in due campi, `RISPOSTA: <passo corrente> | <passo successivo>`; ogni campo è giusto se il
+  titolo di passo più vicino (quota delle sue parole presenti, confrontate sulle prime cinque lettere, almeno
+  metà) è quello atteso. Prima si vietavano gli altri titoli nella risposta: penalizzava *prima*, il cui
+  STATE.md racconta più contesto e porta a nominare più passi.
+- Prova prende il primo percorso della risposta: un commento dopo il percorso non la rende sbagliata.
+- Il controllo su `..` vale solo per i percorsi dei tool sui file: un comando può contenere codice con import
+  relativi.
+
 *Ripresa:* il runner salta le prove già registrate, così una prova interrotta dal limite d'uso si rifà nella
 finestra successiva invece di andare persa.
 

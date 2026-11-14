@@ -15,6 +15,9 @@ const run = event => (settings.hooks?.[event] ?? []).flatMap(m => m.hooks).map(h
 for (const output of run('SessionStart')) emit({ type: 'system', subtype: 'hook_response', hook_event: 'SessionStart', output, stdout: output })
 run('UserPromptSubmit')
 emit({ type: 'system', subtype: 'init', cwd: process.cwd(), tools: args[args.indexOf('--tools') + 1].split(',') })
+if (process.env.FAKE_COMMAND) {
+  emit({ type: 'assistant', message: { content: [{ type: 'tool_use', id: 't0', name: 'Bash', input: { command: process.env.FAKE_COMMAND } }] } })
+}
 if (process.env.FAKE_TOOL_PATH) {
   emit({ type: 'assistant', message: { content: [{ type: 'tool_use', id: 't1', name: 'Read', input: { file_path: process.env.FAKE_TOOL_PATH } }] } })
 }
