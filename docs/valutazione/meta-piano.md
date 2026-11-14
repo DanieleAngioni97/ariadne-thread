@@ -36,7 +36,7 @@ Quale delle due strade, e per quali prove, lo decide il piano (passo 3), non que
 | Passo | Cosa produce | Perché in quest'ordine |
 |---|---|---|
 | 1. Ricerca su metodi e metriche | note con fonti: come la community valuta memoria e contesto degli agenti, usabilità con un solo utente, confronto con i concorrenti | i principi devono venire da pratiche riconosciute, non da quello che ci fa comodo |
-| 2. Principi di valutazione | `principi.md`: 8–15 regole, ognuna con la fonte | scritti **prima** del piano, così il piano si giudica contro di essi e non il contrario |
+| 2. Principi di valutazione | `principi.md`: le regole, ognuna con la fonte (previste 8–15, diventate 28 dopo la revisione) | scritti **prima** del piano, così il piano si giudica contro di essi e non il contrario |
 | 3. Piano di valutazione | `piano.md`: domande, ipotesi, condizioni, fixture, metriche, procedura, analisi, minacce alla validità, costi | ogni scelta giustificata e collegata a un principio |
 | 4. Revisione indipendente | rapporto di un revisore Opus con contesto pulito: legge solo principi, piano e note di ricerca | chi ha scritto il piano non vede i propri punti ciechi |
 | 5. Piano rivisto e approvato | `piano.md` corretto, con la risposta a ogni rilievo; tua approvazione | solo dopo si scrive l'harness (`m4.4`) |

@@ -95,3 +95,6 @@
 {"at":"2026-11-14T11:39Z","id":"m4.3.3","op":"fill","text":"prova per m4.3.3: file docs/valutazione/piano.md","proof":[{"type":"file","ref":"docs/valutazione/piano.md"}]}
 {"at":"2026-11-14T11:39Z","id":"m4.3.3","op":"close","text":"chiuso m4.3.3 Piano di valutazione: bozza del piano con E1–E4, confronto e minacce alla validità, pronta per la revisione","proof":[{"type":"commit","ref":"cb48d0f"}]}
 {"at":"2026-11-14T11:39Z","id":"m4.3.4","op":"start","text":"iniziato m4.3.4 Revisione indipendente del piano"}
+{"at":"2026-11-14T11:44Z","id":"m4.3.4","op":"fill","text":"prova per m4.3.4: file docs/valutazione/revisione-1.md","proof":[{"type":"file","ref":"docs/valutazione/revisione-1.md"}]}
+{"at":"2026-11-14T11:44Z","id":"m4.3.4","op":"close","text":"chiuso m4.3.4 Revisione indipendente del piano: revisore Opus indipendente: pronto con correzioni; 3 bloccanti, 12 maggiori, 4 minori","proof":[{"type":"commit","ref":"65ecfd6"}]}
+{"at":"2026-11-14T11:44Z","id":"m4.3.5","op":"start","text":"iniziato m4.3.5 Piano rivisto e approvato"}
