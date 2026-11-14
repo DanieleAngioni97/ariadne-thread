@@ -114,3 +114,5 @@
 {"at":"2026-11-14T13:46Z","id":"m4.4.2","op":"fill","text":"prova per m4.4.2: commit 84092ec","proof":[{"type":"commit","ref":"84092ec"}]}
 {"at":"2026-11-14T13:47Z","id":"m4.4.2","op":"fill","text":"prova per m4.4.2: commit cbaacfc","proof":[{"type":"commit","ref":"cbaacfc"}]}
 {"at":"2026-11-14T13:48Z","id":"m4.4.2","op":"fill","text":"prova per m4.4.2: commit b571cc0","proof":[{"type":"commit","ref":"b571cc0"}]}
+{"at":"2026-11-14T13:53Z","id":"m4.4.2","op":"close","text":"chiuso m4.4.2 Cartella eval/ con generatore, runner e grader: generatore, grader e runner in eval/, provati con un finto claude e con Haiku","proof":[{"type":"commit","ref":"a00c3a9"}]}
+{"at":"2026-11-14T13:53Z","id":"m4.4.3","op":"start","text":"iniziato m4.4.3 E4 sull'archivio congelato"}
