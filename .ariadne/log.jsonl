@@ -79,3 +79,7 @@
 {"at":"2026-11-14T11:24Z","id":"m4","op":"start","text":"iniziato m4 M4 Revisione e feedback"}
 {"at":"2026-11-14T11:24Z","id":"m4.1","op":"start","text":"iniziato m4.1 Misurare il costo dell’osservatore"}
 {"at":"2026-11-14T11:25Z","id":"m3.4","op":"confirm","text":"confermato m3.4 Segnalibri nella chat"}
+{"at":"2026-11-14T11:33Z","id":"m4.1","op":"replace","text":"sostituito m4.1 Misurare il costo dell’osservatore con m4.3"}
+{"at":"2026-11-14T11:33Z","id":"m4.3","op":"start","text":"iniziato m4.3 Progetto della valutazione"}
+{"at":"2026-11-14T11:33Z","id":"m4.3","op":"plan","text":"piano per Progetto della valutazione: Ricerca su metodi e metriche → Principi di valutazione → Piano di valutazione → Revisione indipendente del piano → Piano rivisto e approvato"}
+{"at":"2026-11-14T11:33Z","id":"m4.3.1","op":"start","text":"iniziato m4.3.1 Ricerca su metodi e metriche"}
