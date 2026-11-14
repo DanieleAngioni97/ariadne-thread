@@ -55,3 +55,5 @@
 {"at":"2026-11-14T10:02Z","id":"m3.1.5","op":"add","text":"aggiunto passo m3.1.5 Banda distinta dal testo della chat sotto m3.1"}
 {"at":"2026-11-14T10:08Z","id":"m3.1.4","op":"fill","text":"prova per m3.1.4: commit ffdecce","proof":[{"type":"commit","ref":"ffdecce"}]}
 {"at":"2026-11-14T10:08Z","id":"m3.1.4","op":"close","text":"chiuso m3.1.4 Pulsante Apri il grafo nella banda: «Apri il grafo» sulla riga dove; apre il viewer e lo avvia se spento","proof":[{"type":"commit","ref":"40b72ea"}]}
+{"at":"2026-11-14T10:21Z","id":"m3.1.5","op":"start","text":"iniziato m3.1.5 Banda distinta dal testo della chat"}
+{"at":"2026-11-14T10:22Z","id":"m3.1.5","op":"close","text":"chiuso m3.1.5 Banda distinta dal testo della chat: linea «── ariadne» nel colore subtle del tema sopra la banda; omessa se farebbe scorrere","proof":[{"type":"commit","ref":"72cfde6"}]}
