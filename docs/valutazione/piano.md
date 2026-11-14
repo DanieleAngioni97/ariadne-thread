@@ -19,7 +19,7 @@ le due domande principali, D1 (l'agente) e D2 (la persona); il resto si riduce o
 | H1b (§ 6) | pass^3 | pass^2 |
 | Potenza (§ 6) | simulazione per 15 punti con potenza 0,8 | la simulazione del pilota dichiara la differenza rilevabile con 12 scenari e 2 ripetizioni (attesa: 20–25 punti) |
 | E1b (§ 6) | 672 prove | tolto; il ritardo del filo è un limite dichiarato |
-| E2 (§ 7) | varianti A, B, C su 40 checkpoint | solo la variante A (Haiku sull'ultimo turno), 20 checkpoint, 2 ripetizioni; la regola di decisione resta, con i limiti ricalcolati su 20 F0 e 80 errori |
+| E2 (§ 7) | varianti A, B, C su 40 checkpoint | solo la variante A (Haiku sull'ultimo turno), stessi 40 checkpoint e 3 ripetizioni: con 20 F0 la soglia sui falsi allarmi sarebbe irraggiungibile (limite superiore 0,16 anche con zero allarmi) |
 | D4 (§ 10) | criteri e schede da un modello terzo, due giudici esterni, 50 etichette | confronto descrittivo sui criteri di § 10, senza giudici né etichette |
 | E3 (§ 8) | 8 sessioni | invariato |
 
@@ -32,7 +32,7 @@ finestra successiva invece di andare persa.
 **Procedura snella** (sostituisce la § 15 dal punto 5):
 
 1. Pilota di E1 su Haiku; potenza per simulazione; quota per prova e numero di finestre per E1.
-2. Scenari di test (12) e di E3 (8) bozzati dal brief e congelati; trascrizioni di E2 (20 checkpoint).
+2. Scenari di test (12) e di E3 (8) bozzati dal brief e congelati; trascrizioni di E2 (40 checkpoint).
 3. Commit di pre-registrazione.
 4. E1 su Sonnet ed E2 variante A; analisi.
 5. E3 con l'utente; KLM; valutazione euristica.
