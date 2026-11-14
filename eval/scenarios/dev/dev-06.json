@@ -1,0 +1,975 @@
+{
+  "id": "dev-06",
+  "project": "greenhouse-readings",
+  "start": "2026-03-02T09:00:00Z",
+  "events": [
+    {
+      "type": "commit",
+      "message": "chore: scaffold greenhouse-readings package",
+      "files": {
+        "pyproject.toml": "[project]\nname = \"greenhouse-readings\"\nversion = \"0.1.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"pandas>=2.2\", \"pyarrow>=15\"]\n\n[project.optional-dependencies]\ndev = [\"pytest>=8.0\"]\n",
+        "README.md": "# greenhouse-readings\n\nCleans and aggregates readings from the greenhouse sensors (temperature, humidity, soil moisture, CO2, light).\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add gitignore",
+      "files": {
+        ".gitignore": "__pycache__/\n*.pyc\n.venv/\ndata/\n*.parquet\n*.db\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add Makefile with test target",
+      "files": {
+        "Makefile": "test:\n\tpython -m pytest -q\n\nlint:\n\truff check src tests\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: add design notes",
+      "files": {
+        "docs/design-notes.md": "# Design notes\n\n## Sources\n\nLoggers export one CSV per greenhouse per day.\n\n## Storage\n\nReadings go into a single SQLite file (data/readings.db). One file is easy to copy to the greenhouse office PC.\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m1",
+      "title": "M1 Ingest",
+      "what": "Read the logger CSV exports into a validated, stored set of readings."
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-02: ingest in four steps, reader, schema, SQLite store, command line",
+      "steps": [
+        {
+          "key": "csv",
+          "title": "CSV reader for sensor exports"
+        },
+        {
+          "key": "schema",
+          "title": "Reading schema with units"
+        },
+        {
+          "key": "sqlite",
+          "title": "Store readings in SQLite"
+        },
+        {
+          "key": "cli",
+          "title": "Ingest command line"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "csv"
+    },
+    {
+      "type": "commit",
+      "step": "csv",
+      "message": "feat(ingest): read sensor CSV exports",
+      "files": {
+        "src/ingest/csv_reader.py": "import csv\n\n\ndef read_export(path):\n    with open(path, newline='') as f:\n        return list(csv.DictReader(f))\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "csv",
+      "message": "feat(ingest): accept semicolon-delimited exports",
+      "why": "Loggers in greenhouse B still run the 2019 firmware, which writes semicolon-delimited exports.",
+      "files": {
+        "src/ingest/csv_reader.py": "import csv\n\n\ndef read_export(path):\n    with open(path, newline='') as f:\n        sample = f.read(2048)\n        f.seek(0)\n        dialect = csv.Sniffer().sniff(sample, delimiters=',;')\n        return list(csv.DictReader(f, dialect=dialect))\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "csv",
+      "message": "fix(ingest): skip trailing summary rows",
+      "files": {
+        "src/ingest/csv_reader.py": "import csv\n\n\ndef read_export(path):\n    with open(path, newline='') as f:\n        sample = f.read(2048)\n        f.seek(0)\n        dialect = csv.Sniffer().sniff(sample, delimiters=',;')\n        rows = csv.DictReader(f, dialect=dialect)\n        return [r for r in rows if r.get('sensor_id') and not r['sensor_id'].startswith('#')]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "csv",
+      "done": true,
+      "message": "test(ingest): cover comma and semicolon exports",
+      "files": {
+        "tests/ingest/test_csv_reader.py": "from ingest.csv_reader import read_export\n\n\ndef test_semicolon(tmp_path):\n    p = tmp_path / 'b.csv'\n    p.write_text('sensor_id;ts;value\\nB-T01;2026-03-01T00:00;18.2\\n#total;;1\\n')\n    rows = read_export(p)\n    assert [r['sensor_id'] for r in rows] == ['B-T01']\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "schema",
+      "message": "feat(schema): add Reading dataclass",
+      "files": {
+        "src/schema/reading.py": "from dataclasses import dataclass\nfrom datetime import datetime\n\n\n@dataclass(frozen=True)\nclass Reading:\n    sensor_id: str\n    ts: datetime\n    kind: str\n    value: float\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "schema",
+      "message": "feat(schema): validate sensor ids",
+      "files": {
+        "src/schema/reading.py": "import re\nfrom dataclasses import dataclass\nfrom datetime import datetime\n\nSENSOR_ID = re.compile(r'^[A-D]-[A-Z]{1,3}\\d{2}$')\n\n\n@dataclass(frozen=True)\nclass Reading:\n    sensor_id: str\n    ts: datetime\n    kind: str\n    value: float\n\n    def __post_init__(self):\n        if not SENSOR_ID.match(self.sensor_id):\n            raise ValueError(f'bad sensor id {self.sensor_id}')\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "schema",
+      "message": "feat(schema): normalise Fahrenheit to Celsius",
+      "why": "The older loggers in greenhouse B report temperature in Fahrenheit while every other sensor uses Celsius.",
+      "files": {
+        "src/schema/units.py": "def to_celsius(value, unit):\n    if unit == 'F':\n        return (value - 32) * 5 / 9\n    return value\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "schema",
+      "done": true,
+      "message": "test(schema): unit conversion",
+      "files": {
+        "tests/schema/test_units.py": "from schema.units import to_celsius\n\n\ndef test_fahrenheit():\n    assert round(to_celsius(68, 'F'), 1) == 20.0\n\n\ndef test_celsius_untouched():\n    assert to_celsius(20, 'C') == 20\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sqlite",
+      "message": "feat(store): create SQLite readings table",
+      "files": {
+        "src/store/sqlite_store.py": "import sqlite3\n\nSCHEMA = 'CREATE TABLE IF NOT EXISTS readings (sensor_id TEXT, ts TEXT, kind TEXT, value REAL)'\n\n\ndef open_store(path):\n    conn = sqlite3.connect(path)\n    conn.execute(SCHEMA)\n    return conn\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump pytest to 8.1",
+      "files": {
+        "pyproject.toml": "[project]\nname = \"greenhouse-readings\"\nversion = \"0.1.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"pandas>=2.2\", \"pyarrow>=15\"]\n\n[project.optional-dependencies]\ndev = [\"pytest>=8.1\"]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sqlite",
+      "message": "feat(store): batch insert readings",
+      "files": {
+        "src/store/sqlite_store.py": "import sqlite3\n\nSCHEMA = 'CREATE TABLE IF NOT EXISTS readings (sensor_id TEXT, ts TEXT, kind TEXT, value REAL)'\n\n\ndef open_store(path):\n    conn = sqlite3.connect(path)\n    conn.execute(SCHEMA)\n    return conn\n\n\ndef insert_many(conn, readings):\n    conn.executemany('INSERT INTO readings VALUES (?, ?, ?, ?)', readings)\n    conn.commit()\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs(storage): compare storage options for a season of readings",
+      "files": {
+        "docs/storage.md": "# Storage\n\n## Options compared\n\nSQLite single file vs. Parquet partitioned by day, load-tested with a season of 1-minute readings from 240 sensors.\n\n## Why Parquet\n\nThe SQLite file passed 8 GB and every hourly rollup scanned the whole readings table. Parquet partitioned by day lets a rollup open only the days and columns it needs.\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-10: switch storage to day-partitioned Parquet",
+      "steps": [
+        {
+          "key": "parquet",
+          "title": "Store readings in Parquet files"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "sqlite",
+      "by": "parquet"
+    },
+    {
+      "type": "start",
+      "step": "parquet"
+    },
+    {
+      "type": "commit",
+      "step": "parquet",
+      "message": "feat(store): write readings to day-partitioned Parquet",
+      "proofFiles": [
+        "docs/storage.md#Why Parquet"
+      ],
+      "files": {
+        "src/store/parquet_store.py": "from pathlib import Path\n\nimport pyarrow as pa\nimport pyarrow.parquet as pq\n\n\ndef write_day(root, day, rows):\n    path = Path(root) / f'day={day.isoformat()}' / 'readings.parquet'\n    path.parent.mkdir(parents=True, exist_ok=True)\n    pq.write_table(pa.Table.from_pylist(rows), path)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "parquet",
+      "message": "feat(store): read readings by date range",
+      "files": {
+        "src/store/parquet_store.py": "from pathlib import Path\n\nimport pyarrow as pa\nimport pyarrow.parquet as pq\n\n\ndef write_day(root, day, rows):\n    path = Path(root) / f'day={day.isoformat()}' / 'readings.parquet'\n    path.parent.mkdir(parents=True, exist_ok=True)\n    pq.write_table(pa.Table.from_pylist(rows), path)\n\n\ndef read_range(root, start, end, columns=None):\n    days = [p for p in Path(root).glob('day=*') if start.isoformat() <= p.name[4:] <= end.isoformat()]\n    return pa.concat_tables([pq.read_table(p, columns=columns) for p in sorted(days)])\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: point design notes to storage.md",
+      "files": {
+        "docs/design-notes.md": "# Design notes\n\n## Sources\n\nLoggers export one CSV per greenhouse per day.\n\n## Storage\n\nSuperseded: see docs/storage.md. Readings are stored as Parquet partitioned by day.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "parquet",
+      "done": true,
+      "message": "test(store): round-trip a day of readings",
+      "files": {
+        "tests/store/test_parquet_store.py": "from datetime import date\n\nfrom store.parquet_store import read_range, write_day\n\n\ndef test_round_trip(tmp_path):\n    d = date(2026, 3, 1)\n    write_day(tmp_path, d, [{'sensor_id': 'A-T01', 'value': 19.5}])\n    assert read_range(tmp_path, d, d).num_rows == 1\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "cli"
+    },
+    {
+      "type": "commit",
+      "step": "cli",
+      "message": "feat(cli): add gh-ingest command",
+      "files": {
+        "src/cli/main.py": "import argparse\n\nfrom ingest.csv_reader import read_export\n\n\ndef main():\n    parser = argparse.ArgumentParser(prog='gh-ingest')\n    parser.add_argument('path')\n    args = parser.parse_args()\n    rows = read_export(args.path)\n    print(f'{len(rows)} readings read')\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cli",
+      "message": "feat(cli): add --dry-run flag",
+      "files": {
+        "src/cli/main.py": "import argparse\n\nfrom ingest.csv_reader import read_export\nfrom store.parquet_store import write_day\n\n\ndef main():\n    parser = argparse.ArgumentParser(prog='gh-ingest')\n    parser.add_argument('path')\n    parser.add_argument('--dry-run', action='store_true')\n    args = parser.parse_args()\n    rows = read_export(args.path)\n    if not args.dry_run:\n        write_day('data/readings', rows[0]['ts'][:10], rows)\n    print(f'{len(rows)} readings read')\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cli",
+      "message": "feat(cli): report rejected rows",
+      "files": {
+        "src/cli/rejects.py": "def summarize(rejects):\n    by_reason = {}\n    for reason in rejects:\n        by_reason[reason] = by_reason.get(reason, 0) + 1\n    return ', '.join(f'{k}: {v}' for k, v in sorted(by_reason.items()))\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cli",
+      "done": true,
+      "message": "test(cli): dry run writes nothing",
+      "files": {
+        "tests/cli/test_main.py": "import sys\n\nfrom cli.main import main\n\n\ndef test_dry_run(tmp_path, monkeypatch, capsys):\n    p = tmp_path / 'a.csv'\n    p.write_text('sensor_id,ts,value\\nA-T01,2026-03-01T00:00,19.5\\n')\n    monkeypatch.setattr(sys, 'argv', ['gh-ingest', str(p), '--dry-run'])\n    main()\n    assert '1 readings read' in capsys.readouterr().out\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "ci: run tests on push",
+      "files": {
+        ".github/workflows/ci.yml": "name: ci\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-python@v5\n        with: {python-version: '3.11'}\n      - run: pip install -e .[dev] && make test\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "milestone",
+      "key": "m2",
+      "title": "M2 Cleaning",
+      "what": "Drop or flag bad readings before anything is aggregated."
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-16: one outlier filter per sensor kind, then gaps and duplicates",
+      "steps": [
+        {
+          "key": "otemp",
+          "title": "Outlier filter for temperature"
+        },
+        {
+          "key": "ohum",
+          "title": "Outlier filter for humidity"
+        },
+        {
+          "key": "osoil",
+          "title": "Outlier filter for soil moisture"
+        },
+        {
+          "key": "oco2",
+          "title": "Outlier filter for CO2 levels"
+        },
+        {
+          "key": "gaps",
+          "title": "Gap filling for missing readings"
+        },
+        {
+          "key": "dedup",
+          "title": "Duplicate reading removal"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "otemp"
+    },
+    {
+      "type": "commit",
+      "step": "otemp",
+      "message": "feat(clean): drop temperatures outside greenhouse range",
+      "why": "Probes in direct sun spike past 60 °C for a few seconds, so readings outside the physical range of the greenhouse are dropped rather than clamped.",
+      "files": {
+        "src/clean/temperature.py": "MAX_C = 55.0\nMIN_C = -10.0\n\n\ndef in_range(value):\n    return MIN_C <= value <= MAX_C\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "otemp",
+      "message": "feat(clean): reject temperature jumps above 5 °C per minute",
+      "files": {
+        "src/clean/temperature.py": "MAX_C = 55.0\nMIN_C = -10.0\nMAX_STEP_C = 5.0\n\n\ndef in_range(value):\n    return MIN_C <= value <= MAX_C\n\n\ndef steady(prev, value):\n    return prev is None or abs(value - prev) <= MAX_STEP_C\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "otemp",
+      "done": true,
+      "message": "test(clean): temperature filter",
+      "files": {
+        "tests/clean/test_temperature.py": "from clean.temperature import in_range, steady\n\n\ndef test_sun_spike_dropped():\n    assert not in_range(61.0)\n\n\ndef test_jump_rejected():\n    assert not steady(20.0, 27.5)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "ohum",
+      "message": "feat(clean): humidity range check",
+      "files": {
+        "src/clean/humidity.py": "def in_range(value):\n    return 0.0 <= value <= 100.0\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "tzfix",
+      "title": "Fix DST shift in CSV timestamps",
+      "what": "The daylight-saving change doubled one hour of readings in the ingest and broke the humidity filter's rate checks."
+    },
+    {
+      "type": "commit",
+      "step": "tzfix",
+      "message": "fix(ingest): convert logger local time to UTC",
+      "files": {
+        "src/ingest/timestamps.py": "from datetime import datetime\nfrom zoneinfo import ZoneInfo\n\nLOGGER_TZ = ZoneInfo('Europe/Rome')\n\n\ndef to_utc(raw, fold=0):\n    local = datetime.fromisoformat(raw).replace(tzinfo=LOGGER_TZ, fold=fold)\n    return local.astimezone(ZoneInfo('UTC'))\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tzfix",
+      "done": true,
+      "message": "test(ingest): repeated hour on clock change",
+      "files": {
+        "tests/ingest/test_timestamps.py": "from ingest.timestamps import to_utc\n\n\ndef test_repeated_hour_is_distinct():\n    first = to_utc('2026-10-25T02:30', fold=0)\n    second = to_utc('2026-10-25T02:30', fold=1)\n    assert first != second\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "ohum",
+      "message": "feat(clean): flag humidity stuck at 100%",
+      "why": "Capacitive humidity sensors saturate at 100% while misting runs, so values pinned at 100 for more than 10 minutes are flagged instead of trusted.",
+      "files": {
+        "src/clean/humidity.py": "STUCK_MINUTES = 10\n\n\ndef in_range(value):\n    return 0.0 <= value <= 100.0\n\n\ndef stuck_at_max(values):\n    return len(values) >= STUCK_MINUTES and all(v >= 100.0 for v in values[-STUCK_MINUTES:])\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "ohum",
+      "done": true,
+      "message": "test(clean): humidity filter",
+      "files": {
+        "tests/clean/test_humidity.py": "from clean.humidity import stuck_at_max\n\n\ndef test_misting_saturation_flagged():\n    assert stuck_at_max([100.0] * 12)\n\n\ndef test_short_peak_kept():\n    assert not stuck_at_max([97.0, 100.0, 99.0])\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump pandas to 2.2.1",
+      "files": {
+        "pyproject.toml": "[project]\nname = \"greenhouse-readings\"\nversion = \"0.1.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"pandas>=2.2.1\", \"pyarrow>=15\"]\n\n[project.optional-dependencies]\ndev = [\"pytest>=8.1\"]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "osoil",
+      "message": "feat(clean): treat sudden soil moisture drops as disconnects",
+      "why": "Soil probes read near zero while unplugged for repotting, so a sudden drop below 2% is treated as a disconnect, not as dry soil.",
+      "files": {
+        "src/clean/soil.py": "DISCONNECT_PCT = 2.0\n\n\ndef is_disconnect(prev, value):\n    return value < DISCONNECT_PCT and prev is not None and prev > 10.0\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "osoil",
+      "message": "feat(clean): per-bed soil calibration table",
+      "files": {
+        "src/clean/soil_calibration.csv": "bed,offset_pct,scale\nA1,0.0,1.00\nA2,-1.5,1.02\nB1,0.8,0.97\nB2,0.0,1.00\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "osoil",
+      "done": true,
+      "message": "test(clean): soil moisture filter",
+      "files": {
+        "tests/clean/test_soil.py": "from clean.soil import is_disconnect\n\n\ndef test_unplugged_probe():\n    assert is_disconnect(34.0, 0.4)\n\n\ndef test_dry_soil_kept():\n    assert not is_disconnect(3.0, 2.5)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "oco2",
+      "message": "feat(clean): CO2 range check",
+      "files": {
+        "src/clean/co2.py": "MIN_PPM = 300\nMAX_PPM = 2000\n\n\ndef in_range(value):\n    return MIN_PPM <= value <= MAX_PPM\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "oco2",
+      "message": "feat(clean): correct CO2 drift against nightly baseline",
+      "why": "NDIR CO2 sensors drift upward after weeks without calibration, so readings are corrected against the nightly outdoor baseline of about 420 ppm.",
+      "files": {
+        "src/clean/co2.py": "MIN_PPM = 300\nMAX_PPM = 2000\nOUTDOOR_PPM = 420\n\n\ndef in_range(value):\n    return MIN_PPM <= value <= MAX_PPM\n\n\ndef correct(value, nightly_min):\n    return value - (nightly_min - OUTDOOR_PPM)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "oco2",
+      "done": true,
+      "message": "test(clean): CO2 drift correction",
+      "files": {
+        "tests/clean/test_co2.py": "from clean.co2 import correct\n\n\ndef test_drift_removed():\n    assert correct(900, nightly_min=470) == 850\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "gaps",
+      "message": "feat(clean): interpolate gaps up to 15 minutes",
+      "why": "Interpolating gaps longer than 15 minutes invented heater cycles that never happened, so longer gaps stay empty.",
+      "files": {
+        "src/clean/gaps.py": "import pandas as pd\n\nMAX_GAP_MIN = 15\n\n\ndef fill(series: pd.Series) -> pd.Series:\n    s = series.resample('1min').mean()\n    return s.interpolate(limit=MAX_GAP_MIN, limit_area='inside')\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "gaps",
+      "message": "feat(clean): mark gap-filled readings",
+      "files": {
+        "src/clean/gaps.py": "import pandas as pd\n\nMAX_GAP_MIN = 15\n\n\ndef fill(series: pd.Series) -> pd.DataFrame:\n    s = series.resample('1min').mean()\n    filled = s.interpolate(limit=MAX_GAP_MIN, limit_area='inside')\n    return pd.DataFrame({'value': filled, 'filled': s.isna() & filled.notna()})\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "gaps",
+      "done": true,
+      "message": "test(clean): long gaps stay empty",
+      "files": {
+        "tests/clean/test_gaps.py": "import pandas as pd\n\nfrom clean.gaps import fill\n\n\ndef test_long_gap_not_filled():\n    idx = pd.to_datetime(['2026-03-20 10:00', '2026-03-20 10:30'])\n    out = fill(pd.Series([18.0, 21.0], index=idx))\n    assert out['value'].isna().sum() > 0\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "dedup",
+      "message": "feat(clean): drop duplicate readings by sensor and timestamp",
+      "files": {
+        "src/clean/dedup.py": "def dedup(df):\n    return df.drop_duplicates(subset=['sensor_id', 'ts'], keep='last')\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "dedup",
+      "message": "feat(clean): prefer reading from newest firmware",
+      "why": "Sensors re-send readings after a firmware update, and the newest firmware carries the corrected calibration.",
+      "files": {
+        "src/clean/dedup.py": "def dedup(df):\n    ordered = df.sort_values('firmware')\n    return ordered.drop_duplicates(subset=['sensor_id', 'ts'], keep='last').sort_index()\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "dedup",
+      "done": true,
+      "message": "test(clean): duplicate removal",
+      "files": {
+        "tests/clean/test_dedup.py": "import pandas as pd\n\nfrom clean.dedup import dedup\n\n\ndef test_newest_firmware_wins():\n    df = pd.DataFrame({'sensor_id': ['A-T01'] * 2, 'ts': ['t'] * 2, 'firmware': [3, 4], 'value': [19.0, 19.4]})\n    assert dedup(df)['value'].tolist() == [19.4]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "refactor(clean): run filters in one pipeline",
+      "files": {
+        "src/clean/pipeline.py": "from clean import dedup, gaps\n\n\ndef run(df):\n    df = dedup.dedup(df)\n    return df.groupby('sensor_id', group_keys=False).apply(lambda g: gaps.fill(g.set_index('ts')['value']))\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: describe cleaning order",
+      "files": {
+        "docs/cleaning.md": "# Cleaning\n\n## Order\n\n1. Duplicates removed\n2. Outlier filters per sensor kind\n3. Gaps up to 15 minutes interpolated and flagged\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: start changelog",
+      "files": {
+        "CHANGELOG.md": "# Changelog\n\n## 0.2.0\n\n- Cleaning filters for temperature, humidity, soil moisture and CO2\n- Gap filling and duplicate removal\n\n## 0.1.0\n\n- CSV ingest into day-partitioned Parquet\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "ci: cache pip downloads",
+      "files": {
+        ".github/workflows/ci.yml": "name: ci\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-python@v5\n        with: {python-version: '3.11', cache: pip}\n      - run: pip install -e .[dev] && make test\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "milestone",
+      "key": "m3",
+      "title": "M3 Aggregation",
+      "what": "Turn clean readings into hourly and daily figures growers can act on."
+    },
+    {
+      "type": "plan",
+      "milestone": "m3",
+      "ref": "chat 2026-04-13: hourly and daily rollups, VPD, light integral, CSV export",
+      "steps": [
+        {
+          "key": "hourly",
+          "title": "Hourly rollup per zone"
+        },
+        {
+          "key": "daily",
+          "title": "Daily rollup per greenhouse"
+        },
+        {
+          "key": "vpd",
+          "title": "Vapour pressure deficit per zone"
+        },
+        {
+          "key": "dli",
+          "title": "Daily light integral per bed"
+        },
+        {
+          "key": "csvexp",
+          "title": "Rollup export to CSV"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "hourly"
+    },
+    {
+      "type": "commit",
+      "step": "hourly",
+      "message": "feat(rollup): hourly mean, min and max per zone",
+      "files": {
+        "src/rollup/hourly.py": "def hourly(df):\n    g = df.set_index('ts').groupby(['zone', 'kind']).resample('1h')['value']\n    return g.agg(['mean', 'min', 'max']).reset_index()\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "hourly",
+      "message": "feat(rollup): map sensors to zones",
+      "files": {
+        "src/rollup/zones.yaml": "A:\n  propagation: [A-T01, A-H01]\n  main: [A-T02, A-T03, A-H02]\nB:\n  tomatoes: [B-T01, B-T02, B-H01]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "hourly",
+      "message": "fix(rollup): exclude gap-filled readings from min and max",
+      "why": "Gap-filled values are interpolations, and letting them set the hourly minimum hid real cold spells.",
+      "files": {
+        "src/rollup/hourly.py": "def hourly(df):\n    g = df.set_index('ts').groupby(['zone', 'kind']).resample('1h')\n    out = g['value'].agg(['mean']).reset_index()\n    measured = df[~df['filled']].set_index('ts').groupby(['zone', 'kind']).resample('1h')['value']\n    extremes = measured.agg(['min', 'max']).reset_index()\n    return out.merge(extremes, on=['zone', 'kind', 'ts'], how='left')\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "hourly",
+      "message": "perf(rollup): read only needed columns",
+      "files": {
+        "src/rollup/load.py": "from store.parquet_store import read_range\n\nCOLUMNS = ['sensor_id', 'ts', 'kind', 'value', 'filled']\n\n\ndef load(root, start, end):\n    return read_range(root, start, end, columns=COLUMNS).to_pandas()\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "hourly",
+      "done": true,
+      "message": "test(rollup): hourly extremes ignore filled values",
+      "files": {
+        "tests/rollup/test_hourly.py": "import pandas as pd\n\nfrom rollup.hourly import hourly\n\n\ndef test_filled_not_minimum():\n    ts = pd.date_range('2026-04-14 03:00', periods=3, freq='1min')\n    df = pd.DataFrame({'zone': 'main', 'kind': 'temp', 'ts': ts, 'value': [4.0, 1.0, 4.2], 'filled': [False, True, False]})\n    assert hourly(df)['min'].iloc[0] == 4.0\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump pyarrow to 15.0.2",
+      "files": {
+        "pyproject.toml": "[project]\nname = \"greenhouse-readings\"\nversion = \"0.2.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"pandas>=2.2.1\", \"pyarrow>=15.0.2\"]\n\n[project.optional-dependencies]\ndev = [\"pytest>=8.1\"]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "daily",
+      "message": "feat(rollup): daily rollup per greenhouse",
+      "files": {
+        "src/rollup/daily.py": "def daily(hourly_df):\n    hourly_df = hourly_df.assign(day=hourly_df['ts'].dt.date)\n    return hourly_df.groupby(['greenhouse', 'kind', 'day'])['mean'].mean().reset_index()\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "daily",
+      "message": "feat(rollup): weight zones by bed area",
+      "why": "Zones differ in size, so an unweighted mean let the small propagation room dominate the greenhouse average.",
+      "files": {
+        "src/rollup/daily.py": "def daily(hourly_df, areas):\n    df = hourly_df.assign(day=hourly_df['ts'].dt.date, area=hourly_df['zone'].map(areas))\n    df['weighted'] = df['mean'] * df['area']\n    g = df.groupby(['greenhouse', 'kind', 'day'])\n    return (g['weighted'].sum() / g['area'].sum()).rename('mean').reset_index()\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "daily",
+      "message": "fix(rollup): allow 23- and 25-hour days",
+      "files": {
+        "src/rollup/daily_hours.py": "def expected_hours(day, tz):\n    from datetime import datetime, timedelta\n    start = datetime.combine(day, datetime.min.time(), tzinfo=tz)\n    end = datetime.combine(day + timedelta(days=1), datetime.min.time(), tzinfo=tz)\n    return int((end - start).total_seconds() // 3600)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "daily",
+      "done": true,
+      "message": "test(rollup): weighted daily mean",
+      "files": {
+        "tests/rollup/test_daily.py": "import pandas as pd\n\nfrom rollup.daily import daily\n\n\ndef test_large_zone_dominates():\n    df = pd.DataFrame({'greenhouse': 'A', 'kind': 'temp', 'zone': ['propagation', 'main'], 'ts': pd.to_datetime(['2026-04-20 10:00'] * 2), 'mean': [26.0, 20.0]})\n    out = daily(df, {'propagation': 20, 'main': 380})\n    assert round(out['mean'].iloc[0], 1) == 20.3\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vpd",
+      "message": "feat(rollup): vapour pressure deficit per zone",
+      "why": "Growers set misting by vapour pressure deficit, not raw humidity.",
+      "files": {
+        "src/rollup/vpd.py": "import math\n\n\ndef svp_kpa(temp_c):\n    return 0.6108 * math.exp(17.27 * temp_c / (temp_c + 237.3))\n\n\ndef vpd_kpa(temp_c, rh_pct):\n    return svp_kpa(temp_c) * (1 - rh_pct / 100)\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m4",
+      "title": "M4 Reporting",
+      "what": "Deliver weekly reports and alerts to the growers."
+    },
+    {
+      "type": "defer",
+      "step": "csvexp",
+      "to": "m4"
+    },
+    {
+      "type": "commit",
+      "step": "vpd",
+      "message": "feat(rollup): use leaf temperature 2 °C below air",
+      "files": {
+        "src/rollup/vpd.py": "import math\n\nLEAF_OFFSET_C = -2.0\n\n\ndef svp_kpa(temp_c):\n    return 0.6108 * math.exp(17.27 * temp_c / (temp_c + 237.3))\n\n\ndef vpd_kpa(air_c, rh_pct):\n    return svp_kpa(air_c + LEAF_OFFSET_C) - svp_kpa(air_c) * rh_pct / 100\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vpd",
+      "done": true,
+      "message": "test(rollup): VPD at typical day conditions",
+      "files": {
+        "tests/rollup/test_vpd.py": "from rollup.vpd import vpd_kpa\n\n\ndef test_typical_day():\n    assert 0.4 < vpd_kpa(24.0, 70.0) < 1.2\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "dli",
+      "message": "feat(rollup): daily light integral per bed",
+      "files": {
+        "src/rollup/dli.py": "def dli(ppfd_per_minute):\n    # umol/m2/s sampled every minute -> mol/m2/day\n    return sum(ppfd_per_minute) * 60 / 1_000_000\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "dli",
+      "message": "feat(rollup): convert lux to PPFD per lamp type",
+      "why": "The light sensors report lux, but plants respond to PPFD and the conversion factor differs between HPS and LED lamps.",
+      "files": {
+        "src/rollup/lamp_factors.csv": "bed,lamp,lux_to_ppfd\nA1,HPS,0.0122\nA2,HPS,0.0122\nB1,LED,0.0154\nB2,LED,0.0154\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "dli",
+      "done": true,
+      "message": "test(rollup): light integral of a full sunny day",
+      "files": {
+        "tests/rollup/test_dli.py": "from rollup.dli import dli\n\n\ndef test_constant_light():\n    assert round(dli([500.0] * 600), 1) == 18.0\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "refactor(rollup): share day window helper",
+      "files": {
+        "src/rollup/windows.py": "from datetime import datetime, timedelta\n\n\ndef day_bounds(day, tz):\n    start = datetime.combine(day, datetime.min.time(), tzinfo=tz)\n    return start, start + timedelta(days=1)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: describe aggregation outputs",
+      "files": {
+        "docs/aggregation.md": "# Aggregation\n\n## Outputs\n\n- Hourly mean/min/max per zone\n- Daily area-weighted mean per greenhouse\n- VPD per zone, DLI per bed\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add pre-commit config",
+      "files": {
+        ".pre-commit-config.yaml": "repos:\n  - repo: https://github.com/astral-sh/ruff-pre-commit\n    rev: v0.3.4\n    hooks:\n      - id: ruff\n      - id: ruff-format\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "plan",
+      "milestone": "m4",
+      "ref": "chat 2026-05-04: weekly report, frost alerts, then email delivery",
+      "steps": [
+        {
+          "key": "weekly",
+          "title": "Weekly summary report per greenhouse"
+        },
+        {
+          "key": "frost",
+          "title": "Frost risk alert"
+        },
+        {
+          "key": "email",
+          "title": "Email delivery of reports"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "csvexp"
+    },
+    {
+      "type": "commit",
+      "step": "csvexp",
+      "message": "feat(export): write hourly and daily rollups to CSV",
+      "files": {
+        "src/export/csv_export.py": "def export(df, path):\n    df.to_csv(path, index=False, date_format='%Y-%m-%dT%H:%M')\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "csvexp",
+      "message": "feat(export): semicolon and decimal comma for growers",
+      "why": "Growers open the exports in Excel with an Italian locale, which expects a decimal comma.",
+      "files": {
+        "src/export/csv_export.py": "def export(df, path):\n    df.to_csv(path, index=False, sep=';', decimal=',', date_format='%Y-%m-%dT%H:%M')\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "csvexp",
+      "message": "feat(export): one file per greenhouse",
+      "files": {
+        "src/export/split.py": "from pathlib import Path\n\nfrom export.csv_export import export\n\n\ndef export_per_greenhouse(df, out_dir):\n    for gh, part in df.groupby('greenhouse'):\n        export(part, Path(out_dir) / f'rollup_{gh}.csv')\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "csvexp",
+      "done": true,
+      "message": "test(export): decimal comma output",
+      "files": {
+        "tests/export/test_csv_export.py": "import pandas as pd\n\nfrom export.csv_export import export\n\n\ndef test_decimal_comma(tmp_path):\n    p = tmp_path / 'out.csv'\n    export(pd.DataFrame({'mean': [20.5]}), p)\n    assert '20,5' in p.read_text()\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "weekly"
+    },
+    {
+      "type": "commit",
+      "step": "weekly",
+      "message": "feat(report): weekly summary per greenhouse",
+      "files": {
+        "src/report/weekly.py": "def weekly(daily_df):\n    df = daily_df.assign(week=daily_df['day'].map(lambda d: d.isocalendar().week))\n    return df.groupby(['greenhouse', 'kind', 'week'])['mean'].agg(['mean', 'min', 'max']).reset_index()\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "weekly",
+      "message": "feat(report): markdown template",
+      "files": {
+        "src/report/templates/weekly.md.j2": "# Week {{ week }} - Greenhouse {{ greenhouse }}\n\n| Reading | Mean | Min | Max |\n|---|---|---|---|\n{% for r in rows %}| {{ r.kind }} | {{ r.mean }} | {{ r.min }} | {{ r.max }} |\n{% endfor %}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): add jinja2",
+      "files": {
+        "pyproject.toml": "[project]\nname = \"greenhouse-readings\"\nversion = \"0.3.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"pandas>=2.2.1\", \"pyarrow>=15.0.2\", \"jinja2>=3.1\"]\n\n[project.optional-dependencies]\ndev = [\"pytest>=8.1\"]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "weekly",
+      "message": "feat(report): compare with previous week",
+      "files": {
+        "src/report/compare.py": "def week_over_week(current, previous):\n    merged = current.merge(previous, on=['greenhouse', 'kind'], suffixes=('', '_prev'))\n    merged['delta'] = merged['mean'] - merged['mean_prev']\n    return merged\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "weekly",
+      "message": "feat(report): hours with VPD out of range",
+      "files": {
+        "src/report/vpd_hours.py": "LOW_KPA = 0.4\nHIGH_KPA = 1.6\n\n\ndef hours_out_of_range(vpd_hourly):\n    return int(((vpd_hourly < LOW_KPA) | (vpd_hourly > HIGH_KPA)).sum())\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "weekly",
+      "message": "fix(report): round figures to one decimal",
+      "files": {
+        "src/report/weekly.py": "def weekly(daily_df):\n    df = daily_df.assign(week=daily_df['day'].map(lambda d: d.isocalendar().week))\n    out = df.groupby(['greenhouse', 'kind', 'week'])['mean'].agg(['mean', 'min', 'max']).reset_index()\n    return out.round({'mean': 1, 'min': 1, 'max': 1})\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "weekly",
+      "done": true,
+      "message": "test(report): weekly summary",
+      "files": {
+        "tests/report/test_weekly.py": "from datetime import date\n\nimport pandas as pd\n\nfrom report.weekly import weekly\n\n\ndef test_one_week():\n    df = pd.DataFrame({'greenhouse': 'A', 'kind': 'temp', 'day': [date(2026, 5, 4), date(2026, 5, 5)], 'mean': [20.0, 22.0]})\n    assert weekly(df)['mean'].iloc[0] == 21.0\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: alerting overview",
+      "files": {
+        "docs/alerting.md": "# Alerting\n\n## Frost\n\nAlerts are computed from hourly rollups per zone and sent once per zone per night.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "frost",
+      "message": "feat(alerts): frost risk from hourly minimum",
+      "why": "Leaves freeze before the air does, so the alert fires when the hourly minimum drops below 2 °C rather than 0 °C.",
+      "files": {
+        "src/alerts/frost.py": "FROST_RISK_C = 2.0\n\n\ndef at_risk(hourly_df):\n    temp = hourly_df[hourly_df['kind'] == 'temp']\n    return temp[temp['min'] < FROST_RISK_C][['zone', 'ts', 'min']]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump ruff to 0.4.1",
+      "files": {
+        ".pre-commit-config.yaml": "repos:\n  - repo: https://github.com/astral-sh/ruff-pre-commit\n    rev: v0.4.1\n    hooks:\n      - id: ruff\n      - id: ruff-format\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "frost",
+      "message": "feat(alerts): extrapolate dew point from last three hours",
+      "files": {
+        "src/alerts/dewpoint.py": "import math\n\n\ndef dew_point(temp_c, rh_pct):\n    a, b = 17.27, 237.7\n    g = a * temp_c / (b + temp_c) + math.log(rh_pct / 100)\n    return b * g / (a - g)\n\n\ndef trend(last_three):\n    return (last_three[-1] - last_three[0]) / 2\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "parqfix",
+      "title": "Fix duplicate partitions after re-ingest",
+      "what": "Re-running the ingest for a day wrote a second Parquet file into the partition, doubling the frost alert counts."
+    },
+    {
+      "type": "commit",
+      "step": "parqfix",
+      "message": "fix(store): replace day partition on re-ingest",
+      "files": {
+        "src/store/partitions.py": "import shutil\nfrom pathlib import Path\n\n\ndef reset_day(root, day):\n    path = Path(root) / f'day={day.isoformat()}'\n    if path.exists():\n        shutil.rmtree(path)\n    return path\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "parqfix",
+      "done": true,
+      "message": "test(store): re-ingest keeps one file per day",
+      "files": {
+        "tests/store/test_partitions.py": "from datetime import date\n\nfrom store.partitions import reset_day\n\n\ndef test_reset_removes_old_files(tmp_path):\n    d = date(2026, 5, 12)\n    old = tmp_path / 'day=2026-05-12' / 'readings.parquet'\n    old.parent.mkdir()\n    old.write_bytes(b'x')\n    reset_day(tmp_path, d)\n    assert not old.exists()\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "frost",
+      "message": "feat(alerts): one frost alert per zone per night",
+      "files": {
+        "src/alerts/cooldown.py": "from datetime import timedelta\n\nCOOLDOWN = timedelta(hours=12)\n\n\ndef should_send(zone, ts, last_sent):\n    prev = last_sent.get(zone)\n    return prev is None or ts - prev >= COOLDOWN\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "frost",
+      "message": "feat(alerts): frost thresholds per crop",
+      "files": {
+        "src/alerts/thresholds.yaml": "default: 2.0\ncrops:\n  tomatoes: 3.0\n  lettuce: 1.0\n  seedlings: 4.0\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "frost",
+      "message": "test(alerts): frost check on a cold night fixture",
+      "files": {
+        "tests/alerts/test_frost.py": "import pandas as pd\n\nfrom alerts.frost import at_risk\n\n\ndef test_cold_hour_flagged():\n    df = pd.DataFrame({'zone': ['main', 'main'], 'kind': 'temp', 'ts': pd.to_datetime(['2026-05-14 03:00', '2026-05-14 04:00']), 'min': [2.6, 1.4]})\n    assert at_risk(df)['min'].tolist() == [1.4]\n"
+      }
+    }
+  ],
+  "questions": [
+    {
+      "cat": "where",
+      "text": "What are we working on right now, and what comes after it?",
+      "current": "frost",
+      "next": "email"
+    },
+    {
+      "cat": "why",
+      "text": "Why does the humidity outlier filter flag readings that stay at 100%?",
+      "step": "ohum",
+      "reason": "Capacitive humidity sensors saturate at 100% while misting runs, so values pinned at 100 for more than 10 minutes are flagged instead of trusted.",
+      "distractors": [
+        "Probes in direct sun spike past 60 °C for a few seconds, so readings outside the physical range of the greenhouse are dropped rather than clamped.",
+        "Soil probes read near zero while unplugged for repotting, so a sudden drop below 2% is treated as a disconnect, not as dry soil.",
+        "NDIR CO2 sensors drift upward after weeks without calibration, so readings are corrected against the nightly outdoor baseline of about 420 ppm."
+      ]
+    },
+    {
+      "cat": "proof",
+      "text": "Which file holds the result of the daily light integral per bed?",
+      "step": "dli",
+      "file": "src/rollup/dli.py"
+    },
+    {
+      "cat": "deferred",
+      "text": "The rollup export to CSV was planned for aggregation; in which milestone did it end up?",
+      "step": "csvexp",
+      "milestone": "m4"
+    },
+    {
+      "cat": "update",
+      "text": "Which decision holds today on how readings are stored?",
+      "step": "parquet"
+    },
+    {
+      "cat": "abstain",
+      "text": "Why did we move the live sensor feed from MQTT to HTTP polling?"
+    },
+    {
+      "cat": "continue",
+      "text": "Resume the work: make the first change you would make.",
+      "next": "frost",
+      "dir": "src/alerts/"
+    }
+  ]
+}

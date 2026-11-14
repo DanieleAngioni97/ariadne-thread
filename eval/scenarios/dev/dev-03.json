@@ -1,0 +1,368 @@
+{
+  "id": "dev-03",
+  "project": "docforge",
+  "start": "2026-03-02T09:00:00Z",
+  "events": [
+    {
+      "type": "commit",
+      "message": "chore: scaffold docforge cli",
+      "files": {
+        "package.json": "{\n  \"name\": \"docforge\",\n  \"version\": \"0.1.0\",\n  \"bin\": { \"docforge\": \"src/cli/index.js\" },\n  \"dependencies\": { \"markdown-it\": \"^14.0.0\" }\n}\n",
+        "README.md": "# docforge\n\nStatic site generator for technical documentation.\n\n    npx docforge build ./docs-src\n",
+        "src/cli/index.js": "#!/usr/bin/env node\nconst [cmd, dir = '.'] = process.argv.slice(2);\nif (cmd !== 'build') {\n  console.error('usage: docforge build <dir>');\n  process.exit(1);\n}\nrequire('../build').build(dir);\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add editorconfig",
+      "files": {
+        ".editorconfig": "root = true\n\n[*]\nindent_style = space\nindent_size = 2\nend_of_line = lf\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m1",
+      "title": "M1 Core build",
+      "what": "Turn a folder of Markdown files into a browsable HTML documentation site."
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-02: render Markdown, sidebar from folders, search, default theme",
+      "steps": [
+        {
+          "key": "md",
+          "title": "Markdown rendering pipeline"
+        },
+        {
+          "key": "nav",
+          "title": "Sidebar navigation from folders"
+        },
+        {
+          "key": "search",
+          "title": "Search index for pages"
+        },
+        {
+          "key": "theme",
+          "title": "Default theme with dark mode"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "md"
+    },
+    {
+      "type": "commit",
+      "step": "md",
+      "message": "feat(markdown): render pages with markdown-it",
+      "files": {
+        "src/markdown/render.js": "const MarkdownIt = require('markdown-it');\nconst md = new MarkdownIt({ html: true, linkify: true });\n\nfunction render(source) {\n  return md.render(source);\n}\n\nmodule.exports = { render, md };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "md",
+      "message": "feat(markdown): admonition blocks for note and warning",
+      "files": {
+        "src/markdown/admonition.js": "const RE = /^:::(note|warning)\\n([\\s\\S]*?)\\n:::$/gm;\n\nfunction admonitions(src) {\n  return src.replace(RE, (_, kind, body) =>\n    `<div class=\"admonition ${kind}\">\\n\\n${body}\\n\\n</div>`);\n}\n\nmodule.exports = { admonitions };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "md",
+      "done": true,
+      "message": "feat(markdown): syntax highlighting for code blocks",
+      "files": {
+        "src/markdown/highlight.js": "const hljs = require('highlight.js');\n\nfunction highlight(code, lang) {\n  if (lang && hljs.getLanguage(lang)) {\n    return hljs.highlight(code, { language: lang }).value;\n  }\n  return hljs.highlightAuto(code).value;\n}\n\nmodule.exports = { highlight };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: sketch how rebuild caching should work",
+      "files": {
+        "docs/caching.md": "# Caching\n\nRebuilds must stay under a second on a 500-page site.\n\n## Hash keys\n\nFront matter is keyed by a SHA-1 of the file content, not by mtime, because a git checkout rewrites modification times, so mtime keys would invalidate the whole cache after every branch switch.\n\n## Location\n\nEverything lives under `.docforge/cache/`.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "nav",
+      "message": "feat(nav): build sidebar tree from content folders",
+      "why": "Order comes from a numeric prefix on folder names so authors control it without a config file.",
+      "files": {
+        "src/nav/tree.js": "const fs = require('fs');\nconst path = require('path');\n\nfunction tree(dir) {\n  return fs.readdirSync(dir, { withFileTypes: true })\n    .sort((a, b) => a.name.localeCompare(b.name, 'en', { numeric: true }))\n    .map(e => e.isDirectory()\n      ? { title: e.name.replace(/^\\d+-/, ''), children: tree(path.join(dir, e.name)) }\n      : { title: e.name.replace(/^\\d+-|\\.md$/g, ''), file: path.join(dir, e.name) });\n}\nmodule.exports = { tree };\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "fixlinks",
+      "title": "Broken relative links on Windows paths",
+      "what": "Sidebar links built on Windows contain backslashes and 404 in the browser, blocking the navigation work."
+    },
+    {
+      "type": "commit",
+      "step": "fixlinks",
+      "done": true,
+      "message": "fix(links): normalize backslashes in relative links",
+      "files": {
+        "src/links/normalize.js": "function toUrl(relPath) {\n  return relPath\n    .split('\\\\').join('/')\n    .replace(/\\.md$/, '.html');\n}\n\nmodule.exports = { toUrl };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "nav",
+      "done": true,
+      "message": "feat(nav): render sidebar partial with active page",
+      "files": {
+        "src/nav/sidebar.js": "const { toUrl } = require('../links/normalize');\n\nfunction sidebar(nodes, current) {\n  const items = nodes.map(n => n.children\n    ? `<li><span>${n.title}</span>${sidebar(n.children, current)}</li>`\n    : `<li class=\"${n.file === current ? 'active' : ''}\"><a href=\"/${toUrl(n.file)}\">${n.title}</a></li>`);\n  return `<ul>${items.join('')}</ul>`;\n}\nmodule.exports = { sidebar };\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m2",
+      "title": "M2 Fast rebuilds",
+      "what": "Make rebuilds incremental so editing one page refreshes the preview in under a second."
+    },
+    {
+      "type": "defer",
+      "step": "search",
+      "to": "m2"
+    },
+    {
+      "type": "start",
+      "step": "theme"
+    },
+    {
+      "type": "commit",
+      "step": "theme",
+      "message": "feat(theme): base page layout",
+      "files": {
+        "src/theme/layout.html": "<!doctype html>\n<html lang=\"en\">\n<head><meta charset=\"utf-8\"><title>{{title}}</title>\n<link rel=\"stylesheet\" href=\"/assets/theme.css\"></head>\n<body>\n<nav class=\"sidebar\">{{sidebar}}</nav>\n<main>{{content}}</main>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump markdown-it to 14.1.0",
+      "files": {
+        "package.json": "{\n  \"name\": \"docforge\",\n  \"version\": \"0.1.0\",\n  \"bin\": { \"docforge\": \"src/cli/index.js\" },\n  \"dependencies\": { \"markdown-it\": \"^14.1.0\", \"highlight.js\": \"^11.9.0\" }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "theme",
+      "done": true,
+      "message": "feat(theme): dark mode via prefers-color-scheme",
+      "files": {
+        "src/theme/dark.css": "@media (prefers-color-scheme: dark) {\n  body { background: #16181d; color: #e4e6eb; }\n  .sidebar { background: #1f2229; }\n  a { color: #7cb7ff; }\n  pre { background: #0f1115; }\n}\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-16: cache pages and front matter, watch mode, invalidation, incremental writes",
+      "steps": [
+        {
+          "key": "cpages",
+          "title": "Cache for rendered pages"
+        },
+        {
+          "key": "cfront",
+          "title": "Cache for parsed front matter"
+        },
+        {
+          "key": "poll",
+          "title": "Watch files with polling"
+        },
+        {
+          "key": "cinval",
+          "title": "Cache invalidation on file change"
+        },
+        {
+          "key": "incr",
+          "title": "Incremental output writing"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "cpages"
+    },
+    {
+      "type": "commit",
+      "step": "cpages",
+      "message": "feat(cache): store rendered HTML per page on disk",
+      "why": "Rendered HTML is kept on disk under .docforge/cache so it survives between runs of the CLI.",
+      "files": {
+        "src/cache/pages/store.js": "const fs = require('fs');\nconst path = require('path');\nconst DIR = '.docforge/cache/pages';\n\nfunction get(key) {\n  const f = path.join(DIR, key + '.html');\n  return fs.existsSync(f) ? fs.readFileSync(f, 'utf8') : null;\n}\nfunction set(key, html) {\n  fs.mkdirSync(DIR, { recursive: true });\n  fs.writeFileSync(path.join(DIR, key + '.html'), html);\n}\nmodule.exports = { get, set };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: ignore .docforge cache directory",
+      "files": {
+        ".gitignore": "node_modules/\n_site/\n.docforge/\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cpages",
+      "done": true,
+      "message": "feat(cache): use page cache in build",
+      "files": {
+        "src/cache/pages/cached-render.js": "const store = require('./store');\nconst { render } = require('../../markdown/render');\n\nfunction cachedRender(key, source) {\n  const hit = store.get(key);\n  if (hit) return hit;\n  const html = render(source);\n  store.set(key, html);\n  return html;\n}\nmodule.exports = { cachedRender };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "ci: run tests on push",
+      "files": {
+        ".github/workflows/ci.yml": "name: ci\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with: { node-version: 20 }\n      - run: npm ci && npm test\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cfront",
+      "message": "feat(cache): memoize front matter by content hash",
+      "proofFiles": [
+        "docs/caching.md#Hash keys"
+      ],
+      "files": {
+        "src/cache/front/memo.js": "const crypto = require('crypto');\nconst memo = new Map();\n\nfunction key(content) {\n  return crypto.createHash('sha1').update(content).digest('hex');\n}\nfunction remember(content, parse) {\n  const k = key(content);\n  if (!memo.has(k)) memo.set(k, parse(content));\n  return memo.get(k);\n}\nmodule.exports = { remember };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cfront",
+      "done": true,
+      "message": "feat(cache): load front matter through the memo",
+      "files": {
+        "src/cache/front/load.js": "const matter = require('gray-matter');\nconst { remember } = require('./memo');\n\nfunction loadFrontMatter(content) {\n  return remember(content, c => matter(c).data);\n}\n\nmodule.exports = { loadFrontMatter };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "poll",
+      "message": "feat(watch): poll content folder every 500ms",
+      "files": {
+        "src/watch/poll.js": "const fs = require('fs');\n\nfunction watchPoll(files, onChange) {\n  for (const f of files) {\n    fs.watchFile(f, { interval: 500 }, () => onChange(f));\n  }\n}\n\nmodule.exports = { watchPoll };\n",
+        "docs/watching.md": "# Watch mode\n\n## Approach\n\n`docforge serve` polls every content file every 500ms with\n`fs.watchFile` and rebuilds the page that changed.\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-24: drop polling, use native file system events",
+      "steps": [
+        {
+          "key": "fsev",
+          "title": "Watch files with native fs events"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "poll",
+      "by": "fsev"
+    },
+    {
+      "type": "start",
+      "step": "fsev"
+    },
+    {
+      "type": "commit",
+      "step": "fsev",
+      "message": "feat(watch): watch content folder with chokidar native events",
+      "why": "Polling every 500ms used too much CPU on large documentation trees.",
+      "files": {
+        "src/watch/native.js": "const chokidar = require('chokidar');\n\nfunction watchNative(dir, onChange) {\n  return chokidar.watch(dir, { ignoreInitial: true, usePolling: false })\n    .on('add', onChange)\n    .on('change', onChange)\n    .on('unlink', onChange);\n}\n\nmodule.exports = { watchNative };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "fsev",
+      "done": true,
+      "message": "feat(watch): debounce bursts of events and rewrite watch docs",
+      "files": {
+        "src/watch/debounce.js": "function debounce(fn, ms = 50) {\n  const pending = new Set();\n  let t;\n  return file => {\n    pending.add(file);\n    clearTimeout(t);\n    t = setTimeout(() => { fn([...pending]); pending.clear(); }, ms);\n  };\n}\nmodule.exports = { debounce };\n",
+        "docs/watching.md": "# Watch mode\n\n## Approach\n\n`docforge serve` listens to native file system events through\nchokidar. Events are debounced for 50ms and the changed pages are\nrebuilt together. Polling is no longer used.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: document serve command in README",
+      "files": {
+        "README.md": "# docforge\n\nStatic site generator for technical documentation.\n\n    npx docforge build ./docs-src\n    npx docforge serve ./docs-src   # rebuild on change\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "cinval"
+    },
+    {
+      "type": "commit",
+      "step": "cinval",
+      "message": "feat(cache): drop page cache entries on file change",
+      "why": "Entries are dropped per page instead of clearing the whole cache so one edit does not trigger a full rebuild.",
+      "files": {
+        "src/cache/invalidate/on-change.js": "const fs = require('fs');\nconst path = require('path');\nconst DIR = '.docforge/cache/pages';\n\nfunction invalidate(changedFiles, keyOf) {\n  for (const f of changedFiles) {\n    const entry = path.join(DIR, keyOf(f) + '.html');\n    if (fs.existsSync(entry)) fs.unlinkSync(entry);\n  }\n}\nmodule.exports = { invalidate };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cinval",
+      "message": "wip(cache): track include dependencies between pages",
+      "files": {
+        "src/cache/invalidate/deps.js": "const deps = new Map(); // included file -> Set of pages\n\nfunction record(page, includes) {\n  for (const inc of includes) {\n    if (!deps.has(inc)) deps.set(inc, new Set());\n    deps.get(inc).add(page);\n  }\n}\n// TODO: expand changed includes into dependent pages in invalidate()\nmodule.exports = { record, deps };\n"
+      }
+    }
+  ],
+  "questions": [
+    {
+      "cat": "where",
+      "text": "Which part of the fast-rebuild work is in progress right now, and what comes after it?",
+      "current": "cinval",
+      "next": "incr"
+    },
+    {
+      "cat": "why",
+      "text": "Why is the front matter cache keyed by a hash of the file content?",
+      "step": "cfront",
+      "reason": "a git checkout rewrites modification times, so mtime keys would invalidate the whole cache after every branch switch",
+      "distractors": [
+        "Rendered HTML is kept on disk under .docforge/cache so it survives between runs of the CLI.",
+        "Entries are dropped per page instead of clearing the whole cache so one edit does not trigger a full rebuild.",
+        "Polling every 500ms used too much CPU on large documentation trees."
+      ]
+    },
+    {
+      "cat": "proof",
+      "text": "Which file holds the result of the sidebar navigation work?",
+      "step": "nav",
+      "file": "src/nav/sidebar.js"
+    },
+    {
+      "cat": "deferred",
+      "text": "The search index for pages was planned for the core build. Where did it go?",
+      "step": "search",
+      "milestone": "m2"
+    },
+    {
+      "cat": "update",
+      "text": "Which decision holds today on how watch mode detects changed files?",
+      "step": "fsev"
+    },
+    {
+      "cat": "abstain",
+      "text": "Why was PDF export removed from the default theme?"
+    },
+    {
+      "cat": "continue",
+      "text": "Resume the work: make the first change you would make.",
+      "next": "cinval",
+      "dir": "src/cache/invalidate/"
+    }
+  ]
+}

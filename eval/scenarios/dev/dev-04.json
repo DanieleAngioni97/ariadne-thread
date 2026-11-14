@@ -1,0 +1,373 @@
+{
+  "id": "dev-04",
+  "project": "gatekeeper-rl",
+  "start": "2026-03-02T09:00:00Z",
+  "events": [
+    {
+      "type": "commit",
+      "message": "chore: scaffold gatekeeper service",
+      "files": {
+        "go.mod": "module github.com/acme/gatekeeper\n\ngo 1.22\n",
+        "cmd/gatekeeper/main.go": "package main\n\nimport \"log\"\n\nfunc main() {\n\tlog.Println(\"gatekeeper: proxying to upstream API\")\n}\n",
+        "README.md": "# gatekeeper\n\nRate limiter that sits in front of the public REST API.\nRejects over-limit calls with 429 before they reach upstream.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: initial design notes",
+      "files": {
+        "docs/design.md": "# Design\n\n## Counters\n\nCounters are kept in process memory, one map per replica.\nWe run a single replica for now, so no shared state is needed.\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m1",
+      "title": "M1 Core limiting",
+      "what": "Reject requests that exceed per-key and per-IP limits on a single replica."
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-02: approved token bucket per key, key extraction, sliding window per IP, then response headers",
+      "steps": [
+        {
+          "key": "bucket",
+          "title": "Token bucket per API key"
+        },
+        {
+          "key": "keys",
+          "title": "Key extraction from requests"
+        },
+        {
+          "key": "window",
+          "title": "Sliding window per IP"
+        },
+        {
+          "key": "headers",
+          "title": "Rate limit response headers"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "bucket"
+    },
+    {
+      "type": "commit",
+      "step": "bucket",
+      "message": "feat(bucket): add token bucket with refill rate",
+      "files": {
+        "src/bucket/bucket.go": "package bucket\n\nimport \"time\"\n\ntype Bucket struct {\n\tTokens, Capacity, RefillPerSec float64\n\tLast time.Time\n}\n\nfunc (b *Bucket) Allow(now time.Time) bool {\n\tb.Tokens = min(b.Capacity, b.Tokens+now.Sub(b.Last).Seconds()*b.RefillPerSec)\n\tb.Last = now\n\tif b.Tokens < 1 { return false }\n\tb.Tokens--\n\treturn true\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "bucket",
+      "done": true,
+      "message": "test(bucket): cover burst and refill",
+      "files": {
+        "src/bucket/bucket_test.go": "package bucket\n\nimport (\"testing\"; \"time\")\n\nfunc TestBurstThenRefill(t *testing.T) {\n\tnow := time.Now()\n\tb := &Bucket{Tokens: 2, Capacity: 2, RefillPerSec: 1, Last: now}\n\tif !b.Allow(now) || !b.Allow(now) || b.Allow(now) { t.Fatal(\"burst of 2 expected\") }\n\tif !b.Allow(now.Add(time.Second)) { t.Fatal(\"refill expected\") }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "keys",
+      "message": "feat(keys): read API key from header or query",
+      "files": {
+        "src/keys/extract.go": "package keys\n\nimport \"net/http\"\n\nfunc APIKey(r *http.Request) string {\n\tif k := r.Header.Get(\"X-Api-Key\"); k != \"\" { return k }\n\treturn r.URL.Query().Get(\"api_key\")\n}\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "xff",
+      "title": "Trust X-Forwarded-For only from the load balancer",
+      "what": "Every anonymous client showed up with the load balancer IP, so one noisy user throttled everyone."
+    },
+    {
+      "type": "commit",
+      "step": "xff",
+      "done": true,
+      "why": "Only the load balancer may set X-Forwarded-For, otherwise clients can spoof their IP to dodge limits.",
+      "message": "fix(proxy): take client IP from X-Forwarded-For only behind trusted proxy",
+      "files": {
+        "src/proxy/trusted.go": "package proxy\n\nimport (\"net\"; \"net/http\"; \"strings\")\n\nvar Trusted = map[string]bool{\"10.0.0.2\": true}\n\nfunc ClientIP(r *http.Request) string {\n\thost, _, _ := net.SplitHostPort(r.RemoteAddr)\n\tif xff := r.Header.Get(\"X-Forwarded-For\"); xff != \"\" && Trusted[host] {\n\t\treturn strings.TrimSpace(strings.Split(xff, \",\")[0])\n\t}\n\treturn host\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "keys",
+      "done": true,
+      "message": "test(keys): header wins over query parameter",
+      "files": {
+        "src/keys/extract_test.go": "package keys\n\nimport (\"net/http/httptest\"; \"testing\")\n\nfunc TestHeaderWins(t *testing.T) {\n\tr := httptest.NewRequest(\"GET\", \"/v1/items?api_key=q\", nil)\n\tr.Header.Set(\"X-Api-Key\", \"h\")\n\tif APIKey(r) != \"h\" { t.Fatal(\"header key expected\") }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "window",
+      "message": "feat(window): sliding window counter per client IP",
+      "files": {
+        "src/window/sliding.go": "package window\n\nimport \"time\"\n\ntype Window struct {\n\tSize time.Duration\n\tLimit int\n\tprev, curr int\n\tstart time.Time\n}\n\nfunc (w *Window) Count(now time.Time) float64 {\n\telapsed := now.Sub(w.start).Seconds() / w.Size.Seconds()\n\treturn float64(w.prev)*(1-elapsed) + float64(w.curr)\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "window",
+      "done": true,
+      "message": "feat(window): roll window and enforce limit",
+      "files": {
+        "src/window/allow.go": "package window\n\nimport \"time\"\n\nfunc (w *Window) Allow(now time.Time) bool {\n\tif now.Sub(w.start) >= w.Size {\n\t\tw.prev, w.curr, w.start = w.curr, 0, now.Truncate(w.Size)\n\t}\n\tif w.Count(now) >= float64(w.Limit) { return false }\n\tw.curr++\n\treturn true\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump golang.org/x/net to v0.26.0",
+      "files": {
+        "go.mod": "module github.com/acme/gatekeeper\n\ngo 1.22\n\nrequire golang.org/x/net v0.26.0\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "headers",
+      "message": "feat(headers): emit RateLimit-Limit and RateLimit-Remaining",
+      "files": {
+        "src/headers/headers.go": "package headers\n\nimport (\"net/http\"; \"strconv\")\n\nfunc Set(w http.ResponseWriter, limit, remaining int) {\n\tw.Header().Set(\"RateLimit-Limit\", strconv.Itoa(limit))\n\tw.Header().Set(\"RateLimit-Remaining\", strconv.Itoa(remaining))\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "headers",
+      "done": true,
+      "message": "feat(headers): add Retry-After on 429",
+      "files": {
+        "src/headers/retry.go": "package headers\n\nimport (\"net/http\"; \"strconv\")\n\nfunc Reject(w http.ResponseWriter, retryAfterSec int) {\n\tw.Header().Set(\"Retry-After\", strconv.Itoa(retryAfterSec))\n\tw.WriteHeader(http.StatusTooManyRequests)\n}\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "milestone",
+      "key": "m2",
+      "title": "M2 Shared state",
+      "what": "Run several replicas that enforce the same limits from shared counters."
+    },
+    {
+      "type": "milestone",
+      "key": "m3",
+      "title": "M3 Operations",
+      "what": "Give operators tools to inspect and tune limits in production."
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-09: approved Memcached counters, policy and bucket caches, invalidation, rejection metrics and an admin dashboard",
+      "steps": [
+        {
+          "key": "memcache",
+          "title": "Shared counters in Memcached"
+        },
+        {
+          "key": "cachepol",
+          "title": "Cache for per-key policies"
+        },
+        {
+          "key": "cachebkt",
+          "title": "Cache for bucket state"
+        },
+        {
+          "key": "inval",
+          "title": "Cache invalidation on policy update"
+        },
+        {
+          "key": "metrics",
+          "title": "Per-key rejection metrics"
+        },
+        {
+          "key": "dash",
+          "title": "Admin dashboard for limits"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "memcache"
+    },
+    {
+      "type": "commit",
+      "step": "memcache",
+      "message": "feat(memcache): incr counters with gomemcache",
+      "files": {
+        "src/memcache/client.go": "package memcache\n\nimport mc \"github.com/bradfitz/gomemcache/memcache\"\n\ntype Store struct{ c *mc.Client }\n\nfunc (s *Store) Incr(key string) (uint64, error) {\n\treturn s.c.Increment(key, 1)\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: record shared counter store decision",
+      "files": {
+        "docs/storage.md": "# Shared counter store\n\n## Why Redis over Memcached\n\nThe token bucket must read, refill and decrement in one step.\nMemcached cannot run the check-and-decrement as one atomic script, so two replicas\ncan both spend the last token. Redis runs it as a Lua script atomically.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: point design notes to storage decision",
+      "files": {
+        "docs/design.md": "# Design\n\n## Counters\n\nSuperseded: counters are no longer kept in process memory.\nSee docs/storage.md for the shared counter store used by all replicas.\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-11: approved moving shared counters to Redis",
+      "steps": [
+        {
+          "key": "redis",
+          "title": "Shared counters in Redis"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "memcache",
+      "by": "redis"
+    },
+    {
+      "type": "start",
+      "step": "redis"
+    },
+    {
+      "type": "commit",
+      "step": "redis",
+      "proofFiles": [
+        "docs/storage.md#Why Redis over Memcached"
+      ],
+      "message": "feat(redis): token bucket as atomic Lua script",
+      "files": {
+        "src/redis/bucket.lua": "local tokens = tonumber(redis.call('HGET', KEYS[1], 't') or ARGV[1])\nlocal last = tonumber(redis.call('HGET', KEYS[1], 'l') or ARGV[3])\ntokens = math.min(tonumber(ARGV[1]), tokens + (ARGV[3] - last) * ARGV[2])\nlocal ok = tokens >= 1\nif ok then tokens = tokens - 1 end\nredis.call('HSET', KEYS[1], 't', tokens, 'l', ARGV[3])\nreturn ok and 1 or 0\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "redis",
+      "done": true,
+      "message": "feat(redis): store wrapper loading bucket script",
+      "files": {
+        "src/redis/store.go": "package redis\n\nimport (_ \"embed\"; \"github.com/redis/go-redis/v9\")\n\n//go:embed bucket.lua\nvar bucketLua string\n\nvar Bucket = redis.NewScript(bucketLua)\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "cachepol"
+    },
+    {
+      "type": "commit",
+      "step": "cachepol",
+      "why": "Policy lookups in Postgres added 4 ms to p99 on every request.",
+      "message": "feat(policycache): in-memory cache of per-key policies",
+      "files": {
+        "src/policycache/cache.go": "package policycache\n\nimport \"sync\"\n\ntype Policy struct{ Capacity, RefillPerSec float64 }\n\ntype Cache struct {\n\tmu sync.RWMutex\n\tm  map[string]Policy\n}\n\nfunc (c *Cache) Get(key string) (Policy, bool) {\n\tc.mu.RLock(); defer c.mu.RUnlock()\n\tp, ok := c.m[key]\n\treturn p, ok\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cachepol",
+      "done": true,
+      "message": "feat(policycache): load from Postgres on miss",
+      "files": {
+        "src/policycache/load.go": "package policycache\n\nfunc (c *Cache) Load(key string, fetch func(string) (Policy, error)) (Policy, error) {\n\tif p, ok := c.Get(key); ok { return p, nil }\n\tp, err := fetch(key)\n\tif err != nil { return Policy{}, err }\n\tc.mu.Lock(); c.m[key] = p; c.mu.Unlock()\n\treturn p, nil\n}\n"
+      }
+    },
+    {
+      "type": "defer",
+      "step": "dash",
+      "to": "m3"
+    },
+    {
+      "type": "commit",
+      "message": "ci: run go vet and tests on pull requests",
+      "files": {
+        ".github/workflows/ci.yml": "name: ci\non: [pull_request]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-go@v5\n      - run: go vet ./... && go test ./...\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cachebkt",
+      "why": "A Redis round trip on every request doubled latency for keys with large bursts.",
+      "message": "feat(bucketcache): local token lease from Redis bucket",
+      "files": {
+        "src/bucketcache/lease.go": "package bucketcache\n\n// Lease takes a batch of tokens from Redis and spends them locally.\ntype Lease struct {\n\tKey  string\n\tLeft int\n}\n\nfunc (l *Lease) Take() bool {\n\tif l.Left == 0 { return false }\n\tl.Left--\n\treturn true\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cachebkt",
+      "done": true,
+      "message": "feat(bucketcache): renew lease when local tokens run out",
+      "files": {
+        "src/bucketcache/renew.go": "package bucketcache\n\nconst LeaseSize = 10\n\nfunc (l *Lease) Renew(take func(key string, n int) int) {\n\tl.Left = take(l.Key, LeaseSize)\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump go-redis to v9.7.0",
+      "files": {
+        "go.mod": "module github.com/acme/gatekeeper\n\ngo 1.22\n\nrequire (\n\tgithub.com/redis/go-redis/v9 v9.7.0\n\tgolang.org/x/net v0.26.0\n)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "inval",
+      "why": "Replicas kept enforcing the old limit for up to a minute after a policy change.",
+      "message": "feat(invalidation): publish policy changes on Redis channel",
+      "files": {
+        "src/invalidation/pubsub.go": "package invalidation\n\nimport (\"context\"; \"github.com/redis/go-redis/v9\")\n\nconst Channel = \"gatekeeper:policy-updated\"\n\nfunc Publish(ctx context.Context, rdb *redis.Client, key string) error {\n\treturn rdb.Publish(ctx, Channel, key).Err()\n}\n"
+      }
+    }
+  ],
+  "questions": [
+    {
+      "cat": "where",
+      "text": "Which step of the shared state work is in progress right now, and what comes after it?",
+      "current": "inval",
+      "next": "metrics"
+    },
+    {
+      "cat": "why",
+      "text": "Why was a cache for per-key policies added?",
+      "step": "cachepol",
+      "reason": "Policy lookups in Postgres added 4 ms to p99 on every request.",
+      "distractors": [
+        "A Redis round trip on every request doubled latency for keys with large bursts.",
+        "Replicas kept enforcing the old limit for up to a minute after a policy change.",
+        "Memcached cannot run the check-and-decrement as one atomic script, so two replicas can both spend the last token."
+      ]
+    },
+    {
+      "cat": "proof",
+      "text": "Which file holds the result of the sliding window per IP work?",
+      "step": "window",
+      "file": "src/window/sliding.go"
+    },
+    {
+      "cat": "deferred",
+      "text": "What happened to the admin dashboard for limits, and in which milestone is it planned now?",
+      "step": "dash",
+      "milestone": "m3"
+    },
+    {
+      "cat": "update",
+      "text": "Which decision holds today on where the shared counters are stored?",
+      "step": "redis"
+    },
+    {
+      "cat": "abstain",
+      "text": "Why did the team drop the leaky bucket algorithm in favour of the token bucket?"
+    },
+    {
+      "cat": "continue",
+      "text": "Resume the work: make the first change you would make.",
+      "next": "inval",
+      "dir": "src/invalidation/"
+    }
+  ]
+}

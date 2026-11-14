@@ -1,0 +1,189 @@
+{
+  "id": "dev-02",
+  "project": "tally-timesheet",
+  "start": "2026-03-02T09:00:00Z",
+  "events": [
+    {
+      "type": "commit",
+      "message": "chore: scaffold tally CLI with package manifest and design notes",
+      "files": {
+        "package.json": "{\n  \"name\": \"tally-timesheet\",\n  \"version\": \"0.1.0\",\n  \"bin\": { \"tally\": \"bin/tally.js\" },\n  \"type\": \"module\"\n}\n",
+        "bin/tally.js": "#!/usr/bin/env node\nconst [cmd] = process.argv.slice(2);\nconsole.log(`tally: unknown command ${cmd ?? ''}`.trim());\n",
+        "README.md": "# tally\n\nCommand-line timesheet for freelancers.\n\n    tally start <project>\n    tally stop\n    tally report --week\n",
+        "docs/design.md": "# Design notes\n\n## Storage\n\nTime entries are appended to `~/.tally/entries.json`, one JSON array per user.\nNo database: a flat file is easy to back up and to edit by hand.\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m1",
+      "title": "M1 Tracking core",
+      "what": "Record time entries reliably and print the reports a freelancer needs before invoicing."
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-02: storage first, then weekly, client and project reports, then CSV export",
+      "steps": [
+        {
+          "key": "js",
+          "title": "JSON file storage for entries"
+        },
+        {
+          "key": "sq",
+          "title": "SQLite storage for entries"
+        },
+        {
+          "key": "rw",
+          "title": "Report by week"
+        },
+        {
+          "key": "rc",
+          "title": "Report by client"
+        },
+        {
+          "key": "rp",
+          "title": "Report by project"
+        },
+        {
+          "key": "csv",
+          "title": "CSV export of reports"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "js"
+    },
+    {
+      "type": "commit",
+      "message": "docs: replace storage notes after concurrent clock-in test",
+      "files": {
+        "docs/storage.md": "# Storage\n\nSupersedes the Storage section of docs/design.md.\n\n## Concurrent writes\n\nRunning `tally start` in two terminals at once rewrote entries.json twice and lost one entry.\nA flat JSON file cannot be written safely by two processes, so entries move to a SQLite database with WAL mode, which serialises writers for us.\n"
+      }
+    },
+    {
+      "type": "replace",
+      "step": "js",
+      "by": "sq"
+    },
+    {
+      "type": "start",
+      "step": "sq"
+    },
+    {
+      "type": "commit",
+      "step": "sq",
+      "done": true,
+      "message": "feat(storage): keep time entries in SQLite",
+      "proofFiles": [
+        "docs/storage.md#Concurrent writes"
+      ],
+      "files": {
+        "src/storage-sqlite/db.js": "import Database from 'better-sqlite3';\n\nexport function open(path) {\n  const db = new Database(path);\n  db.pragma('journal_mode = WAL');\n  db.exec(`CREATE TABLE IF NOT EXISTS entries (\n    id INTEGER PRIMARY KEY, project TEXT, client TEXT, start TEXT, stop TEXT)`);\n  return db;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "rw",
+      "done": true,
+      "message": "feat(report): weekly report starting on Monday",
+      "why": "Weeks start on Monday because clients invoice on ISO weeks.",
+      "files": {
+        "src/report-week/week.js": "// Weeks start on Monday because clients invoice on ISO weeks.\nexport function weekStart(date) {\n  const d = new Date(date);\n  const day = (d.getUTCDay() + 6) % 7;\n  d.setUTCDate(d.getUTCDate() - day);\n  d.setUTCHours(0, 0, 0, 0);\n  return d;\n}\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "fx",
+      "title": "Fix midnight entries in the wrong week",
+      "what": "An entry running past Sunday midnight was counted entirely in the next week, so the weekly totals were wrong before the client report could build on them."
+    },
+    {
+      "type": "commit",
+      "step": "fx",
+      "done": true,
+      "message": "fix(time): split entries that cross midnight",
+      "why": "Entries crossing midnight were counted in the wrong week, so they are split at the day boundary.",
+      "files": {
+        "src/time-split/midnight.js": "export function splitAtMidnight({ start, stop, ...rest }) {\n  const mid = new Date(start);\n  mid.setUTCHours(24, 0, 0, 0);\n  if (new Date(stop) <= mid) return [{ start, stop, ...rest }];\n  return [{ start, stop: mid.toISOString(), ...rest },\n          ...splitAtMidnight({ start: mid.toISOString(), stop, ...rest })];\n}\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m2",
+      "title": "M2 Invoicing",
+      "what": "Turn tracked hours into per-client invoices."
+    },
+    {
+      "type": "defer",
+      "step": "rc",
+      "to": "m2"
+    },
+    {
+      "type": "start",
+      "step": "rp"
+    },
+    {
+      "type": "commit",
+      "step": "rp",
+      "message": "feat(report): group hours by project",
+      "why": "Hours are grouped by project because retainer clients pay against a per-project budget.",
+      "files": {
+        "src/report-project/project.js": "// Hours are grouped by project because retainer clients pay against a per-project budget.\nexport function byProject(entries) {\n  const totals = new Map();\n  for (const e of entries) {\n    const ms = new Date(e.stop) - new Date(e.start);\n    totals.set(e.project, (totals.get(e.project) ?? 0) + ms);\n  }\n  return totals;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump better-sqlite3 to 11.3.0",
+      "files": {
+        "package.json": "{\n  \"name\": \"tally-timesheet\",\n  \"version\": \"0.1.0\",\n  \"bin\": { \"tally\": \"bin/tally.js\" },\n  \"type\": \"module\",\n  \"dependencies\": { \"better-sqlite3\": \"^11.3.0\" }\n}\n"
+      }
+    }
+  ],
+  "questions": [
+    {
+      "cat": "where",
+      "text": "Which part of the tracking core is being worked on right now, and what comes after it?",
+      "current": "rp",
+      "next": "csv"
+    },
+    {
+      "cat": "why",
+      "text": "Why do weekly reports start on Monday?",
+      "step": "rw",
+      "reason": "Weeks start on Monday because clients invoice on ISO weeks.",
+      "distractors": [
+        "Hours are grouped by project because retainer clients pay against a per-project budget.",
+        "A flat JSON file cannot be written safely by two processes, so entries move to a SQLite database with WAL mode, which serialises writers for us.",
+        "Entries crossing midnight were counted in the wrong week, so they are split at the day boundary."
+      ]
+    },
+    {
+      "cat": "proof",
+      "text": "Which file holds the result of moving time entries to SQLite?",
+      "step": "sq",
+      "file": "src/storage-sqlite/db.js"
+    },
+    {
+      "cat": "deferred",
+      "text": "What happened to the per-client report planned for the tracking core?",
+      "step": "rc",
+      "milestone": "m2"
+    },
+    {
+      "cat": "update",
+      "text": "Which decision holds today on where time entries are stored?",
+      "step": "sq"
+    },
+    {
+      "cat": "abstain",
+      "text": "Why was the import from Toggl exports dropped from the tracking core?"
+    },
+    {
+      "cat": "continue",
+      "text": "Resume the work: make the first change you would make.",
+      "next": "rp",
+      "dir": "src/report-project/"
+    }
+  ]
+}
