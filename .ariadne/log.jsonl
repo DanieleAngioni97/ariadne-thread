@@ -53,3 +53,5 @@
 {"at":"2026-11-14T09:57Z","id":"m3.1.4","op":"add","text":"deviazione m3.1.4 Pulsante Apri il grafo nella banda, rientra in m3.1.3"}
 {"at":"2026-11-14T10:01Z","id":"","op":"confirm","text":"confermate 5 modifiche"}
 {"at":"2026-11-14T10:02Z","id":"m3.1.5","op":"add","text":"aggiunto passo m3.1.5 Banda distinta dal testo della chat sotto m3.1"}
+{"at":"2026-11-14T10:08Z","id":"m3.1.4","op":"fill","text":"prova per m3.1.4: commit ffdecce","proof":[{"type":"commit","ref":"ffdecce"}]}
+{"at":"2026-11-14T10:08Z","id":"m3.1.4","op":"close","text":"chiuso m3.1.4 Pulsante Apri il grafo nella banda: «Apri il grafo» sulla riga dove; apre il viewer e lo avvia se spento","proof":[{"type":"commit","ref":"40b72ea"}]}
