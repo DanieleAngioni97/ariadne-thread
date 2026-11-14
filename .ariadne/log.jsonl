@@ -85,3 +85,7 @@
 {"at":"2026-11-14T11:33Z","id":"m4.3.1","op":"start","text":"iniziato m4.3.1 Ricerca su metodi e metriche"}
 {"at":"2026-11-14T11:34Z","id":"m4.3","op":"fill","text":"prova per m4.3: file docs/valutazione/meta-piano.md","proof":[{"type":"file","ref":"docs/valutazione/meta-piano.md"}]}
 {"at":"2026-11-14T11:34Z","id":"m4.3.1","op":"fill","text":"prova per m4.3.1: commit 97bc231","proof":[{"type":"commit","ref":"97bc231"}]}
+{"at":"2026-11-14T11:36Z","id":"m4.3.1","op":"close","text":"chiuso m4.3.1 Ricerca su metodi e metriche: due ricerche con fonti: metodi e metriche per memoria degli agenti; usabilità n=1 e concorrenti","proof":[{"type":"commit","ref":"8004bab"}]}
+{"at":"2026-11-14T11:36Z","id":"m4.3.2","op":"start","text":"iniziato m4.3.2 Principi di valutazione"}
+{"at":"2026-11-14T11:36Z","id":"m4.3.1","op":"fill","text":"prova per m4.3.1: file docs/valutazione/ricerca-metodi.md","proof":[{"type":"file","ref":"docs/valutazione/ricerca-metodi.md"}]}
+{"at":"2026-11-14T11:36Z","id":"m4.3.1","op":"fill","text":"prova per m4.3.1: file docs/valutazione/ricerca-usabilita.md","proof":[{"type":"file","ref":"docs/valutazione/ricerca-usabilita.md"}]}
