@@ -1,0 +1,17 @@
+{
+  "model": "claude-opus-5-5",
+  "checker": "claude-sonnet-5-5",
+  "handoffs": [
+    {
+      "point": 17,
+      "today": "2026-03-02",
+      "before": {
+        "STATE.md": "# State — invoice-parser\nUpdated: 2026-03-02 · Branch: `main` @ `f42def8` · PR: none (no remote configured)\n\n## Milestone\nM1 Parser — invoices become ledger rows. Done: lexer (`3eae71d`), in-memory supplier\ncache (`f238b2c`). Current plan (approved): Validate invoice totals → Report malformed invoices.\nIn progress: \"Validate invoice totals\" — first cut in `f42def8` (`src/totals/index.js`), not closed.\n\n## Next\n1. Finish \"Validate invoice totals\": `balanced()` in `src/totals/index.js` compares float sums\n   with `===`; decide on rounding/cents and add tests, then close the step.\n2. \"Report malformed invoices\".\n3. Then M2 Reports (monthly reports from the ledger); its first step is\n   \"Export to the ledger\", deferred there from M1.\n\n## Open decisions and risks\n- \"Store suppliers in SQLite\" was dropped by the user; the in-memory cache replaces it\n  (`docs/decisions.md`). Don't reintroduce SQLite.\n- No test script in `package.json` and no tests yet; CI job `.github/workflows/test.yml`\n  has `timeout-minutes: 1` (raised to 60 s in `8beb0e4` after cold-cache timeouts).\n- STATE.md and LOG.md are git-excluded (`.git/info/exclude`): never commit them.\n\n## Pointers\n- Decisions: `docs/decisions.md` · Code: `src/lexer`, `src/cache`, `src/totals`\n- Verify: no test command defined yet → not run\n",
+        "LOG.md": "# Log\n- 2026-03-02 · M1 Parser: lexer and supplier cache done, CI fixed, export deferred to M2, totals validation started · f42def8\n"
+      },
+      "applied": [],
+      "rejected": [],
+      "cost": 0.1690928
+    }
+  ]
+}
