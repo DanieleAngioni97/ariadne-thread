@@ -104,3 +104,6 @@
 {"at":"2026-11-14T11:57Z","id":"m4.3.5","op":"fill","text":"completato m4.3.5: detail, file docs/valutazione/piano.md","proof":[{"type":"file","ref":"docs/valutazione/piano.md"}]}
 {"at":"2026-11-14T11:57Z","id":"m4.3.5","op":"fill","text":"prova per m4.3.5: file docs/valutazione/principi.md","proof":[{"type":"file","ref":"docs/valutazione/principi.md"}]}
 {"at":"2026-11-14T12:00Z","id":"","op":"confirm","text":"confermate 1 modifiche"}
+{"at":"2026-11-14T12:12Z","id":"m4.3.5","op":"close","text":"chiuso m4.3.5 Piano rivisto e approvato: piano v3.1 approvato dall'utente: si parte con m4.4 § 15","proof":[{"type":"message","ref":"chat 2026-11-14: l'utente approva il piano v3.1 e dice di proseguire"}]}
+{"at":"2026-11-14T12:12Z","id":"m4.4","op":"plan","text":"piano per Esecuzione della valutazione: Orologio finto ARIADNE_NOW → Repository ariadne-eval con generatore, runner e grader → E4 sull'archivio congelato → Scenari di sviluppo e condizione prima → Pilota di E1 ed E2 → Scenari di test, E3 e trascrizioni congelati → Commit di pre-registrazione → Approvazione del budget → E1, E1b, E2 e analisi → E3 con l'utente → Confronto D4 → Rapporto"}
+{"at":"2026-11-14T12:12Z","id":"m4.4.1","op":"start","text":"iniziato m4.4.1 Orologio finto ARIADNE_NOW"}
