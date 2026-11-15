@@ -1,0 +1,98 @@
+{
+  "H1": {
+    "method": "gee-bias-reduced",
+    "ok": true,
+    "prima": 0.9652777777777778,
+    "ariadne": 0.9861111111111112,
+    "diff": 0.020833333333333592,
+    "se": 0.021759706994462252,
+    "df": 11,
+    "lower": -0.02705945884942005,
+    "p": 0.00008598173994424467,
+    "margin": 0.1,
+    "nonInferior": true
+  },
+  "H2": {
+    "ratio": 0.9466608030597854,
+    "ci": [
+      0.8980576076035267,
+      1.0027770920479762
+    ],
+    "p": 0.10986328125,
+    "scenarios": 12
+  },
+  "holm": {
+    "H1": true,
+    "H2": false
+  },
+  "secondary": {
+    "pass2": {
+      "prima": 0.9583333333333334,
+      "ariadne": 0.9722222222222222
+    },
+    "continua": {
+      "prima": {
+        "share": 0.5833333333333334,
+        "ci": [
+          0.3333333333333333,
+          0.8333333333333334
+        ],
+        "n": 24
+      },
+      "ariadne": {
+        "share": 1,
+        "ci": [
+          1,
+          1
+        ],
+        "n": 24
+      }
+    },
+    "byCat": {
+      "prima": {
+        "update": 1,
+        "proof": 0.7916666666666666,
+        "why": 1,
+        "where": 1,
+        "deferred": 1,
+        "abstain": 1,
+        "continue": 0.5833333333333334
+      },
+      "ariadne": {
+        "update": 1,
+        "proof": 0.9166666666666666,
+        "why": 1,
+        "where": 1,
+        "deferred": 1,
+        "abstain": 1,
+        "continue": 1
+      }
+    },
+    "paraphrase": {
+      "prima": 0.9583333333333334,
+      "ariadne": 1
+    },
+    "medianTokens": {
+      "prima": 15822,
+      "ariadne": 14960
+    },
+    "billed": {
+      "prima": 3.891878099999996,
+      "ariadne": 3.6133281
+    },
+    "asked": {
+      "prima": {
+        "n": 0,
+        "of": 24
+      },
+      "ariadne": {
+        "n": 0,
+        "of": 24
+      }
+    },
+    "excluded": {
+      "prima": 0,
+      "ariadne": 0
+    }
+  }
+}
