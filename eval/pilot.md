@@ -53,7 +53,7 @@ Variant A (Haiku 5.5 on the last turn and the view), 12 checkpoints on dev-03..0
 
 | Run | Recall (CI) | False alarms on F0 (CI) | Passes | Cost |
 |---|---|---|---|---|
-| e2-pilot-haiku | high, but see false alarms | 0.75 (wrong-current 25, done-not-done 8 of 36 runs) | no | ~0.1 $ |
+| e2-pilot-haiku | 0.94 (0.88–1) | 0.75 (0.67–0.92) | no | ~0.1 $ |
 | e2-pilot-haiku-2 | 0.98 (0.94–1); unrecorded-detour 0.92 | 0 (0–0) | yes | 0.10 $ |
 
 - The first run flagged a correct graph because the observer prompt did not say what "done" and "current"
