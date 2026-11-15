@@ -406,6 +406,7 @@ function Legend() {
             ${t.cues.map(([key, text]) => html`<li key=${key} class=${`cue-${key}`}><span class="cue" aria-hidden="true"></span>${text}</li>`)}
             ${problems.size > 0 && html`<li class="cue-anomaly"><span class="alert">!</span>${t.anomalyKey}</li>`}
           </ul>
+          <p class="legend-keys">${t.keys}</p>
         </div>`}
       <button class="tool" aria-expanded=${open} aria-controls="legend" onClick=${flip}>${t.legendTitle}</button>
     </div>`
@@ -611,6 +612,8 @@ function App() {
   // Where to fly after the next layout (a step chosen from the panel or the breadcrumb), and the step just reached.
   const [flyTo, setFlyTo] = useState(null)
   const [arriving, setArriving] = useState(null)
+  // True while a fly waits for the layout its choice asked for.
+  const waitLayout = useRef(false)
   const flow = useReactFlow()
 
   const stageRef = useRef(null)
@@ -680,6 +683,8 @@ function App() {
     drawn.current = version
     layout(expanded, focus, revealed).then(next => {
       if (!alive) return
+      // A fly waiting on this layout may go now: the node sits where it will stay.
+      waitLayout.current = false
       setGraph(next)
       if (!flyTo && !reloaded) whenDrawn(next.nodes.map(n => n.id), readableFit)
     })
@@ -701,7 +706,7 @@ function App() {
 
   // Zoom onto the chosen step once it is drawn, then make it pulse so the eye lands on it.
   useEffect(() => {
-    if (!flyTo || !graph.nodes.some(n => n.id === flyTo)) return
+    if (!flyTo || waitLayout.current || !graph.nodes.some(n => n.id === flyTo)) return
     const target = flyTo
     whenDrawn([target], () => frame([target], { pad: FLY_PAD, duration: 500 }))
     setArriving(flyTo)
@@ -747,14 +752,24 @@ function App() {
     return () => removeEventListener('keydown', onKey)
   }, [])
 
+  // The state the next choice reads, without making `choose` change at every render.
+  const now = useRef(null)
+  now.current = { expanded, revealed, focus }
+
   const choose = useCallback(id => {
     select(id)
-    setFlyTo(id)
-    // Make sure the step is drawn: open everything that contains it and every level it sits in.
+    // Make sure the step is drawn: open what contains it; open its levels in full only if it is hidden there.
+    const { expanded: open, revealed: shown, focus: only } = now.current
     const holders = pathTo(data, id).slice(0, -1).map(n => n.id)
-    setExpanded(prev => (holders.every(at => prev.has(at)) ? prev : new Set([...prev, ...holders])))
+    const opened = holders.every(at => open.has(at)) ? open : new Set([...open, ...holders])
     const levels = [...holders, id].map(levelKey)
-    reveal(byId.get(id)?.status === 'replaced' ? [...levels, `replaced:${levelKey(id)}`] : levels)
+    const wanted = byId.get(id)?.status === 'replaced' ? [...levels, `replaced:${levelKey(id)}`] : levels
+    const drawnThere = visibleNodes(data, opened, only, { limit: LIMIT, revealed: shown }).some(n => n.id === id)
+    const unveiled = drawnThere || wanted.every(k => shown.has(k)) ? shown : new Set([...shown, ...wanted])
+    waitLayout.current = opened !== open || unveiled !== shown
+    setExpanded(opened)
+    setRevealed(unveiled)
+    setFlyTo(id)
   }, [])
 
   // In the graph, arrows move the selection to the closest node on that side; Enter opens or closes a container.

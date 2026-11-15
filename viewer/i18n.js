@@ -43,6 +43,7 @@ const STRINGS = {
     open: (n, title) => `Open ${n} steps inside ${title}`,
     close: title => `Close ${title}`,
     legendTitle: 'Legend',
+    keys: 'Arrows move between steps · / searches · Esc closes the panel',
     kinds: { active: 'in progress', done: 'done', todo: 'to do', deferred: 'deferred', detour: 'detour', dropped: 'replaced or rejected' },
     cues: [
       ['current', 'current step'], ['thread', 'where it comes from'], ['review', 'to confirm'], ['uncertain', 'uncertain proof'],
@@ -128,6 +129,7 @@ const STRINGS = {
     open: (n, title) => `Apri i ${n} passi dentro ${title}`,
     close: title => `Chiudi ${title}`,
     legendTitle: 'Legenda',
+    keys: 'Frecce: da un passo all’altro · / cerca · Esc chiude il pannello',
     kinds: { active: 'in corso', done: 'fatto', todo: 'da fare', deferred: 'rimandato', detour: 'deviazione', dropped: 'sostituito o rifiutato' },
     cues: [
       ['current', 'passo corrente'], ['thread', 'da dove viene'], ['review', 'da confermare'], ['uncertain', 'prova incerta'],
