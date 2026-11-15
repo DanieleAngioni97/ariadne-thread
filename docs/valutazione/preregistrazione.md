@@ -56,6 +56,8 @@ prevale. Il commit che lo introduce è il punto di riferimento: dopo, cambiano s
   3 ripetizioni.
 - **Comando:** `node eval/e2.mjs run eval/scenarios/test/test-*.json --model claude-haiku-5-5
   --out eval/runs/e2-test --reps 3`.
+  *Errata (2026-11-15, dopo il commit):* al comando manca `--k 4`; senza, il run cerca 3 checkpoint per
+  scenario, diversi da quelli congelati, e si ferma. Il testo sopra dice già 4 per scenario; il run usa `--k 4`.
 - **Regola (piano § 7):** si adotta se il limite inferiore del recall complessivo è ≥ 0,6 e il limite superiore
   dei falsi allarmi su F0 è ≤ 0,15, con intervalli bootstrap per scenario. Il prompt dell'osservatore è quello
   del commit `3fafb3e`, provato sul pilota 2 (recall 0,98, falsi allarmi 0 su 12 checkpoint di sviluppo).
