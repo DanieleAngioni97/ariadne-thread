@@ -11,10 +11,16 @@ question categories (Continua apart), after the exclusions.
 | pilot-haiku-4 | 2 | 0.85 | 0.93 | 0.75 / 0.82 | Where graded on two fields by the closest title |
 | pilot-haiku-5 | 2 | 0.93 | 0.99 | 0.75 / 0.55 | ceiling rule reached: both above 0.90 |
 | pilot-haiku-6 | 2 | 1.00 | 1.00 | 1.00 / 1.00 | 2 pilot scenarios under the test rules (75 and 102 events): ceiling again |
+| pilot-haiku-7 | 2 | 0.94 | 0.96 | 0.75 / 0.88 | state card at start, view in `.ariadne/STATE.md`; 2 pilot + dev-05, dev-06 |
 
 pilot-haiku-6: 56 trials, 1 excluded (a read outside the copy), about 0.10 $; median tokens per trial 19k
 (prima) and 34k (ariadne). Longer scenarios and more distractors did not lift the ceiling: with a handoff at
 the very end, STATE.md answers every category.
+
+pilot-haiku-7 (state card, `bc1dba6`; deferral fix in the generator, `66c6b11`): 112 trials, none excluded.
+Cost 0.080 $ (ariadne) against 0.088 $ (prima), -10%, where pilot 6 had +21%; 3.4 turns against 3.8, and
+the prompt hook stays silent. Still dearer: proof (x1.26) and abstain (x1.07); cheaper: update, deferred,
+where (about x0.67) and continue (x0.85).
 
 Run 5: pass^2 0.86 (prima) and 0.97 (ariadne); about 28k tokens per trial counted as uncached; about 1.2 $
 for the five runs at list price.
