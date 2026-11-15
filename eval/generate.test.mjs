@@ -125,3 +125,14 @@ test('a test scenario hands off at the end of a milestone, then runs into an ope
   planned.events.splice(planned.events.findLastIndex(e => e.type === 'plan') + 1, 0, handoff)
   assert.ok(check(planned, { test: true }).some(e => /test: the open step was planned before the last handoff/.test(e)))
 })
+
+test('after a deferral the work on the step lands on the node that resumes it, as an agent would write it', () => {
+  const later = structuredClone(scenario)
+  later.events.push({ type: 'commit', step: 'export', message: 'feat(export): write the ledger file', files: { 'src/export/ledger.js': 'export const ledger = []\n' }, done: true })
+  const { dir } = generate(later, mkdtempSync(join(tmpdir(), 'ariadne-eval-')))
+  const nodes = readFileSync(join(dir, 'ariadne', '.ariadne', 'graph.jsonl'), 'utf8').trimEnd().split('\n').map(l => JSON.parse(l))
+  const original = nodes.find(x => x.title === 'Export to the ledger' && !x.continues)
+  const resumed = nodes.find(x => x.continues === original.id)
+  assert.equal(original.status, 'deferred')
+  assert.equal(resumed.status, 'done')
+})

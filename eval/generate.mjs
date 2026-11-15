@@ -86,9 +86,13 @@ export function generate(scenario, dir, { until } = {}) {
         cli('add', 'detour', e.title, '--what', e.what, '--start')
         name(e.key, e.title)
         break
-      case 'defer':
+      case 'defer': {
         cli('defer', ids[e.step], ids[e.to], '--by', 'user')
+        // Later work on the step goes to the node that resumes it in the new milestone, as an agent writes it.
+        const old = ids[e.step]
+        ids[e.step] = readFileSync(join(ariadne, '.ariadne', 'graph.jsonl'), 'utf8').trimEnd().split('\n').map(l => JSON.parse(l)).find(n => n.continues === old).id
         break
+      }
       case 'replace':
         cli('replace', ids[e.step], ids[e.by], '--by', 'user')
         break
