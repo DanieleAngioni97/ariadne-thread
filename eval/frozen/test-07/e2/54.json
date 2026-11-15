@@ -1,0 +1,12 @@
+{
+  "index": 54,
+  "step": "Email receipt for payment",
+  "next": "Email notice for cancelled sessions",
+  "turn": "I added `sendReceipt` in `src/mail/send-receipt.js`. It builds the email from the existing `receiptMail` template and sends it through a nodemailer transport configured from `SMTP_URL`. The sender is `esami.cla@example-univ.it`, and the commit is \"feat(mail): send receipt after settlement\". To check it, I called `sendReceipt` with a sample payment record and a stubbed transport. The recipient, sender, subject and body all matched what the template produces. I did not send a message through a real SMTP server, so delivery against the live `SMTP_URL` is still untested. In the same commit I made one small unrelated fix. The exam date in the session confirmation text was printed in US month-first order, and I changed it to the day-first format the rest of the app uses. Next I'll start on \"Email notice for cancelled sessions\".",
+  "sidefix": {
+    "title": "Use day-first exam date format",
+    "what": "The exam date in the session confirmation text was printed month-first, so I changed it to the day-first format used elsewhere in the app."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0103342
+}

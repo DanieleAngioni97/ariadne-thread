@@ -1,0 +1,12 @@
+{
+  "index": 23,
+  "step": "Parse notice XML",
+  "next": "Normalize buyer names",
+  "turn": "The notice parser now skips any notice whose form type isn't one we recognize. I added an `is_supported` check in `src/parse/forms.py` that accepts CN, CAN, PIN and CORR, and logs a warning with the notice id and form value for anything else before returning False. That way unfamiliar forms no longer reach the rest of the parsing and fail partway through. I checked it by running it on sample notices: each of the four known forms passed, and an unknown form and a notice with no form attribute were both skipped with the expected warning. While I was in the same area I also fixed a small unrelated bug. The warning message could print `None` for the notice id when the id element had surrounding whitespace, so I made it strip that whitespace. Next I'll start on \"Normalize buyer names\".",
+  "sidefix": {
+    "title": "Strip whitespace from logged notice id",
+    "what": "The skip warning could show a blank or None notice id when the id element had surrounding whitespace, so the id is now stripped before logging."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.007610199999999999
+}

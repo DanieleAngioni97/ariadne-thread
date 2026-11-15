@@ -1,0 +1,12 @@
+{
+  "index": 58,
+  "step": "Geofence check with H3 cells",
+  "next": "Cache for geofence polygons",
+  "turn": "The geofence exit check now works by cell lookup. In `src/geofence/h3-check.ts`, `insideZone` converts the lat/lon to an H3 cell at `ZONE_RES` and checks whether that cell is in the zone's cell set, so there is no polygon math at check time. I haven't run the test suite or any other check on it, so it's untested. While I was in the geofence module I also fixed a small unplanned problem in the same commit. A debug log line was printing full device coordinates, and it now logs only the cell ID. Next I'll start on \"Cache for geofence polygons\".",
+  "sidefix": {
+    "title": "Stop logging raw device coordinates",
+    "what": "Replaced a debug log line that printed full device lat/lon with one that logs only the H3 cell ID."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0068922
+}

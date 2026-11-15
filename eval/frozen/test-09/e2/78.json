@@ -1,0 +1,12 @@
+{
+  "index": 78,
+  "step": "Report for slot moves",
+  "next": "Report for zone utilization",
+  "turn": "The \"Report for slot moves\" step is finished. The last commit adds a test in tests/report_moves/test_render.py that checks per-aisle grouping. It passes a single move from F02-01-1 to F03-02-1 for item 100 into by_aisle and asserts that the result has one sheet, keyed by the source aisle F02. That sheet holds the tuple (source slot, destination slot, item). I ran the new test and it passed. I also ran the rest of the report_moves tests to confirm nothing else changed. The test covers only one move, so it doesn't exercise several aisles or several moves in one aisle. While in the same commit I made one small unplanned fix. The slot-code parsing in the report code now strips trailing whitespace before it reads the aisle prefix. Before, a code with a stray space could end up in the wrong group. Next I'll start \"Report for zone utilization\".",
+  "sidefix": {
+    "title": "Strip whitespace from slot codes",
+    "what": "Slot codes are now stripped of trailing whitespace before the aisle prefix is read, so a code with a stray space no longer lands in the wrong aisle group."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0079802
+}

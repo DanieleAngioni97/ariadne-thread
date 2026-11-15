@@ -1,0 +1,12 @@
+{
+  "index": 98,
+  "step": "Export deduplicated notices as CSV",
+  "next": "Export duplicate groups as JSON Lines",
+  "turn": "The deduplicated-notices CSV export now writes with a semicolon delimiter and a UTF-8 BOM, so Excel opens it with the right columns and accented characters intact. In `src/export_csv/writer.py`, `write_csv` opens the file with `utf-8-sig` and `newline=''`. It uses `csv.DictWriter` with `delimiter=';'` and `extrasaction='ignore'`, so extra fields on a record are dropped instead of raising an error. The columns are title, buyer, cpv, deadline, estimated_value, lot_number and lot_title. I haven't run the export or any tests in this session, so none of this is verified. The same commit also includes a small fix I noticed along the way: I added `newline=''` to the file open call, which stops blank lines appearing between rows on Windows. Next I'll start \"Export duplicate groups as JSON Lines\".",
+  "sidefix": {
+    "title": "Prevent blank rows in CSV output",
+    "what": "Opened the output file with newline='' so Windows doesn't insert blank lines between rows."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0081222
+}

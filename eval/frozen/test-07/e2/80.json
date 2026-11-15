@@ -1,0 +1,12 @@
+{
+  "index": 80,
+  "step": "Export of booking lists",
+  "next": "Export of attendance sheets",
+  "turn": "The booking list export is done and committed as \"feat(export): staff-only export routes\". I added a router in src/export/routes.js with GET /sessions/:id/bookings.csv, which queries the booking_list view for the given session and returns the rows as CSV through bookingsCsv. A middleware on the whole router returns 403 for anyone whose role isn't staff, including requests with no logged-in user. The session id is passed as a query parameter, not concatenated into the SQL. I checked this by reading the route code through to confirm the guard runs before the handler and that the query is parameterised. I did not run the server or any tests, so the endpoint hasn't been exercised against a real database. In the same commit I made one small unrelated fix: while in the export folder I noticed a stray unused import and removed it. Next I'll start \"Export of attendance sheets\".",
+  "sidefix": {
+    "title": "Remove unused import in export module",
+    "what": "Removed a stray unused import I noticed in the export folder so the module no longer loads something it doesn't use."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0079662
+}

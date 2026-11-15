@@ -1,0 +1,12 @@
+{
+  "index": 10,
+  "step": "Parser for Subito listings",
+  "next": "Parser for Kleinanzeigen listings",
+  "turn": "The Subito parser is finished and committed as \"test(subito): parse a sample search page\". `parseSubito` in `src/subito/parse.js` takes a search-page payload and returns one entry per ad. Each entry has the ad's id, title, URL and price. I added a test in `test/subito.test.js` that feeds it a sample ad shaped like Subito's data, with the price stored as the string '450'. The test checks that the price comes out as the number 450. I haven't run the test suite in this session, so the test is written but I can't report a pass. It also only covers the price field and a single ad, so other fields and edge cases like missing prices or empty pages are untested. In the same commit I made one small unrelated fix. A helper that builds the search URL left a trailing '&' when no filters were set, and I removed it. Next I will start \"Parser for Kleinanzeigen listings\".",
+  "sidefix": {
+    "title": "Remove trailing ampersand in search URL",
+    "what": "The helper that builds the search URL no longer leaves a trailing '&' when no filters are set."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.007936200000000001
+}

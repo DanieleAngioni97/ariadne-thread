@@ -1,0 +1,12 @@
+{
+  "index": 49,
+  "step": "Rounding for invoice totals",
+  "next": "Rounding for VAT lines",
+  "turn": "I finished the \"Rounding for invoice totals\" step by adding a test, test_many_small_lines, in tests/invoices/test_totals.py. It builds three lines of 0.0049 each and checks that invoice_total returns 0.01. That result shows the total is rounded once, after the lines are summed. Rounding each line first would give 0.00. I didn't run the test suite in this session, so the new test hasn't been confirmed passing. While I was in the same commit, I also fixed a small unplanned issue: the Line import in the test module pointed at a stale path, so I corrected it. Next I'll start \"Rounding for VAT lines\".",
+  "sidefix": {
+    "title": "Correct stale Line import path",
+    "what": "The test module imported Line from an outdated path, so I changed it to import from invoices.model."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.006944199999999999
+}

@@ -1,0 +1,12 @@
+{
+  "index": 52,
+  "step": "Daily ECB exchange rates",
+  "next": "Dedupe across marketplaces",
+  "turn": "The \"Daily ECB exchange rates\" step is finished. The last commit, \"test(ecb): convert SEK with a fixed rate set\", adds tests in test/ecb.test.js for the conversion helper. One test checks that 1000 SEK converts to 87.1 EUR with a fixed rate of 0.0871. The other checks that an unknown currency such as XYZ throws. I didn't run the tests in this final step, so I can't say they pass. The tests use a fixed rate set, so they don't depend on the live ECB feed. In the same commit I made one small fix I noticed along the way. I corrected the import path in the test file so it points at src/ecb/convert.js. Next I'll start \"Dedupe across marketplaces\".",
+  "sidefix": {
+    "title": "Correct test import path for converter",
+    "what": "Corrected the import in test/ecb.test.js so it resolves to src/ecb/convert.js."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0074662
+}

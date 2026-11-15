@@ -1,0 +1,12 @@
+{
+  "index": 7,
+  "step": "XML loading with UBL namespaces",
+  "next": "Parse invoice header",
+  "turn": "The XML loader now rejects any document whose root element isn't a UBL Invoice. After parsing, `load` in `src/loading/loader.py` compares the root tag with the Invoice tag in the UBL namespace and raises a ValueError naming the offending tag if they differ. I added `test_rejects_credit_note` in `tests/loading/test_loader.py`. It writes a small CreditNote document to a temporary file and asserts that `load` raises ValueError. I haven't run the test suite in this session, so the new test and the existing ones are unverified. In the same commit I also made one small unplanned fix. The parser setup in the loader had no explicit guard against network access, so I set `no_network=True` on it alongside the existing `resolve_entities=False`. Next I'll start on \"Parse invoice header\".",
+  "sidefix": {
+    "title": "Disable network access in XML parser",
+    "what": "Set no_network=True on the lxml XMLParser in the loader so parsing can never fetch external resources."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.008250200000000001
+}

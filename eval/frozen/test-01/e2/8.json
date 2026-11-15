@@ -1,0 +1,12 @@
+{
+  "index": 8,
+  "step": "Parcel status store",
+  "next": "Public tracking lookup",
+  "turn": "The parcel status store now enforces a whitelist of status transitions in src/store/transitions.js. A parcel can go from accepted to in_transit, from in_transit to itself or out_for_delivery, and from out_for_delivery to delivered or back to in_transit. delivered is terminal. A parcel with no previous status can be given any first status, so new records aren't blocked. I checked the transitions by reading the table against the intended lifecycle, and I stepped through the allowed and rejected moves for each status, including the repeat in_transit scan and the terminal delivered case. I didn't add or run an automated test suite for this step, so that coverage is manual. In the same commit I made one small unplanned fix. While in the file I noticed the module's exports were inconsistent with how the store imports them, and I corrected that so the import resolves cleanly. Next I'll start \"Public tracking lookup\".",
+  "sidefix": {
+    "title": "Fix inconsistent transitions module export",
+    "what": "Corrected the export in the transitions module so the store's import of canMove resolves properly."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0078002
+}

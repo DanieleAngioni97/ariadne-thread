@@ -1,0 +1,12 @@
+{
+  "index": 55,
+  "step": "Match notices by reference number",
+  "next": "Match notices by title similarity",
+  "turn": "I changed reference matching in src/match/reference.py so two notices are only paired when they share the same buyer and the same normalized reference number. Previously the index was keyed on the cleaned reference alone, so unrelated buyers who happened to use the same reference string could be grouped together. Now the index key is the (buyer, cleaned reference) tuple, and only groups with more than one notice are returned. I checked this by reading through the grouping logic. I did not run the test suite or try it on sample notices, so the behavior is unexecuted. In the same commit I also made a small unplanned fix. The clean() helper now lowercases the reference before stripping non-alphanumeric characters, so references that differ only in case or punctuation normalize the same way. Next I will start \"Match notices by title similarity\".",
+  "sidefix": {
+    "title": "Normalize case in reference cleaning",
+    "what": "The clean() helper now lowercases references before stripping punctuation, so references that differ only by case or punctuation compare as equal."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.007660199999999999
+}

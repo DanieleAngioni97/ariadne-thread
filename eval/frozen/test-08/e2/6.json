@@ -1,0 +1,12 @@
+{
+  "index": 6,
+  "step": "Plugin manifest format",
+  "next": "Loader for local plugins",
+  "turn": "The plugin manifest format step is finished, and I committed it as \"feat(manifest): validate manifest fields\". I added `validateManifest` in `src/manifest/validate.ts`. It takes a `PluginManifest` and returns a list of error strings instead of throwing, so callers can report every problem at once. It currently checks two things: that `name` is present, and that `apiVersion` matches the exported `HOST_API_VERSION`, which is 1. I haven't run anything to check it. I only reread the function against the manifest type, so it has no test coverage yet. In the same commit I also fixed a small, unrelated problem I noticed: a relative import in the manifest module was missing its `.js` extension, which would have broken resolution under ESM. Next I'll start on \"Loader for local plugins\".",
+  "sidefix": {
+    "title": "Add missing .js import extension",
+    "what": "Fixed a relative import in the manifest module that lacked the .js extension required for ESM resolution."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0076882
+}

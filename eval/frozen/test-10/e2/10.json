@@ -1,0 +1,12 @@
+{
+  "index": 10,
+  "step": "Consent scopes per study",
+  "next": "Validation of consent form versions",
+  "turn": "The consent scopes step is finished and committed as \"feat(scopes): load study list from registry config\". `load_studies` in src/scopes/studies.py now reads config/studies.yaml and returns a dict keyed by study ID. The config currently lists two studies, CARDIO-07 (Heart failure cohort) and ONCO-12 (Breast cancer biobank). I haven't run the code or any tests. I only wrote the loader and the config, so the loader is unverified. In the same commit I also made a small unplanned fix. The loader had no explicit file encoding, so I set it to UTF-8, which stops study titles with accented characters from failing to load on systems with a different default locale. Next I will start \"Validation of consent form versions\".",
+  "sidefix": {
+    "title": "Open study config as UTF-8",
+    "what": "Set the config file encoding to UTF-8 so non-ASCII study titles load the same way on every system."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.007400199999999999
+}

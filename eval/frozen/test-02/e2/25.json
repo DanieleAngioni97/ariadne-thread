@@ -1,0 +1,12 @@
+{
+  "index": 25,
+  "step": "Parse supplier and customer parties",
+  "next": "Parse invoice lines",
+  "turn": "The supplier and customer party parsing is finished. The last commit adds a test in tests/party/test_parties.py that loads tests/samples/no-endpoint.xml and checks that parse_customer returns None for the endpoint when the party has no endpoint ID. I wrote the test to cover that case, so the parser now has a check for parties without an endpoint ID. I haven't run the test suite in this message, so I can't report a pass or fail result here. In the same commit I also made one small unplanned fix. While reading the loader I noticed that the sample file path handling was brittle, so I made it resolve paths consistently. It's unrelated to the party work. Next I will start \"Parse invoice lines\".",
+  "sidefix": {
+    "title": "Make sample path handling consistent",
+    "what": "Changed the loader so sample file paths resolve the same way no matter where the tests are run from."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0070241999999999995
+}

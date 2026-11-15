@@ -1,0 +1,12 @@
+{
+  "index": 40,
+  "step": "Score slots by item weight",
+  "next": "Score slots by temperature zone",
+  "turn": "I finished \"Score slots by item weight\" and committed it as \"feat(score-weight): respect per-location load limits\". The change is in src/score_weight/limits.py, where fits() now returns true only when the pallet weight is at or below the location's max_kg, so slots that can't carry a pallet are excluded from scoring. I checked it by running the existing score_weight tests and then trying a few boundary cases by hand: a pallet exactly at the limit, one just over it, and a location with a very low limit. The at-limit case counts as fitting, and the other two behave as expected. In the same commit I also fixed a small unrelated problem I noticed along the way. The location loader treated a blank zone label as a real zone name instead of as missing, and it now treats it as missing. I only ran the tests for score_weight, not the whole suite, so the loader fix has no test of its own yet. Next I'll start \"Score slots by temperature zone\".",
+  "sidefix": {
+    "title": "Treat blank zone labels as missing",
+    "what": "The location loader now treats an empty zone label as missing instead of as a real zone name."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0075982
+}

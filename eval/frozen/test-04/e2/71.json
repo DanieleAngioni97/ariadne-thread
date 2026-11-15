@@ -1,0 +1,12 @@
+{
+  "index": 71,
+  "step": "Match amended notices to originals",
+  "next": "Group matched pairs into duplicate sets",
+  "turn": "I finished matching amended notices to their originals. In src/match/amendments.py, link_corrigenda now pairs each CORR notice with the notice named in its amends field, and it skips any whose target isn't in the batch. The new apply_corrigendum then copies the corrigendum's changed fields onto the original and ignores fields set to None, so a blank value can't erase real data. I haven't run the code or any tests. I only re-read the two functions against the cases I had in mind: a corrigendum with a valid target, one with a missing target, and one that has None values. In the same commit I made one small unplanned fix. The date parser in the loader crashed on notice dates with trailing whitespace, so I now strip them before parsing. Next I'll start \"Group matched pairs into duplicate sets\".",
+  "sidefix": {
+    "title": "Strip whitespace before parsing notice dates",
+    "what": "The loader's date parser crashed on notice dates with trailing whitespace, so the value is now stripped before parsing."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0077482
+}

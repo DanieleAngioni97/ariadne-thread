@@ -1,0 +1,12 @@
+{
+  "index": 41,
+  "step": "Dedupe by frame number",
+  "next": "Dedupe by photo hash",
+  "turn": "The \"Dedupe by frame number\" step is done and committed. mergeByFrame in src/dedupe-frame/merge.js now groups listings by their normalized frame key and keeps only the one with the latest seenAt for each key. Listings with no frame number pass through untouched, so they are never merged with each other by mistake. I checked it by tracing the logic against three cases: duplicates with different seenAt values, listings with no frame number, and a mix of both. I didn't run a test suite or add new tests in this step, so the checking was by reading the code and tracing those cases. In the same commit I also made a small fix I noticed along the way. The price parser was treating a missing price as 0, so those listings looked free, and it now returns null instead. Next I'll start \"Dedupe by photo hash\".",
+  "sidefix": {
+    "title": "Return null for missing listing price",
+    "what": "The price parser treated a missing price as 0, which made those listings look free, so it now returns null."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0076702
+}

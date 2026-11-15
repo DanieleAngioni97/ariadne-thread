@@ -1,0 +1,12 @@
+{
+  "index": 69,
+  "step": "Alert delivery via webhooks",
+  "next": "Cache for firmware manifests",
+  "turn": "Alert delivery via webhooks now retries failed sends with exponential backoff. The new `sendWithRetry` in `src/webhook/retry.ts` wraps `sendAlert`, makes up to 6 attempts, and waits 1s, 2s, 4s, 8s and 16s between them. If the last attempt fails, it rethrows that error so the caller can see it. I checked this by reading through the retry loop, including the attempt counting and the point where it gives up. I didn't run it against a live endpoint or write automated tests for it, so the timing and the final rethrow are untested. In the same commit I made one small unrelated fix. The webhook sender was building its headers object in a way that could drop a caller-supplied Content-Type, and it now keeps that value. Next I'll start \"Cache for firmware manifests\".",
+  "sidefix": {
+    "title": "Preserve caller-supplied Content-Type header",
+    "what": "The webhook sender no longer drops a Content-Type header supplied by the caller when it builds the request headers."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0078722
+}

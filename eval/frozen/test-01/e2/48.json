@@ -1,0 +1,12 @@
+{
+  "index": 48,
+  "step": "Partner API keys",
+  "next": "Nightly CSV feed for partners",
+  "turn": "The \"Partner API keys\" step is finished. I added a test in src/partners/keys.test.js that issues a key with issueKey() and asserts that hashOf(key) equals the hash returned alongside it, so a stored hash can be trusted to match the key the partner receives. I wrote the test but haven't run it, so I can't tell you whether it passes. In the same commit I made one small fix I noticed along the way. The partner key test file was missing a trailing newline, and I added it so editors and diffs stop flagging that file. Next I'll start \"Nightly CSV feed for partners\".",
+  "sidefix": {
+    "title": "Add missing trailing newline in test",
+    "what": "Added the missing trailing newline at the end of src/partners/keys.test.js so diffs and editors no longer flag the file."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.006862200000000001
+}

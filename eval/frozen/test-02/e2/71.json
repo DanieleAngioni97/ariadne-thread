@@ -1,0 +1,12 @@
+{
+  "index": 71,
+  "step": "Batch validation of a folder",
+  "next": "Cache for parsed parties",
+  "turn": "Batch validation of a folder is done. I added `summarize` in `src/batch/summary.py`, which takes the (path, errors) results for each file and returns the paths of the files that failed along with a `failed_count`. A file counts as failed when its error list isn't empty, and every other file counts as passed. I checked it by reading through the logic against the result shape the batch runner produces. I did not run it against a real folder of invoices or add a test in this step, so that check is still open. In the same commit I also made one small fix I noticed along the way: the batch module had an unused import left over from an earlier refactor, and I removed it. Next I'll start on \"Cache for parsed parties\".",
+  "sidefix": {
+    "title": "Remove unused import in batch module",
+    "what": "Deleted a leftover unused import in the batch module that remained after an earlier refactor."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0067962000000000005
+}

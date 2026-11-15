@@ -1,0 +1,12 @@
+{
+  "index": 57,
+  "step": "Credit notes for corrected readings",
+  "next": "Render invoices with wkhtmltopdf",
+  "turn": "I added `correction_lines` in `src/credits/lines.py`, which builds the lines for a credit note when a meter reading is corrected. It creates a negative \"Reversal: <label>\" line for each original invoice line, keeping the same VAT rate, and then appends the corrected lines. I haven't run the code or any tests, and I haven't read the new function against real invoice data. All I did was write it. While in the same file I also fixed a small unplanned issue: a stray unused import was left over from an earlier refactor, so I removed it. Next I'll start \"Render invoices with wkhtmltopdf\".",
+  "sidefix": {
+    "title": "Remove unused import in credits",
+    "what": "Removed a leftover unused import from the credits module that remained after an earlier refactor."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0067762
+}

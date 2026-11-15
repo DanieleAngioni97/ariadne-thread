@@ -1,0 +1,12 @@
+{
+  "index": 54,
+  "step": "Rewrite links to heading anchors",
+  "next": "Copy attachments next to each page",
+  "turn": "Heading anchors in links are now rewritten to GitHub-style slugs. The new `github_anchor` function in `src/links/anchors/slug.py` trims and lowercases the heading, removes characters other than word characters, hyphens and spaces, and then turns spaces into hyphens. I checked it by running it on a handful of sample headings, including ones with punctuation, mixed case and repeated spaces, and the slugs matched what GitHub generates for them. I haven't tested duplicate headings, which GitHub disambiguates with a numeric suffix, and the function doesn't handle them yet. In the same commit I made one small unrelated fix. I noticed that the `re` import in the slug module was being pulled in alongside an unused import, so I removed the unused one to keep the module clean. Next I'll start on \"Copy attachments next to each page\".",
+  "sidefix": {
+    "title": "Remove unused import in slug module",
+    "what": "Removed a leftover unused import next to the `re` import in the slug module so the file stays lint-clean."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0075482
+}

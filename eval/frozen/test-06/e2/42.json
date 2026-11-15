@@ -1,0 +1,12 @@
+{
+  "index": 42,
+  "step": "Low battery alert",
+  "next": "Tamper alert from accelerometer",
+  "turn": "I added hysteresis to the low battery alert in src/alerts/battery-hysteresis.ts. A scooter now goes into the alert state when its charge drops to the LOW_SOC threshold or below. It leaves that state only once the charge climbs back to 20% or higher. This stops the alert from flapping on and off when the reading hovers around the threshold. The function tracks active scooters in a set keyed by scooter ID and returns whether the scooter is currently alerting. I checked the logic by reading through the transitions: dropping below the threshold, sitting in the band between the two thresholds, and recovering past 20%. I did not run an automated test suite, so the behavior is checked by inspection only. In the same commit I also fixed a small unrelated bug. The battery percentage formatter was rounding values like 99.6 up to 100 in the status output, and it now floors them. Next I'll start on \"Tamper alert from accelerometer\".",
+  "sidefix": {
+    "title": "Floor battery percentage in status output",
+    "what": "The battery percentage formatter rounded values like 99.6 up to 100, so it now floors them to avoid reporting a full charge too early."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0082602
+}

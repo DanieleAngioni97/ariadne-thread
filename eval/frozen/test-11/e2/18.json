@@ -1,0 +1,12 @@
+{
+  "index": 18,
+  "step": "Parser for Blocket listings",
+  "next": "Cron crawl schedule",
+  "turn": "The Blocket listing parser is finished, and I committed a test that runs it on a sample search response. `parseBlocket` in `src/blocket/parse.js` takes the response's `data` array and returns listings with the ad id, subject, price, currency and share URL. The new test in `test/blocket.test.js` feeds it one ad priced at 3500 and checks that the price stays 3500 and the currency comes out as 'SEK'. I haven't run the test suite in this message, so the test is written but I can't report a pass. The sample is a single hand-written ad, so it doesn't cover missing prices or empty result pages. In the same commit I also made one small unrelated fix. I noticed the test file's imports weren't in a consistent order and tidied them so they follow the same pattern as the other test files. Next I'll start on \"Cron crawl schedule\".",
+  "sidefix": {
+    "title": "Tidy test file import order",
+    "what": "Reordered the imports in the Blocket test file to match the ordering used in the project's other test files."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0077922
+}

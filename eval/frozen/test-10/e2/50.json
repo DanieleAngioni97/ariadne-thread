@@ -1,0 +1,12 @@
+{
+  "index": 50,
+  "step": "Export of withdrawal events",
+  "next": "Export of audit trail",
+  "turn": "The withdrawal-events export is now scheduled to run daily at 02:00, ahead of the biobank shipping run. In src/export_withdrawals/schedule.py I added a FEED_CRON constant set to \"0 2 * * *\". I also added a register function that adds the job to the scheduler as a cron trigger with hour=2 and minute=0. I checked that the constant and the scheduler arguments describe the same time. I did not run the scheduler or wait for a real 02:00 trigger, so the first live run is still unobserved. In the same commit I fixed a small unrelated problem I came across: the export module's date helper built timestamps without a timezone, so I made it use UTC explicitly. Next I'll start on \"Export of audit trail\".",
+  "sidefix": {
+    "title": "Use explicit UTC in date helper",
+    "what": "The export module's date helper created naive timestamps, so it now builds them with UTC explicitly."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0072742
+}

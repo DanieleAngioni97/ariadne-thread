@@ -1,0 +1,12 @@
+{
+  "index": 11,
+  "step": "Patient profiles with fiscal code",
+  "next": "Booking endpoint with overlap checks",
+  "turn": "I finished the \"Patient profiles with fiscal code\" step. The last commit, \"test(patients): fiscal code samples\", adds a vitest case in src/patients/fiscal-code.test.ts. The case checks that isValidFiscalCode rejects a malformed code, using the truncated string 'RSSMRA80A01'. I haven't run the suite in this session, so I can't confirm the new test passes. The only check was reading the test against the validator's expected behavior. The test covers just one rejection case. It has no valid-code sample and no checksum case yet. In the same commit I also fixed a small unrelated problem. The test file imported the validator as './fiscal-code.js', and I fixed an inconsistent import path in a neighboring patients module so it matches that ESM-style extension. Next I'll start \"Booking endpoint with overlap checks\".",
+  "sidefix": {
+    "title": "Fix inconsistent ESM import extension",
+    "what": "Changed an import in a neighboring patients module to use the explicit .js extension, matching the rest of the codebase."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.007766199999999999
+}

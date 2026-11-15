@@ -1,0 +1,12 @@
+{
+  "index": 30,
+  "step": "Webhook retry on failure",
+  "next": "Webhook signature check",
+  "turn": "I added exponential backoff for webhook retries in src/webhook/backoff.js. The delay starts at one minute and doubles on each attempt, and any single delay is capped at one hour. A separate MAX_AGE constant of six hours sets how long a delivery keeps being retried. That means the commit title's \"capped at six hours\" describes the retry window, not the per-attempt delay. I checked the schedule by working through the formula by hand, not by running a test. The delays come out as 1, 2, 4, 8, 16 and 32 minutes, and from attempt 6 onward they hold at 60 minutes. I haven't run this against a live endpoint. In the same commit I fixed a small unrelated problem I noticed: the retry log line printed the delay in milliseconds but labelled it as seconds, so I corrected the label. Next I'll start \"Webhook signature check\".",
+  "sidefix": {
+    "title": "Correct retry delay unit label",
+    "what": "The retry log message showed the delay in milliseconds but labelled it as seconds, so the label now matches the unit."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0113142
+}

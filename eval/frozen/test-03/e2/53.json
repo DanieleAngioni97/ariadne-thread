@@ -1,0 +1,12 @@
+{
+  "index": 53,
+  "step": "Availability rules for public holidays",
+  "next": "SMS gateway client for Twilio",
+  "turn": "I finished the public holidays availability step by adding tests in src/availability/holidays.test.ts. One checks that 28 April (Sa Die de sa Sardigna) is treated as a closed day for Cagliari clinics. The other checks that Easter Monday 2026 comes out as 2026-04-06. Both tests assert against the existing closedDays and easterMonday functions, and the expected dates match the 2026 calendar. I haven't shown a test run in this message, so I can't say the suite passed. In the same commit I also fixed a small unrelated problem I noticed: the Easter helper's import in the test file now uses the explicit .js extension, so it resolves the same way as the other imports. Next I'll start on \"SMS gateway client for Twilio\".",
+  "sidefix": {
+    "title": "Use explicit .js extension in import",
+    "what": "The easter helper import in the holidays test now uses the .js extension so it matches the other ESM imports."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0076262000000000005
+}

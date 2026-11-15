@@ -1,0 +1,12 @@
+{
+  "index": 65,
+  "step": "Validation of access request scopes",
+  "next": "Consent filter as SQL view",
+  "turn": "The access request scope validation is finished. I added a test in tests/test_request_scope.py that builds a request for study ONCO-12 under approval CE-2026-014, which only covers CARDIO-07. It asserts that check_request_scope raises a ValueError. That test is the only change to the scope check in this commit, so the validation code itself is unchanged. I haven't run the test suite in this session, so the new test hasn't been confirmed passing. In the same commit I also made a small unplanned fix. While I was in the test file, I noticed the imports weren't in a consistent order, and I tidied them. Next I will start \"Consent filter as SQL view\".",
+  "sidefix": {
+    "title": "Tidy test file import order",
+    "what": "Reordered the imports at the top of tests/test_request_scope.py so they follow a consistent order, with no change in behavior."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.007074200000000001
+}

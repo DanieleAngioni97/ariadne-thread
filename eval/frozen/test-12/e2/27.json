@@ -1,0 +1,12 @@
+{
+  "index": 27,
+  "step": "Validate tariff schedule files",
+  "next": "Rounding for energy charges",
+  "turn": "I finished the \"Validate tariff schedule files\" step by adding a test in tests/tariffs/test_validate_upload.py that checks overlapping bands are refused. It passes two bands, (0, 9, 0.18) and (8, 24, 0.24), which overlap at hours 8 and 9, to check_bands and expects a ValueError. I haven't run the test suite in this session, so I can't say the new test passes. While I was in the same commit, I also fixed a small unrelated problem. The upload validator's error message for an empty file named the wrong field, so I corrected it to name the field that is actually missing. Next I'll start \"Rounding for energy charges\".",
+  "sidefix": {
+    "title": "Correct empty-file validator error message",
+    "what": "The upload validator's error for an empty file named the wrong field, so it now names the field that is actually missing."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0070102
+}

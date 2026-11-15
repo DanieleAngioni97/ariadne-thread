@@ -1,0 +1,12 @@
+{
+  "index": 14,
+  "step": "Loader for npm plugins",
+  "next": "Sandbox plugins with vm contexts",
+  "turn": "The npm plugin loader now reads its manifest from the `migralint` field of a package's `package.json`. `readNpmManifest` in `src/loader/npm-manifest.ts` parses the file and returns that field as a `PluginManifest`. I haven't run any tests or a type check, so I can't say how it behaves. The function also returns `undefined` when a package has no `migralint` field, and it does no validation yet. That means a malformed or missing manifest would only fail later. In the same commit I made one small unrelated fix. A relative import in the manifest types module was missing its `.js` extension, which breaks ESM resolution, so I added it. Next I'll start on \"Sandbox plugins with vm contexts\".",
+  "sidefix": {
+    "title": "Add missing .js import extension",
+    "what": "Added the missing .js extension to a relative import in the manifest types module so ESM resolution works."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0073402
+}

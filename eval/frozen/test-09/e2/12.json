@@ -1,0 +1,12 @@
+{
+  "index": 12,
+  "step": "Load SKU master from ERP export",
+  "next": "Read locations from WMS API",
+  "turn": "The SKU master loading step is finished. I added a test in tests/sku/test_parse.py that writes a small Latin-1 encoded, semicolon-delimited ERP export with one Mozzarella item whose dimensions are 300 x 200 x 150 mm. It checks that read_items returns the dimensions converted to centimetres, (30.0, 20.0, 15.0). The test covers the Latin-1 encoding, the semicolon delimiter and the millimetre-to-centimetre conversion in one pass. I haven't run the suite in this message, so I can't report a pass result. In the same commit I made one small unrelated fix. I noticed the test helper left the temporary CSV path built by string concatenation, and I switched it to pathlib joining so it behaves the same on every platform. Next I'll start on \"Read locations from WMS API\".",
+  "sidefix": {
+    "title": "Use pathlib for temp CSV path",
+    "what": "Replaced string-concatenated temporary CSV path in the test helper with pathlib joining for cross-platform consistency."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0079782
+}

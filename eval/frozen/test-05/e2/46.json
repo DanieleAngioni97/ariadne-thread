@@ -1,0 +1,12 @@
+{
+  "index": 46,
+  "step": "Write nested output folders",
+  "next": "Rewrite links between pages",
+  "turn": "The nested output folders step is finished, and the last piece was de-duplicating sibling slugs in src/layout/slugs.py. I added a `unique(slug, taken)` helper. If a slug is already in the set of taken names, it tries `slug-2`, `slug-3` and so on until it finds a free one, then records that name in the set. `slugify` still lowercases a title and collapses runs of non-alphanumeric characters into single hyphens. I checked the logic by reading through the cases: a first occurrence keeps its slug, a second becomes `-2`, a third becomes `-3`, and the chosen name is always added to `taken`. I haven't run a test suite or a full wikishift build against this change. In the same commit I also made one small unplanned fix. `slugify` could return an empty string for titles with no letters or digits, and I now guard against that case. Next I will start \"Rewrite links between pages\".",
+  "sidefix": {
+    "title": "Guard against empty slug results",
+    "what": "Titles made up only of punctuation or non-ASCII characters no longer produce an empty folder name from slugify."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0079222
+}

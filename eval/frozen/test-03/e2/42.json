@@ -1,0 +1,12 @@
+{
+  "index": 42,
+  "step": "Availability rules per therapist",
+  "next": "Availability rules per clinic room",
+  "turn": "The \"Availability rules per therapist\" step is finished. I added a test in src/availability/therapist.test.ts for Saturday hours. It gives a therapist a 09:00–12:00 window on weekday 6 and passes in the candidate times 08:45, 09:00 and 12:00. The test expects only 09:00 back, so it checks that nothing before opening or at closing time is offered. I haven't run the test suite, so the test is written but not run. In the same commit I fixed a small unrelated issue: the time-parsing helper in the availability module didn't trim stray whitespace, so a value like ' 09:00' could be rejected. It now trims the input first. Next I'll start \"Availability rules per clinic room\".",
+  "sidefix": {
+    "title": "Trim whitespace when parsing times",
+    "what": "The availability time-parsing helper now trims its input, so values with stray spaces such as ' 09:00' are no longer rejected."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0075902
+}

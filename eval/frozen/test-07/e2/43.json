@@ -1,0 +1,12 @@
+{
+  "index": 43,
+  "step": "Payment request to the university gateway",
+  "next": "Gateway webhook handler",
+  "turn": "I finished the payment request step for the university gateway. Bookings now stay in a pending status until payment is confirmed, and a booking that is still pending after two hours is marked expired. The change is in src/booking/pending.js, where markPending sets the status when the payment request goes out and expirePending clears out stale ones. I checked it by reading the two queries against the bookings schema and confirming the status values and the interval match what the booking flow expects. I did not run it against a live gateway or a real database, so the expiry timing is untested end to end. In the same commit I also fixed a small unrelated bug: the booking confirmation date helper was formatting dates without zero-padding the month, so I corrected it. Next I will start \"Gateway webhook handler\".",
+  "sidefix": {
+    "title": "Zero-pad month in confirmation date",
+    "what": "The booking confirmation date helper printed months without zero-padding, so I changed it to always use two digits."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0074342
+}

@@ -1,0 +1,12 @@
+{
+  "index": 46,
+  "step": "Score slots by temperature zone",
+  "next": "Seasonal velocity adjustment",
+  "turn": "I finished the \"Score slots by temperature zone\" step by adding tests in tests/score_temp/test_zones.py that cover the zone and dock rules. The zone test checks that a frozen item is allowed in zone F02 and rejected in A01. The dock test checks that a position at (5.0, 40.0) counts as near the dock and one at (30.0, 0.0) does not. I wrote these as direct assertions on `allowed` and `near_dock`, so they don't depend on any other scoring code. I haven't described a test run here, so please run the suite yourself before relying on it. In the same commit I also fixed a small unrelated problem I noticed: the tests package was missing an import path setup, which could make test discovery fail depending on where pytest was started. Next I'll start \"Seasonal velocity adjustment\".",
+  "sidefix": {
+    "title": "Fix test package import path setup",
+    "what": "Added the missing import path setup for the tests package so pytest discovery no longer depends on the directory it is started from."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0075902
+}

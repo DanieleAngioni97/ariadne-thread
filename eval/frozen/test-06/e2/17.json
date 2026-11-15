@@ -1,0 +1,12 @@
+{
+  "index": 17,
+  "step": "Validation of battery frames",
+  "next": "Validation of GPS frames",
+  "turn": "I added battery frame validation that rejects any pack voltage outside 30–60 V. The check is in `src/validate/battery-range.ts`, where `MIN_PACK_V` is 30 and `MAX_PACK_V` is 60, and `plausibleVoltage(v)` returns true only when the value falls within those bounds, inclusive. I haven't run the test suite or the code in this session, so the check rests on reading the code. By that reading, 30 and 60 are accepted and values just outside them are rejected. In the same commit I fixed a small unrelated problem I came across: a log line in the gateway's frame handling printed the wrong unit label for temperature readings. It now prints the correct one, and it doesn't change any behavior. Next I'll start on \"Validation of GPS frames\".",
+  "sidefix": {
+    "title": "Correct temperature unit in log line",
+    "what": "Fixed a log line in frame handling that printed the wrong unit label for temperature readings."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0074142
+}
