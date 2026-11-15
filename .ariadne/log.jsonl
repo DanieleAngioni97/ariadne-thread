@@ -203,3 +203,6 @@
 {"at":"2026-11-15T14:57Z","id":"m4.4.8","op":"fill","text":"prova per m4.4.8: file docs/valutazione/preregistrazione.md#Spesa","proof":[{"type":"file","ref":"docs/valutazione/preregistrazione.md#Spesa"}]}
 {"at":"2026-11-15T14:58Z","id":null,"op":"relink","text":"ricollegato docs/valutazione/preregistrazione.md#spesa → docs/valutazione/preregistrazione.md#Spesa in 1 nodo (m4.4.8)"}
 {"at":"2026-11-15T14:58Z","id":"m4.4.12.4","op":"fill","text":"completato m4.4.12.4: detail"}
+{"at":"2026-11-15T15:04Z","id":"m4.4.12.5","op":"add","text":"deviazione m4.4.12.5 Revisione UI/UX del viewer, rientra in m4.4.12.3"}
+{"at":"2026-11-15T15:14Z","id":"m4.4.12.5","op":"plan","text":"piano per Revisione UI/UX del viewer: Corrente sempre visibile nella finestra → Icone di stato SVG e legenda a scomparsa → Pannello ritraibile e comandi compatti → Cronologia ed Elenco con filtri e ricerca → Zoom leggibile, pillola Sei qui e tastiera → Revisione d'usabilità e correzioni"}
+{"at":"2026-11-15T15:14Z","id":"m4.4.12.5.1","op":"start","text":"iniziato m4.4.12.5.1 Corrente sempre visibile nella finestra"}
