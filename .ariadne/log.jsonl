@@ -312,3 +312,5 @@
 {"at":"2026-11-15T17:17Z","id":"m4.4.12.3","op":"fill","text":"proof for m4.4.12.3: commit f8a2687","proof":[{"type":"commit","ref":"f8a2687"}]}
 {"at":"2026-11-15T17:35Z","id":"m4.4.12.6","op":"add","text":"deviazione m4.4.12.6 ariadne parla la lingua della persona, rientra in m4.4.12.3"}
 {"at":"2026-11-15T17:35Z","id":"m4.4.12.6","op":"close","text":"chiuso m4.4.12.6 ariadne parla la lingua della persona: CLI, band and viewer speak the person's language, config lang still pins it","proof":[{"type":"commit","ref":"6d59432"}]}
+{"at":"2026-11-15T17:36Z","id":"","op":"confirm","text":"confermate 1 modifiche"}
+{"at":"2026-11-15T17:37Z","id":"m4.4.12.3","op":"fill","text":"completato m4.4.12.3: detail, message chat 2026-11-15: rivedere tutto, meno tecnico, vendere bene e onesto; logo e grafica propri di ariadne; poi le slide","proof":[{"type":"message","ref":"chat 2026-11-15: rivedere tutto, meno tecnico, vendere bene e onesto; logo e grafica propri di ariadne; poi le slide"}]}
