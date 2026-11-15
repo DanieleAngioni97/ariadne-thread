@@ -39,7 +39,7 @@ evidence is recorded and the thread moves on. Things you can say:
 | "open the graph" | `ariadne open` |
 | "why are we doing this?" | `ariadne why <id>` |
 
-The band's **Apri il grafo** button opens the viewer too. Each project gets its own viewer port,
+The band's **Open the graph** button opens the viewer too. Each project gets its own viewer port,
 so sessions on several projects don't collide.
 
 Everything lives in `.ariadne/` in your project: `graph.jsonl` (the steps), `log.jsonl` (the diary)
@@ -48,8 +48,10 @@ machine-local `local.json` stay out of git.
 
 ## Status
 
-Early. The band uses Claude Code's mods API, which is in early access. The command line and the band
-speak Italian for now; the viewer speaks English and Italian.
+Early. The band uses Claude Code's mods API, which is in early access.
+
+ariadne speaks English. For Italian, put `{ "lang": "it" }` in `.ariadne/config.json`; the viewer
+follows your browser's language.
 
 ## Develop
 

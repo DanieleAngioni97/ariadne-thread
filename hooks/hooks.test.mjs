@@ -9,6 +9,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+// These tests read what ariadne writes in Italian; English has its own tests.
+process.env.ARIADNE_LANG = 'it'
+
 const PLUGIN = fileURLToPath(new URL('..', import.meta.url))
 const { hooks } = JSON.parse(readFileSync(new URL('./hooks.json', import.meta.url), 'utf8'))
 

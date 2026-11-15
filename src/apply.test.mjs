@@ -4,6 +4,9 @@ import assert from 'node:assert/strict'
 import { apply } from './apply.mjs'
 import { parse } from './graph.mjs'
 
+// These tests read what ariadne writes in Italian; English has its own tests.
+process.env.ARIADNE_LANG = 'it'
+
 const AT = '2026-11-11T10:00'
 const PLAN = [{ type: 'message', ref: 'chat 2026-11-11: plan approved' }]
 const n = (id, fields) => ({ id, kind: 'step', title: `Title ${id}`, status: 'done', what: `${id} result.`, proof: PLAN, by: 'agent', at: '2026-11-11', ...fields })

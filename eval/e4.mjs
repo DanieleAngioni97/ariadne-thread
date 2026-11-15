@@ -8,6 +8,9 @@ import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+// The evaluation was frozen with ariadne writing in Italian.
+process.env.ARIADNE_LANG ??= 'it'
+
 const graphOnly = c => c.files.length > 0 && c.files.every(f => f.startsWith('.ariadne/'))
 
 /** The person's prompts in each session of a transcript; a `/clear` starts a new session. */

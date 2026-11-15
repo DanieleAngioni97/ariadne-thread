@@ -3,6 +3,9 @@ import assert from 'node:assert/strict'
 
 import { summarize, tokens, LIMIT } from './summary.mjs'
 
+// These tests read what ariadne writes in Italian; English has its own tests.
+process.env.ARIADNE_LANG = 'it'
+
 const AT = '2026-11-11'
 const n = (id, fields) => ({ id, kind: 'step', title: `Title ${id}`, status: 'done', what: `${id} result.`, by: 'agent', at: AT, ...fields })
 

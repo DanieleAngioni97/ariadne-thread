@@ -10,6 +10,9 @@ import { fileURLToPath } from 'node:url'
 
 import { normalize } from './grade.mjs'
 
+// The evaluation was frozen with ariadne writing in Italian.
+process.env.ARIADNE_LANG ??= 'it'
+
 const ROOT = fileURLToPath(new URL('..', import.meta.url))
 const FROZEN = fileURLToPath(new URL('./frozen', import.meta.url))
 const CLI = '.ariadne/cli/bin/ariadne.mjs'

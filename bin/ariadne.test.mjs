@@ -9,6 +9,9 @@ import { fileURLToPath } from 'node:url'
 
 import { derivedPort } from '../src/port.mjs'
 
+// These tests read what ariadne writes in Italian; English has its own tests.
+process.env.ARIADNE_LANG = 'it'
+
 const CLI = fileURLToPath(new URL('./ariadne.mjs', import.meta.url))
 const AT = '2026-11-11'
 const n = (id, fields) => ({ id, kind: 'step', title: `Title ${id}`, status: 'done', what: `${id} result.`, proof: [{ type: 'file', ref: 'x.md' }], by: 'agent', at: AT, ...fields })

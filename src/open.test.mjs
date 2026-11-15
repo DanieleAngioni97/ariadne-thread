@@ -3,6 +3,9 @@ import assert from 'node:assert/strict'
 
 import { openViewer } from './open.mjs'
 
+// These tests read what ariadne writes in Italian; English has its own tests.
+process.env.ARIADNE_LANG = 'it'
+
 const ROOT = '/work/repo'
 
 /** Stands for the port: `answers` are what /root says on each probe (null: nothing listens). */

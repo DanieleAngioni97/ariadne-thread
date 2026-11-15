@@ -16,6 +16,9 @@ import { generate } from './generate.mjs'
 import { closest } from './grade.mjs'
 import { ask } from './run.mjs'
 
+// The evaluation was frozen with ariadne writing in Italian.
+process.env.ARIADNE_LANG ??= 'it'
+
 const FROZEN = fileURLToPath(new URL('./frozen', import.meta.url))
 export const VERSIONS = ['F0', 'F1', 'F2', 'F3', 'F4']
 const TYPES = ['done-not-done', 'missing-work', 'unrecorded-detour', 'wrong-current']

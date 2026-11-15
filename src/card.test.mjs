@@ -3,6 +3,9 @@ import assert from 'node:assert/strict'
 
 import { card, view, CARD_LIMIT } from './card.mjs'
 
+// These tests read what ariadne writes in Italian; English has its own tests.
+process.env.ARIADNE_LANG = 'it'
+
 const AT = '2026-11-15'
 const n = (id, fields) => ({ id, kind: 'step', title: `Title ${id}`, status: 'done', what: `${id} result.`, by: 'agent', at: AT, ...fields })
 

@@ -15,6 +15,7 @@ import { apply } from '../src/apply.mjs'
 import { band } from '../src/band.mjs'
 import { card, view } from '../src/card.mjs'
 import { parse } from '../src/graph.mjs'
+import { words } from '../src/i18n.mjs'
 import { show, why } from '../src/inspect.mjs'
 import { openViewer } from '../src/open.mjs'
 import { keepOut, savePort, viewerPort } from '../src/port.mjs'
@@ -30,7 +31,41 @@ const LOG = '.ariadne/log.jsonl'
 const VIEW = '.ariadne/STATE.md'
 const HISTORY = 2000
 const RECENT_COMMITS = 20
-const USAGE = `uso: ariadne <comando>
+// The language: ARIADNE_LANG, else `lang` in .ariadne/config.json, else English (src/i18n.mjs).
+if (!process.env.ARIADNE_LANG) {
+  try { process.env.ARIADNE_LANG = JSON.parse(readFileSync('.ariadne/config.json', 'utf8')).lang ?? '' } catch {}
+}
+
+const say = words({
+  en: {
+    usage: `usage: ariadne <command>
+  init · card [--hook] · summary [--hook] · show <id> · why <id> · log [n] · validate [file]
+  plan <parent> "<step>"… --ref "<approval>"
+  start <id> · close <id> "<outcome>" (--commit sha | --file path | --message text)
+  add <kind> "<title>" --what "…" [--under id] [--after a,b] [--why …] [--detail …] [--reentry id] [--id x] [--start | --done]
+  fill <id> [--what|--why|--detail|--title …] [--commit|--file|--message …]
+  defer <id> <milestone> · replace <id> <successor> · relink <old path> <new>
+  move <id> <parent> [--after a,b] · undo · confirm <id>|--all · reject <id> [successor]
+  apply <ops.json> · sync [--hook] · view [--port n] · open [id] [--port n] · band [--review i]
+  --by user: the action comes from you (move, undo, confirm and reject always do)`,
+    noFile: id => `ariadne: ⚠ ${id} closes with no file or commit: where does the result live? ariadne fill ${id} --file <path>[#section]`,
+    ready: 'ariadne: project ready in .ariadne/ · ask the agent to keep the thread: the graph starts with the first plan',
+    noGraph: 'ariadne: no graph in .ariadne/ yet · the agent starts it with the first plan',
+    invalid: (line, id, rule, message, more) => `⚠ invalid graph: line ${line}${id ? ` ${id}` : ''} [${rule}] ${message}${more}`,
+    untracked: k => `⚠ ${k} commits without Thread: since the graph last changed`,
+    notRecorded: (id, error) => `⚠ Thread: ${id} not recorded: ${error}`,
+    unknown: id => `ariadne: node ${id} not found`,
+    noSummary: error => `ariadne: summary unavailable (${error})`,
+    noCard: error => `ariadne: card unavailable (${error})`,
+    noBand: error => `⚠ ariadne: band unavailable (${error})`,
+    noSync: error => `ariadne: sync failed (${error})`,
+    viewing: port => `ariadne: viewer at http://127.0.0.1:${port}/ (Ctrl+C to stop)`,
+    taken: port => `port ${port} is taken, try --port`,
+    notStarted: why => `ariadne: viewer not started (${why})`,
+    opened: url => `ariadne: viewer at ${url}`,
+  },
+  it: {
+    usage: `uso: ariadne <comando>
   init · card [--hook] · summary [--hook] · show <id> · why <id> · log [n] · validate [file]
   plan <parent> "<passo>"… --ref "<approvazione>"
   start <id> · close <id> "<esito>" (--commit sha | --file path | --message testo)
@@ -39,7 +74,24 @@ const USAGE = `uso: ariadne <comando>
   defer <id> <milestone> · replace <id> <successore> · relink <vecchio percorso> <nuovo>
   move <id> <parent> [--after a,b] · undo · confirm <id>|--all · reject <id> [successore]
   apply <ops.json> · sync [--hook] · view [--port n] · open [id] [--port n] · band [--review i]
-  --by user: l'azione viene da te (move, undo, confirm e reject lo sono sempre)`
+  --by user: l'azione viene da te (move, undo, confirm e reject lo sono sempre)`,
+    noFile: id => `ariadne: ⚠ ${id} si chiude senza file né commit: dove sta il risultato? ariadne fill ${id} --file <percorso>[#sezione]`,
+    ready: "ariadne: progetto pronto in .ariadne/ · chiedi all'agente di tracciare il lavoro: il grafo nasce con il primo piano",
+    noGraph: "ariadne: nessun grafo in .ariadne/ · l'agente lo crea con il primo piano",
+    invalid: (line, id, rule, message, more) => `⚠ grafo non valido: riga ${line}${id ? ` ${id}` : ''} [${rule}] ${message}${more}`,
+    untracked: k => `⚠ ${k} commit senza Thread: dall'ultimo aggiornamento del grafo`,
+    notRecorded: (id, error) => `⚠ Thread: ${id} non registrato: ${error}`,
+    unknown: id => `ariadne: nodo ${id} non trovato`,
+    noSummary: error => `ariadne: riassunto non disponibile (${error})`,
+    noCard: error => `ariadne: scheda non disponibile (${error})`,
+    noBand: error => `⚠ ariadne: banda non disponibile (${error})`,
+    noSync: error => `ariadne: sync non riuscito (${error})`,
+    viewing: port => `ariadne: viewer su http://127.0.0.1:${port}/ (Ctrl+C per chiudere)`,
+    taken: port => `porta ${port} occupata, prova --port`,
+    notStarted: why => `ariadne: viewer non avviato (${why})`,
+    opened: url => `ariadne: viewer su ${url}`,
+  },
+})
 
 const FLAGS = {
   ref: { type: 'string' }, what: { type: 'string' }, why: { type: 'string' }, detail: { type: 'string' },
@@ -59,7 +111,7 @@ function readThread(nodes) {
 }
 
 function usage() {
-  console.error(USAGE)
+  console.error(say('usage'))
   process.exit(2)
 }
 
@@ -128,7 +180,7 @@ function run(ops, by) {
   const closed = r.log.filter(l => l.op === 'close').map(l => parse(r.text).find(n => n.id === l.id))
   for (const n of closed) {
     if (!(n.proof ?? []).some(p => p.type === 'file' || p.type === 'commit')) {
-      console.error(`ariadne: ⚠ ${n.id} si chiude senza file né commit: dove sta il risultato? ariadne fill ${n.id} --file <percorso>[#sezione]`)
+      console.error(say('noFile', n.id))
     }
   }
 }
@@ -146,14 +198,12 @@ function bandJson(review) {
 function init() {
   mkdirSync('.ariadne', { recursive: true })
   for (const name of ['STATE.md', 'local.json']) keepOut(process.cwd(), name)
-  console.log(`ariadne: progetto pronto in .ariadne/ · chiedi all'agente di tracciare il lavoro: il grafo nasce con il primo piano`)
+  console.log(say('ready'))
 }
-
-const NO_GRAPH = "ariadne: nessun grafo in .ariadne/ · l'agente lo crea con il primo piano"
 
 /** The card at the start of a session; with `hook`, the session remembers the summary it stands for. */
 function cardOut(hook) {
-  if (!existsSync(GRAPH)) return console.log(NO_GRAPH)
+  if (!existsSync(GRAPH)) return console.log(say('noGraph'))
   const nodes = parse(readFileSync(GRAPH, 'utf8'))
   const thread = readThread(nodes)
   writeView(nodes, thread)
@@ -164,7 +214,7 @@ function cardOut(hook) {
 
 /** On every prompt; with `hook`, only when it changed since this session last heard it. */
 function summary(hook) {
-  if (!existsSync(GRAPH)) return console.log(NO_GRAPH)
+  if (!existsSync(GRAPH)) return console.log(say('noGraph'))
   const text = summaryText()
   const session = hook && sessionOf()
   if (session) {
@@ -183,11 +233,11 @@ function summaryText() {
   if (errors.length > 0) {
     const [e] = errors
     const more = errors.length > 1 ? ` (+${errors.length - 1})` : ''
-    out.push(`⚠ grafo non valido: riga ${e.line}${e.id ? ` ${e.id}` : ''} [${e.rule}] ${e.message}${more}`)
+    out.push(say('invalid', e.line, e.id, e.rule, e.message, more))
   }
   const recent = commits()
   const k = recent ? untracked(recent) : 0
-  if (k > 0) out.push(`⚠ ${k} commit senza Thread: dall'ultimo aggiornamento del grafo`)
+  if (k > 0) out.push(say('untracked', k))
   return out.join('\n')
 }
 
@@ -206,7 +256,7 @@ function sync(hook) {
   for (const op of opsFromCommits(recent, recorded)) {
     const r = commit([op], 'agent')
     if (r.ok) lines.push(...r.log.map(l => `↺ ${l.text}`))
-    else lines.push(`⚠ Thread: ${op.id} non registrato: ${r.errors[0]}`)
+    else lines.push(say('notRecorded', op.id, r.errors[0]))
   }
   if (lines.length === 0) return
   if (!hook) return console.log(lines.join('\n'))
@@ -216,7 +266,7 @@ function sync(hook) {
 function inspect(fn, id) {
   const text = fn(parse(readFileSync(GRAPH, 'utf8')), id)
   if (text === null) {
-    console.error(`ariadne: nodo ${id} non trovato`)
+    console.error(say('unknown', id))
     process.exit(1)
   }
   console.log(text)
@@ -304,28 +354,28 @@ else if (command === 'summary') {
   try {
     summary(values.hook)
   } catch (error) {
-    console.log(`ariadne: riassunto non disponibile (${error.message})`)
+    console.log(say('noSummary', error.message))
   }
 }
 else if (command === 'card') {
   try {
     cardOut(values.hook)
   } catch (error) {
-    console.log(`ariadne: scheda non disponibile (${error.message})`)
+    console.log(say('noCard', error.message))
   }
 }
 else if (command === 'band') {
   try {
     bandJson(values.review)
   } catch (error) {
-    console.log(JSON.stringify({ viewer: viewerPort(process.cwd()), rows: [{ kind: 'error', text: `⚠ ariadne: banda non disponibile (${error.message})`, actions: [] }] }))
+    console.log(JSON.stringify({ viewer: viewerPort(process.cwd()), rows: [{ kind: 'error', text: say('noBand', error.message), actions: [] }] }))
   }
 }
 else if (command === 'sync') {
   try {
     sync(values.hook)
   } catch (error) {
-    if (!values.hook) console.error(`ariadne: sync non riuscito (${error.message})`)
+    if (!values.hook) console.error(say('noSync', error.message))
   }
 }
 else if (command === 'show' && args[0]) inspect(show, args[0])
@@ -339,12 +389,12 @@ else if (command === 'view') {
     .on('listening', function () {
       const actual = this.address().port
       if (actual !== port) savePort(root, actual)
-      console.log(`ariadne: viewer su http://127.0.0.1:${actual}/ (Ctrl+C per chiudere)`)
+      console.log(say('viewing', actual))
     })
     .on('error', error => {
       // The project's port held by another server: the system picks a free one, saved for band and open.
       if (error.code === 'EADDRINUSE' && !fixed && port !== 0) return listen(0)
-      console.error(`ariadne: viewer non avviato (${error.code === 'EADDRINUSE' ? `porta ${port} occupata, prova --port` : error.message})`)
+      console.error(say('notStarted', error.code === 'EADDRINUSE' ? say('taken', port) : error.message))
       process.exitCode = 1
     })
   listen(Number(values.port) || viewerPort(root))
@@ -358,7 +408,7 @@ else if (command === 'open') {
   const start = () => spawn(process.execPath, [fileURLToPath(import.meta.url), 'view', ...(fixed ? ['--port', values.port] : [])], { detached: true, stdio: 'ignore' }).unref()
   const launch = url => spawnSync('open', [url])
   openViewer({ root, port, id: args[0], probe, start, launch, fixed })
-    .then(url => console.log(`ariadne: viewer su ${url}`))
+    .then(url => console.log(say('opened', url)))
     .catch(error => {
       console.error(`ariadne: ${error.message}`)
       process.exitCode = 1

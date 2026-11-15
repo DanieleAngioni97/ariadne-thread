@@ -11,6 +11,9 @@ import { parseArgs } from 'node:util'
 import { normalizedCost } from './cost.mjs'
 import { grade, gradeContinue } from './grade.mjs'
 
+// The evaluation was frozen with ariadne writing in Italian.
+process.env.ARIADNE_LANG ??= 'it'
+
 const CONDITIONS = ['prima', 'ariadne']
 const ARIADNE = 'node .ariadne/cli/bin/ariadne.mjs'
 const TIMEOUT_MS = 300_000

@@ -3,6 +3,9 @@ import assert from 'node:assert/strict'
 
 import { band, cut } from './band.mjs'
 
+// These tests read what ariadne writes in Italian; English has its own tests.
+process.env.ARIADNE_LANG = 'it'
+
 const line = n => JSON.stringify({ by: 'agent', at: '2026-11-11', proof: [{ type: 'message', ref: 'chat' }], what: n.title, ...n })
 const graph = nodes => nodes.map(line).join('\n') + '\n'
 
