@@ -27,12 +27,25 @@ then `ariadne why <id>` only for the nodes you need. Don't read the whole graph.
 
 ## While you work
 
+The test of the thread: the user can `/clear` at any moment and the next session needs nothing from
+you. Commits are recorded by a hook; what is decided in chat is recorded only if you do it, there and
+then. If you ever feel you should write a recap before `/clear`, something was not recorded when it
+happened: record it now, and next time earlier.
+
 - **A plan the user approved:** `ariadne plan <parent> "<step>" "<step>"… --ref "chat <date>: <what was approved>"`.
   The `--ref` is the evidence that the user agreed; without an approval, don't plan.
 - **Commits:** every commit message carries `Thread: <id>` for the node you work on; the last commit of
   a step carries `Thread: <id> done: <outcome in one line>`. A hook records the commit as proof, closes
   the step and starts the next one. Git reads trailers only in the message's last paragraph, so put
   `Thread:` there, next to any `Co-Authored-By:`, with no blank line between them.
+- **Decided in chat, recorded at once,** in the same turn the user says it:
+  - next steps the user agrees to: `ariadne plan <id> "<step>"… --ref "chat <date>: …"`, even in the
+    middle of a step (they become its sub-steps). `plan` under the current step starts the first new
+    step; when the user wants other work done first, plan and `start` that work, then plan the rest;
+  - a direction that shapes the work ("no names", "less technical", "fix X before Y"):
+    `ariadne fill <id> --message "chat <date>: <the direction>"` on the step it shapes;
+  - a result saved outside the repo, or not committed yet: `ariadne fill <id> --file <path>` as soon as
+    the file exists, so the next session finds it.
 - **Work with no commit** (research, a decision, a document): `ariadne close <id> "<outcome>" --file <path>`
   so the result points to where it lives; `--message "chat <date>"` only when it lives nowhere else.
 - **Off plan,** recorded at once, the user confirms later:
