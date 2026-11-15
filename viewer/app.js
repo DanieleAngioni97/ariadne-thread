@@ -11,6 +11,7 @@ import { fileRef, showRef } from '../src/refs.mjs'
 import { summarize } from '../src/summary.mjs'
 import { validate } from '../src/validate.mjs'
 import { StatusIcon } from './icons.js'
+import { fitTarget, nearest, offscreen, viewportFor } from './nav.js'
 import { dayOffset, groupOf, kindOf, lastActivity, listCounts, listRows, parseLog, searchNodes, timeline } from './views.js'
 import { lang, t } from './i18n.js'
 import {
@@ -32,6 +33,12 @@ const heightOf = node => {
 const PROOFS_SHOWN = 3
 const RELOAD_MS = 2000
 const PANEL_WIDTH = 400
+// The zoom below which a 14px title drops under 11px on screen: automatic fits never go lower.
+const READABLE = 0.8
+const FIT_PAD = 40
+const FLY_PAD = 160
+const ARROWS = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down' }
+const GROUP_HEAD = 48
 
 // The repo as it is now: `ariadne view` serves .ariadne/ and tells the page where the repo lives.
 // The files are read again every RELOAD_MS; `load` swaps the graph in when they change.
@@ -606,11 +613,64 @@ function App() {
   const [arriving, setArriving] = useState(null)
   const flow = useReactFlow()
 
-  // Fitting leaves the panel's strip free while the panel is open.
-  const padding = useCallback(
-    (side = 0.12) => (panelOpen ? { top: side, bottom: side, left: side, right: `${PANEL_WIDTH + 24}px` } : side),
-    [panelOpen])
-  const fit = useCallback(() => flow.fitView({ padding: padding(), duration: 240 }), [padding])
+  const stageRef = useRef(null)
+  /** The part of the stage not under the panel, in screen pixels: every fit frames inside it. */
+  const viewSize = () => ({
+    width: (stageRef.current?.clientWidth ?? innerWidth) - (panelOpen ? PANEL_WIDTH : 0),
+    height: stageRef.current?.clientHeight ?? innerHeight,
+  })
+  /** The box around drawn nodes, from their absolute positions (children of open containers included). */
+  const boundsOf = ids => {
+    const boxes = ids.map(id => flow.getInternalNode(id)).filter(Boolean).map(n => {
+      const at = n.internals.positionAbsolute
+      return { x: at.x, y: at.y, right: at.x + (n.measured.width ?? 0), bottom: at.y + (n.measured.height ?? 0) }
+    })
+    const x = Math.min(...boxes.map(b => b.x))
+    const y = Math.min(...boxes.map(b => b.y))
+    return { x, y, width: Math.max(...boxes.map(b => b.right)) - x, height: Math.max(...boxes.map(b => b.bottom)) - y }
+  }
+  /** Runs `fn` once every node in `ids` is drawn and measured: a frame needs real sizes. */
+  const whenDrawn = (ids, fn) => {
+    let tries = 0
+    const step = () => {
+      if (ids.every(id => flow.getInternalNode(id)?.measured?.width)) fn()
+      else if (tries++ < 60) requestAnimationFrame(step)
+    }
+    requestAnimationFrame(step)
+  }
+  const frame = (ids, { pad = FIT_PAD, maxZoom = 1.1, duration = 240 } = {}) =>
+    flow.setViewport(viewportFor(boundsOf(ids), viewSize(), { pad, maxZoom, minZoom: 0.05 }), { duration })
+  // «Adatta» shows everything drawn, however small: you asked for the overview.
+  const fit = useCallback(() => frame(flow.getNodes().map(n => n.id)), [panelOpen])
+  /** The drawn node that stands for the current one: itself, or the innermost drawn container holding it. */
+  const hereId = () => [...pathTo(data, data.current)].reverse().map(n => n.id).find(id => flow.getInternalNode(id))
+  /**
+   * Fit as much as stays readable: everything, else the widest container of the current node that fits,
+   * else the current node alone.
+   */
+  const readableFit = useCallback(() => {
+    const drawn = flow.getNodes()
+    if (!drawn.length) return
+    const holders = pathTo(data, data.current).map(n => n.id).filter(id => flow.getInternalNode(id))
+    const frames = [drawn.map(n => n.id), ...holders.map(id => [id])].map(ids => ({ ids, bounds: boundsOf(ids) }))
+    const size = viewSize()
+    const usable = { width: size.width - 2 * FIT_PAD, height: size.height - 2 * FIT_PAD }
+    frame(fitTarget(frames, usable, READABLE).ids)
+  }, [panelOpen])
+
+  // «Sei qui» on the edge when the current node is out of sight; it updates when the view stops moving.
+  const [pill, setPill] = useState(null)
+  const placePill = useCallback(() => {
+    const id = hereId()
+    const node = id && flow.getInternalNode(id)
+    if (!node) return setPill(null)
+    const { x, y, zoom } = flow.getViewport()
+    const at = node.internals.positionAbsolute
+    const tall = node.type === 'group' ? GROUP_HEAD : node.measured.height
+    const rect = { x: at.x * zoom + x, y: at.y * zoom + y, width: node.measured.width * zoom, height: tall * zoom }
+    setPill(offscreen(rect, viewSize(), 64))
+  }, [panelOpen])
+  useEffect(() => { const timer = setTimeout(placePill, 320); return () => clearTimeout(timer) }, [graph, panelOpen, placePill])
 
   // A reload keeps the viewport: only a change you made refits the view.
   const drawn = useRef(version)
@@ -621,7 +681,7 @@ function App() {
     layout(expanded, focus, revealed).then(next => {
       if (!alive) return
       setGraph(next)
-      if (!flyTo && !reloaded) requestAnimationFrame(fit)
+      if (!flyTo && !reloaded) whenDrawn(next.nodes.map(n => n.id), readableFit)
     })
     return () => { alive = false }
   }, [expanded, focus, revealed, version])
@@ -642,7 +702,8 @@ function App() {
   // Zoom onto the chosen step once it is drawn, then make it pulse so the eye lands on it.
   useEffect(() => {
     if (!flyTo || !graph.nodes.some(n => n.id === flyTo)) return
-    requestAnimationFrame(() => flow.fitView({ nodes: [{ id: flyTo }], padding: padding(0.6), maxZoom: 1.1, duration: 500 }))
+    const target = flyTo
+    whenDrawn([target], () => frame([target], { pad: FLY_PAD, duration: 500 }))
     setArriving(flyTo)
     setFlyTo(null)
     const timer = setTimeout(() => setArriving(null), 1600)
@@ -696,6 +757,36 @@ function App() {
     reveal(byId.get(id)?.status === 'replaced' ? [...levels, `replaced:${levelKey(id)}`] : levels)
   }, [])
 
+  // In the graph, arrows move the selection to the closest node on that side; Enter opens or closes a container.
+  useEffect(() => {
+    if (view !== 'graph') return
+    const onKey = e => {
+      if (e.target.closest?.('input') || e.metaKey || e.ctrlKey || e.altKey) return
+      if (e.key === 'Enter' && selected && hasChildren(data, selected)) return toggle(selected)
+      const dir = ARROWS[e.key]
+      if (!dir) return
+      e.preventDefault()
+      const rects = new Map()
+      for (const n of flow.getNodes()) {
+        if (n.type === 'more') continue
+        const internal = flow.getInternalNode(n.id)
+        const at = internal.internals.positionAbsolute
+        rects.set(n.id, { x: at.x, y: at.y, width: internal.measured.width, height: n.type === 'group' ? GROUP_HEAD : internal.measured.height })
+      }
+      const next = nearest(rects, rects.has(selected) ? selected : hereId(), dir)
+      if (!next) return
+      setSelected(next)
+      const r = rects.get(next)
+      const { x, y, zoom } = flow.getViewport()
+      const onScreen = { x: r.x * zoom + x, y: r.y * zoom + y, width: r.width * zoom, height: r.height * zoom }
+      const size = viewSize()
+      const shown = onScreen.x >= 0 && onScreen.y >= 0 && onScreen.x + onScreen.width <= size.width && onScreen.y + onScreen.height <= size.height
+      if (!shown) flow.setCenter(r.x + r.width / 2 + (panelOpen ? PANEL_WIDTH / 2 / zoom : 0), r.y + r.height / 2, { zoom, duration: 240 })
+    }
+    addEventListener('keydown', onKey)
+    return () => removeEventListener('keydown', onKey)
+  }, [view, selected, panelOpen, toggle])
+
   const showInGraph = id => {
     setView('graph')
     choose(id)
@@ -728,7 +819,7 @@ function App() {
           </nav>
           <${Search} view=${view} query=${query} setQuery=${setQuery} onGo=${choose} inputRef=${searchRef} />
         </header>
-        <main class="stage">
+        <main class="stage" ref=${stageRef}>
           ${missing && html`<p class="no-graph">${t.noGraph}</p>`}
           <div class="overlays"><${Invalid} /></div>
           ${view === 'timeline' && html`<${Timeline} query=${query} selected=${selected} onSelect=${select} />`}
@@ -751,14 +842,20 @@ function App() {
               if (n.type === 'group' && !e.target.closest('.group-head')) return
               select(n.id)
             }}
-            onMoveStart=${() => hover(null)}
+            onMoveStart=${() => { hover(null); setPill(null) }}
+            onMoveEnd=${placePill}
             nodesDraggable=${false}
             nodesConnectable=${false}
-            minZoom=${0.2}
+            minZoom=${0.05}
             proOptions=${{ hideAttribution: true }}
           >
             <${Background} gap=${24} size=${1} color="#cfd5dc" />
           <//>
+          ${view === 'graph' && pill && html`
+            <button class=${`here-pill to-${pill.side}`} style=${{ left: `${pill.x}px`, top: `${pill.y}px` }} onClick=${() => choose(data.current)}>
+              <span class="dot" aria-hidden="true"></span>${t.here}
+              <svg class="arrow" width="12" height="12" viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8h9M8.5 4.5 12 8l-3.5 3.5" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            </button>`}
           <div class="bottom-tools" hidden=${view !== 'graph'}>
             ${!missing && html`<${Legend} />`}
             <${ZoomTools} onFit=${fit} />

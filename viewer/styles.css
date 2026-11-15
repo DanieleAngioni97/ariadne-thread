@@ -435,3 +435,18 @@ button { font: inherit; color: inherit; }
 .when { color: var(--muted); font-variant-numeric: tabular-nums; margin-right: 4px; }
 .panel-head .link { margin-top: 4px; font-size: 13px; }
 [hidden] { display: none !important; }
+
+/* «Sei qui» on the edge, pointing at the current step when it is out of sight. */
+.here-pill {
+  position: absolute; z-index: 6; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px;
+  border: 0; border-radius: 999px; background: var(--thread); color: #fff; font-size: 12px; font-weight: 600; white-space: nowrap;
+  box-shadow: 0 6px 16px rgba(192, 49, 59, 0.3); cursor: pointer; transform: translate(-50%, -50%);
+  transition: opacity 160ms var(--ease-out), transform 160ms var(--ease-out);
+}
+@starting-style { .here-pill { opacity: 0; transform: translate(-50%, -50%) scale(0.9); } }
+.here-pill:active { transform: translate(-50%, -50%) scale(0.97); }
+.here-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: #fff; }
+.to-left { flex-direction: row-reverse; }
+.to-left .arrow { transform: rotate(180deg); }
+.to-up .arrow { transform: rotate(-90deg); }
+.to-down .arrow { transform: rotate(90deg); }

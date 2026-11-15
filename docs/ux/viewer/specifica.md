@@ -64,8 +64,9 @@ porta al nodo. In Cronologia ed Elenco filtra le righe. `Esc` svuota.
 ## Navigazione (V1, V2, V5, V6)
 - **Corrente sempre disegnato:** nella finestra di un livello il corrente vince sul punto di rientro
   della sua deviazione (bug visto con m4.4.12.5).
-- **Zoom leggibile:** «adatta» non scende sotto lo zoom a cui il titolo è ≥ 11 px; se tutto non ci sta,
-  inquadra il contenitore più grande del corrente che ci sta, altrimenti il corrente.
+- **Zoom leggibile:** gli adattamenti automatici (apertura, cambio di livello) non scendono sotto lo zoom a
+  cui il titolo è ≥ 11 px; se tutto non ci sta, inquadrano il contenitore più grande del corrente che ci
+  sta, altrimenti il corrente. Il pulsante «Adatta» mostra invece tutto: è la panoramica chiesta da te.
 - **Corrente fuori schermo:** una pillola «● Sei qui» sul bordo, nella direzione del nodo; clic = vai.
 - **Tastiera:** frecce = nodo più vicino in quella direzione; Invio = apre/chiude i passi del
   contenitore; `Esc` = chiude il pannello; `/` = cerca. Nessun'altra scorciatoia.
