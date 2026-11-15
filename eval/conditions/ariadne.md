@@ -1,5 +1,5 @@
 # Where the thread of this project lives
 
-The state of the work is in the graph in `.ariadne/` (where we are, what comes next, deviations and
-deferrals). For a step and the reason behind it, run `node .ariadne/cli/bin/ariadne.mjs show <id>` or
-`why <id>`; `log` lists recent events.
+The state of the work is in `.ariadne/STATE.md` (where we are, each step with its files and reasons,
+changed decisions), generated from the graph in `.ariadne/`. For more on a step, run
+`node .ariadne/cli/bin/ariadne.mjs show <id>` or `why <id>`.

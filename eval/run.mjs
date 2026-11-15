@@ -51,7 +51,7 @@ export function settingsFor(condition, { injectDir, edits = false }) {
   const hook = (command, event) => [{ hooks: [{ type: 'command', command: `${command} | tee '${join(injectDir, `${event}.txt`)}'` }] }]
   const hooks = condition === 'prima'
     ? { SessionStart: hook('cat STATE.md', 'SessionStart') }
-    : { SessionStart: hook(`${ARIADNE} summary`, 'SessionStart'), UserPromptSubmit: hook(`${ARIADNE} summary`, 'UserPromptSubmit') }
+    : { SessionStart: hook(`${ARIADNE} card --hook`, 'SessionStart'), UserPromptSubmit: hook(`${ARIADNE} summary --hook`, 'UserPromptSubmit') }
   // The helpers models chain to their reads (`a; echo ---; b | head`): without them a compound command is
   // denied whole. A read outside the copy is still caught by `outside` and excludes the trial.
   const helpers = ['echo', 'head', 'tail', 'wc', 'sort', 'git status'].map(c => `Bash(${c}:*)`)
@@ -129,7 +129,8 @@ export function trial({ fixture, condition, q, key, model, seed, bin = 'claude',
       writeFileSync(join(raw, `${id}.jsonl`), r.stdout ?? '')
     }
 
-    const expected = condition === 'prima' ? ['SessionStart'] : ['SessionStart', 'UserPromptSubmit']
+    // The prompt hook of ariadne speaks only when the summary changed since the card: silent on the first prompt.
+    const expected = ['SessionStart']
     const told = f => existsSync(join(injectDir, f)) && readFileSync(join(injectDir, f), 'utf8').trim() !== ''
     const injected = Object.fromEntries(expected.map(ev => [ev, told(`${ev}.txt`) && (ev !== 'SessionStart' || events.some(e => e.subtype === 'hook_response' && e.hook_event === 'SessionStart' && e.output?.trim()))]))
     const away = outside(events, copy)

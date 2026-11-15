@@ -146,3 +146,6 @@
 {"at":"2026-11-15T11:28Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 32917f2","proof":[{"type":"commit","ref":"32917f2"}]}
 {"at":"2026-11-15T11:39Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 9dba8df","proof":[{"type":"commit","ref":"9dba8df"}]}
 {"at":"2026-11-15T11:59Z","id":"m4.4.13","op":"add","text":"deviazione m4.4.13 Scheda di stato a costo pari a prima, rientra in m4.4.5"}
+{"at":"2026-11-15T12:05Z","id":"m4.4.13","op":"fill","text":"prova per m4.4.13: commit 66c6b11","proof":[{"type":"commit","ref":"66c6b11"}]}
+{"at":"2026-11-15T12:05Z","id":"m4.4.13","op":"fill","text":"prova per m4.4.13: commit c62129d","proof":[{"type":"commit","ref":"c62129d"}]}
+{"at":"2026-11-15T12:05Z","id":"m4.4.13","op":"fill","text":"prova per m4.4.13: commit bc1dba6","proof":[{"type":"commit","ref":"bc1dba6"}]}

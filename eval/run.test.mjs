@@ -37,6 +37,8 @@ test('settings give each condition its hooks and allowed commands; Continua adds
   assert.match(prima.hooks.SessionStart[0].hooks[0].command, /cat STATE\.md/)
   const ariadne = settingsFor('ariadne', { injectDir: '/runs/x', edits: true })
   assert.deepEqual(Object.keys(ariadne.hooks), ['SessionStart', 'UserPromptSubmit'])
+  assert.match(ariadne.hooks.SessionStart[0].hooks[0].command, /ariadne\.mjs card --hook/)
+  assert.match(ariadne.hooks.UserPromptSubmit[0].hooks[0].command, /ariadne\.mjs summary --hook/)
   assert.ok(ariadne.permissions.allow.includes('Bash(node .ariadne/cli/bin/ariadne.mjs:*)'))
   for (const c of ['echo', 'head', 'tail', 'wc', 'sort', 'git status']) assert.ok(prima.permissions.allow.includes(`Bash(${c}:*)`) && ariadne.permissions.allow.includes(`Bash(${c}:*)`))
   assert.ok(!prima.permissions.allow.some(r => r.includes('ariadne')))
@@ -47,7 +49,8 @@ test('settings give each condition its hooks and allowed commands; Continua adds
 test('a trial grades the answer, checks the injection and counts tokens as if nothing were cached', () => {
   const r = at('ariadne', q('where'), { FAKE_ANSWER: 'Looked.\nRISPOSTA: Validate invoice totals | Report malformed invoices' })
   assert.equal(r.status, 'correct')
-  assert.deepEqual(r.injected, { SessionStart: true, UserPromptSubmit: true })
+  // The prompt hook stays silent: the card at the start already said it all.
+  assert.deepEqual(r.injected, { SessionStart: true })
   assert.equal(r.tokens, 1115)
   assert.equal(r.excluded, null)
 })

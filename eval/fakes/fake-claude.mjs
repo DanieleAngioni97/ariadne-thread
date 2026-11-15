@@ -10,7 +10,9 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 const args = process.argv.slice(2)
 const settings = args.includes('--settings') ? JSON.parse(readFileSync(args[args.indexOf('--settings') + 1], 'utf8')) : {}
 const emit = e => console.log(JSON.stringify(e))
-const run = event => (settings.hooks?.[event] ?? []).flatMap(m => m.hooks).map(h => execSync(h.command, { encoding: 'utf8', shell: '/bin/sh' }))
+// Like Claude Code, each hook reads the session on stdin.
+const session = `fake-${process.pid}-${Date.now()}`
+const run = event => (settings.hooks?.[event] ?? []).flatMap(m => m.hooks).map(h => execSync(h.command, { encoding: 'utf8', shell: '/bin/sh', input: JSON.stringify({ session_id: session, hook_event_name: event }) }))
 
 for (const output of run('SessionStart')) emit({ type: 'system', subtype: 'hook_response', hook_event: 'SessionStart', output, stdout: output })
 run('UserPromptSubmit')
