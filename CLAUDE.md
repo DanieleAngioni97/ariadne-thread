@@ -21,7 +21,7 @@ a ogni prompt il riassunto, solo se è cambiato. Non frenare il lavoro per il gr
 - **Piano approvato:** `ariadne plan <parent> "<passo>"… --ref "chat <data>: <cosa hai approvato>"`.
 - **Fuori piano** (deviazione, cosa temporanea, rinvio): `ariadne add detour "<titolo>" --what "…"
   --start` (rientra da solo dove eri; chiudila con `close`), `defer <id> <milestone>`,
-  `replace <id> <successore>`. Entrano subito; la persona le conferma quando vuole.
+  `replace <id> <successore>`, `pause <id>` (un passo avviato troppo presto torna da fare). Entrano subito; la persona le conferma quando vuole.
 - **Ragionamento da investigatore** (quando la persona lo chiede): una `list` per l'indagine, un
   `point` per indizio, una deduzione `point --after <indizi> --why "…"`; un'ipotesi smentita
   `replace <id> <indizio che la smentisce>`. `why <deduzione>` ricostruisce la catena.

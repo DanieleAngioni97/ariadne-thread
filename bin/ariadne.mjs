@@ -44,7 +44,7 @@ const say = words({
     usage: `usage: ariadne <command>
   init · card [--hook] · summary [--hook] · show <id> · why <id> · log [n] · validate [file]
   plan <parent> "<step>"… --ref "<approval>"
-  start <id> · close <id> "<outcome>" (--commit sha | --file path | --message text)
+  start <id> · pause <id> · close <id> "<outcome>" (--commit sha | --file path | --message text)
   add <kind> "<title>" --what "…" [--under id] [--after a,b] [--why …] [--detail …] [--reentry id] [--id x] [--start | --done]
   fill <id> [--what|--why|--detail|--title …] [--commit|--file|--message …]
   defer <id> <milestone> · replace <id> <successor> · relink <old path> <new>
@@ -71,7 +71,7 @@ const say = words({
     usage: `uso: ariadne <comando>
   init · card [--hook] · summary [--hook] · show <id> · why <id> · log [n] · validate [file]
   plan <parent> "<passo>"… --ref "<approvazione>"
-  start <id> · close <id> "<esito>" (--commit sha | --file path | --message testo)
+  start <id> · pause <id> · close <id> "<esito>" (--commit sha | --file path | --message testo)
   add <kind> "<titolo>" --what "…" [--under id] [--after a,b] [--why …] [--detail …] [--reentry id] [--id x] [--start | --done]
   fill <id> [--what|--why|--detail|--title …] [--commit|--file|--message …]
   defer <id> <milestone> · replace <id> <successore> · relink <vecchio percorso> <nuovo>
@@ -341,6 +341,7 @@ function operation(command, args, v) {
   switch (command) {
     case 'plan': return a && args.length > 1 ? { op: 'plan', parent: a, titles: args.slice(1), ref: v.ref } : null
     case 'start': return a ? { op: 'start', id: a } : null
+    case 'pause': return a ? { op: 'pause', id: a } : null
     case 'close': return a ? { op: 'close', id: a, what: b, proof: proofs(v) } : null
     case 'fill': return a ? { op: 'fill', id: a, what: v.what, why: v.why, detail: v.detail, title: v.title, proof: proofs(v) } : null
     case 'add': {

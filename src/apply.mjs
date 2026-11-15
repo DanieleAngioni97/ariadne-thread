@@ -23,6 +23,8 @@ const say = words({
     unknownOp: op => `unknown operation: ${op}`,
     lineError: (line, id, rule, message) => `line ${line} ${id} [${rule}] ${message}`,
     started: (reopened, id, title) => `${reopened ? 'reopened' : 'started'} ${id} ${title}`,
+    notStarted: (id, status) => `pause ${id}: the step is not started (it is ${status})`,
+    paused: (id, title) => `back among the todo steps ${id} ${title}`,
     planned: (title, steps) => `plan for ${title ?? 'the project'}: ${steps}`,
     proofFor: (id, parts) => `proof for ${id}: ${parts}`,
     closed: (id, title, what) => `closed ${id} ${title}: ${what}`,
@@ -53,6 +55,8 @@ const say = words({
     unknownOp: op => `operazione sconosciuta: ${op}`,
     lineError: (line, id, rule, message) => `riga ${line} ${id} [${rule}] ${message}`,
     started: (reopened, id, title) => `${reopened ? 'riaperto' : 'iniziato'} ${id} ${title}`,
+    notStarted: (id, status) => `pause ${id}: il passo non è avviato (è ${status})`,
+    paused: (id, title) => `rimesso tra i da fare ${id} ${title}`,
     planned: (title, steps) => `piano per ${title ?? 'il progetto'}: ${steps}`,
     proofFor: (id, parts) => `prova per ${id}: ${parts}`,
     closed: (id, title, what) => `chiuso ${id} ${title}: ${what}`,
@@ -142,6 +146,16 @@ export function apply({ text, thread, ops, at, by = 'agent' }) {
     },
 
     start({ id }) { start(get(id)) },
+
+    // A step started too early, as a plan's first step is: back to todo, and the thread on its container.
+    pause({ id }) {
+      const n = get(id)
+      if (n.status !== 'active') refuse(say('notStarted', id, n.status))
+      n.status = 'todo'
+      touch(n)
+      if (state.thread.current === id) state.thread.current = n.parent
+      log(id, 'pause', say('paused', id, n.title))
+    },
 
     close({ id, what, proof = [] }) {
       const n = get(id)

@@ -163,6 +163,25 @@ test('start reopens a done node and the log says so', () => {
   assert.equal(r.log[0].text, 'riaperto a Title a')
 })
 
+test('pause puts the current step back among the todo ones and the thread on its parent', () => {
+  const r = ok([{ op: 'pause', id: 'b' }])
+  assert.equal(r.get('b').status, 'todo')
+  assert.equal(r.thread.current, 'm1')
+  assert.equal(r.log[0].text, 'rimesso tra i da fare b Title b')
+})
+
+test('pause of a step started by mistake elsewhere leaves the thread where it is', () => {
+  const text = TEXT.replace('"id":"c","kind":"step","title":"Title c","status":"todo"', '"id":"c","kind":"step","title":"Title c","status":"active"')
+  const r = ok([{ op: 'pause', id: 'c' }], { text })
+  assert.equal(r.get('c').status, 'todo')
+  assert.equal(r.thread.current, 'b')
+})
+
+test('pause refuses a step that is not started', () => {
+  assert.equal(run([{ op: 'pause', id: 'c' }]).errors[0], 'pause c: il passo non è avviato (è todo)')
+  assert.equal(run([{ op: 'pause', id: 'a' }]).errors[0], 'pause a: il passo non è avviato (è done)')
+})
+
 test('fill adds descriptive fields and a proof only once', () => {
   const proof = [{ type: 'commit', ref: 'abc1234' }]
   const r1 = ok([{ op: 'fill', id: 'b', why: 'Because.', proof }])

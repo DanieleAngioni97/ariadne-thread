@@ -43,7 +43,8 @@ command it names, or say in one line why there is nothing to record.
 - **Decided in chat, recorded at once,** in the same turn the user says it:
   - next steps the user agrees to: `ariadne plan <id> "<step>"… --ref "chat <date>: …"`, even in the
     middle of a step (they become its sub-steps). `plan` under the current step starts the first new
-    step; when the user wants other work done first, plan and `start` that work, then plan the rest;
+    step; when the user wants other work done first, plan and `start` that work, then plan the rest.
+    A step started too early goes back among the todo ones with `ariadne pause <id>`;
   - a direction that shapes the work ("no names", "less technical", "fix X before Y"):
     `ariadne fill <id> --message "chat <date>: <the direction>"` on the step it shapes;
   - a result saved outside the repo, or not committed yet: `ariadne fill <id> --file <path>` as soon as

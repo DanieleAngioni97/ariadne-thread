@@ -35,6 +35,7 @@ evidence is recorded and the thread moves on. Things you can say:
 | --- | --- |
 | "ok, go with that plan" | `ariadne plan <parent> "<step>"… --ref "chat <date>: …"` |
 | "fix CI first" | `ariadne add detour "…" --start` (it returns where you were) |
+| "not that one yet, it comes later" | `ariadne pause <id>` (a step started too early goes back to todo) |
 | "move X under Y", "undo", "approve all" | `ariadne move X Y`, `ariadne undo`, `ariadne confirm --all` |
 | "open the graph" | `ariadne open` |
 | "why are we doing this?" | `ariadne why <id>` |

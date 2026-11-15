@@ -151,6 +151,15 @@ test('close writes the graph, moves the thread on and appends a readable log lin
   assert.equal(run(dir, 'log').stdout.split('\n').filter(Boolean).length, 2)
 })
 
+test('pause puts a started step back among the todo ones from the command line', () => {
+  const dir = project({ graph: PLAN, thread: { project: 'p', current: 'a', profile: 'standard' } })
+  const r = run(dir, 'pause', 'a')
+  assert.equal(r.status, 0, r.stderr)
+  assert.equal(r.stdout, '↺ rimesso tra i da fare a Title a\n')
+  assert.equal(nodesOf(dir).find(x => x.id === 'a').status, 'todo')
+  assert.equal(JSON.parse(read(dir, 'thread.json')).current, 'm')
+})
+
 test('ARIADNE_NOW fixes the time written to the graph and the log, so a generated fixture is byte-identical', () => {
   const dir = project({ graph: PLAN, thread: { project: 'p', current: 'a', profile: 'standard' } })
   const at = '2030-01-02T03:04Z'
