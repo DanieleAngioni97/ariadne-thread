@@ -177,9 +177,9 @@ const STRINGS = {
   },
 }
 
-/** ?lang= first, then `lang` in the project's .ariadne/config.json, else English, like the command line. */
-export function pickLang(param, configured) {
-  const wanted = (param ?? configured ?? 'en').slice(0, 2)
+/** ?lang= first, then `lang` in the project's .ariadne/config.json, then the browser's language, else English. */
+export function pickLang(param, configured, browser) {
+  const wanted = (param || configured || browser || 'en').slice(0, 2).toLowerCase()
   return STRINGS[wanted] ? wanted : 'en'
 }
 
@@ -187,5 +187,5 @@ export function pickLang(param, configured) {
 const configured = globalThis.location
   ? await fetch('/.ariadne/config.json').then(r => (r.ok ? r.json() : {}), () => ({})).then(c => c.lang, () => undefined)
   : undefined
-export const lang = pickLang(new URLSearchParams(globalThis.location?.search ?? '').get('lang'), configured)
+export const lang = pickLang(new URLSearchParams(globalThis.location?.search ?? '').get('lang'), configured, globalThis.navigator?.language)
 export const t = STRINGS[lang]

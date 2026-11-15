@@ -11,6 +11,7 @@ when it changed. Your job is to record the work you already do, as you do it, wi
 command. Tracking must never slow the work down: one command at the moment something happens, no more.
 
 Every `ariadne add` prints the id it gave the new node: use that id, don't guess one.
+Write titles, `--what` and outcomes in the language the user speaks with you: the graph is theirs to read.
 Change `.ariadne/` only through `ariadne`: it validates every change and keeps the log, the generated
 `.ariadne/STATE.md` and the band in step. A hand edit can break the graph silently.
 

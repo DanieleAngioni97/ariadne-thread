@@ -1,4 +1,4 @@
-// English is what a new project gets; `lang` in .ariadne/config.json switches to Italian.
+// ariadne speaks the person's language, from the system locale; `lang` in .ariadne/config.json overrides it.
 
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
@@ -9,8 +9,10 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const CLI = fileURLToPath(new URL('./ariadne.mjs', import.meta.url))
-const { ARIADNE_LANG, ...ENV } = process.env
+const { ARIADNE_LANG, LC_ALL, LC_MESSAGES, LANG, ...BASE } = process.env
+const ENV = { ...BASE, LANG: 'en_US.UTF-8' }
 const run = (dir, ...args) => spawnSync(process.execPath, [CLI, ...args], { cwd: dir, encoding: 'utf8', env: ENV })
+const runIn = (locale, dir, ...args) => spawnSync(process.execPath, [CLI, ...args], { cwd: dir, encoding: 'utf8', env: { ...BASE, LANG: locale } })
 
 function started() {
   const dir = mkdtempSync(join(tmpdir(), 'ariadne-en-'))
@@ -19,7 +21,7 @@ function started() {
   return dir
 }
 
-test('a new project speaks English: init, the diary, the card, the summary and the band', () => {
+test('on an English system a new project speaks English: init, the diary, the card, the summary and the band', () => {
   const dir = mkdtempSync(join(tmpdir(), 'ariadne-en-'))
   assert.match(run(dir, 'init').stdout, /^ariadne: project ready in \.ariadne\//)
   assert.match(run(dir, 'card').stdout, /no graph in \.ariadne\/ yet/)
@@ -37,4 +39,21 @@ test('lang "it" in .ariadne/config.json switches to Italian', () => {
   const dir = started()
   writeFileSync(join(dir, '.ariadne', 'config.json'), '{ "lang": "it" }\n')
   assert.match(run(dir, 'card').stdout, /^# Stato del lavoro \(scheda generata da ariadne\)\nSei in: Login/)
+})
+
+test('on an Italian system ariadne speaks Italian, with no setting', () => {
+  const dir = started()
+  assert.match(runIn('it_IT.UTF-8', dir, 'card').stdout, /^# Stato del lavoro \(scheda generata da ariadne\)\nSei in: Login/)
+})
+
+test('lang in .ariadne/config.json wins over the system language', () => {
+  const dir = started()
+  writeFileSync(join(dir, '.ariadne', 'config.json'), '{ "lang": "en" }\n')
+  assert.match(runIn('it_IT.UTF-8', dir, 'card').stdout, /^# Work state/)
+})
+
+test('a system language ariadne does not speak falls back to English', () => {
+  const dir = started()
+  assert.match(runIn('de_DE.UTF-8', dir, 'card').stdout, /^# Work state/)
+  assert.match(runIn('C', dir, 'card').stdout, /^# Work state/)
 })

@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { words } from './i18n.mjs'
+import { systemLang, words } from './i18n.mjs'
 
 const say = words({
   en: { hello: 'hello', closed: (id, what) => `closed ${id}: ${what}`, only: 'only in English' },
@@ -33,4 +33,13 @@ test('in the browser, where there is no process, the viewer sets the language on
   const table = { en: { hello: 'hello' }, it: { hello: 'ciao' } }
   assert.equal(runInNewContext(`${source}; words(table)('hello')`, { table }), 'hello')
   assert.equal(runInNewContext(`${source}; globalThis.ARIADNE_LANG = 'it'; words(table)('hello')`, { table }), 'ciao')
+})
+
+test('the system language comes from LC_ALL, LC_MESSAGES or LANG, as two letters', () => {
+  assert.equal(systemLang({ LANG: 'it_IT.UTF-8' }), 'it')
+  assert.equal(systemLang({ LC_ALL: 'en_GB.UTF-8', LANG: 'it_IT.UTF-8' }), 'en')
+  assert.equal(systemLang({ LC_MESSAGES: 'it', LANG: 'en_US.UTF-8' }), 'it')
+  assert.equal(systemLang({ LANG: 'C' }), '')
+  assert.equal(systemLang({ LANG: 'POSIX' }), '')
+  assert.equal(systemLang({}), '')
 })

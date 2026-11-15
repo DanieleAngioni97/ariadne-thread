@@ -15,7 +15,7 @@ import { apply } from '../src/apply.mjs'
 import { band } from '../src/band.mjs'
 import { card, view } from '../src/card.mjs'
 import { parse } from '../src/graph.mjs'
-import { words } from '../src/i18n.mjs'
+import { systemLang, words } from '../src/i18n.mjs'
 import { show, why } from '../src/inspect.mjs'
 import { openViewer } from '../src/open.mjs'
 import { keepOut, savePort, viewerPort } from '../src/port.mjs'
@@ -31,9 +31,11 @@ const LOG = '.ariadne/log.jsonl'
 const VIEW = '.ariadne/STATE.md'
 const HISTORY = 2000
 const RECENT_COMMITS = 20
-// The language: ARIADNE_LANG, else `lang` in .ariadne/config.json, else English (src/i18n.mjs).
+// The language: ARIADNE_LANG, else `lang` in .ariadne/config.json, else the system's, else English (src/i18n.mjs).
 if (!process.env.ARIADNE_LANG) {
-  try { process.env.ARIADNE_LANG = JSON.parse(readFileSync('.ariadne/config.json', 'utf8')).lang ?? '' } catch {}
+  let configured
+  try { configured = JSON.parse(readFileSync('.ariadne/config.json', 'utf8')).lang } catch {}
+  process.env.ARIADNE_LANG = configured || systemLang(process.env)
 }
 
 const say = words({
