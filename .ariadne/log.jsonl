@@ -345,3 +345,4 @@
 {"at":"2026-11-15T18:24Z","id":"m4.4.12.3","op":"close","text":"chiuso m4.4.12.3 Revisione severa della narrazione di rapporto.html: rapporto riscritto: testo semplice, pagina nuova con logo, screenshot e grafici, versione tecnica allineata","proof":[{"type":"file","ref":"~/ariadne-report/rapporto.html"},{"type":"file","ref":"docs/valutazione/rapporto.md"}]}
 {"at":"2026-11-15T18:24Z","id":"m4.4.12.4","op":"start","text":"iniziato m4.4.12.4 Dieci slide"}
 {"at":"2026-11-15T18:28Z","id":"m4.4.12.4","op":"close","text":"chiuso m4.4.12.4 Dieci slide: dieci slide in HTML animato: filo come avanzamento, labirinto che si disegna, commit che chiude un passo, barre dei risultati; frecce, clic, f per lo schermo intero","proof":[{"type":"file","ref":"~/ariadne-report/slide.html"}]}
+{"at":"2026-11-15T18:29Z","id":"m4.10","op":"fill","text":"prova per m4.10: commit 2f0af39","proof":[{"type":"commit","ref":"2f0af39"}]}
