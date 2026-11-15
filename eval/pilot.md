@@ -46,3 +46,16 @@ For the report (user, 2026-11-15; the plan stays as approved):
   how often the agent stops to ask, how often the user has to prompt a handoff or a state update, how often
   the thread falls behind with nobody updating it. The plan measures none of these as a hypothesis; report
   them as descriptive findings and as a limit.
+
+## Pilot of E2 on the dev scenarios (2026-11-15)
+
+Variant A (Haiku 5.5 on the last turn and the view), 12 checkpoints on dev-03..06, 3 runs per graph.
+
+| Run | Recall (CI) | False alarms on F0 (CI) | Passes | Cost |
+|---|---|---|---|---|
+| e2-pilot-haiku | high, but see false alarms | 0.75 (wrong-current 25, done-not-done 8 of 36 runs) | no | ~0.1 $ |
+| e2-pilot-haiku-2 | 0.98 (0.94–1); unrecorded-detour 0.92 | 0 (0–0) | yes | 0.10 $ |
+
+- The first run flagged a correct graph because the observer prompt did not say what "done" and "current"
+  mean once a step is closed: a step the agent says it starts next is current, a finished step is done even
+  if its tests were not run (`3fafb3e`). Only the prompt changed; the turns are the same frozen ones.
