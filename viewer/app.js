@@ -10,6 +10,7 @@ import { parse } from '../src/graph.mjs'
 import { fileRef, showRef } from '../src/refs.mjs'
 import { summarize } from '../src/summary.mjs'
 import { validate } from '../src/validate.mjs'
+import { StatusIcon } from './icons.js'
 import { lang, t } from './i18n.js'
 import {
   anomalies, cameFrom, defaultExpanded, emptyNote, fromGraph, hasChildren, holdsCurrent, labelOf, ledTo, panelRows, pathTo, threadSet,
@@ -27,7 +28,6 @@ const heightOf = node => {
   const lines = Math.ceil(`${node.id} ${node.title}`.length / STEP_CHARS_PER_LINE)
   return Math.max(STEP.height, 42 + 19 * lines)
 }
-const GLYPH = { done: '✓', active: '●', todo: '○', deferred: '↷', dropped: '⊘', detour: '⤷' }
 const PROOFS_SHOWN = 3
 const RELOAD_MS = 2000
 
@@ -192,8 +192,8 @@ function RoutedEdge({ id, data: { sections }, sourceX, sourceY, targetX, targetY
 
 const Ctx = React.createContext(null)
 
-/** The coloured badge that says what a node is, readable even zoomed out. */
-const Badge = ({ node }) => html`<span class="badge" aria-hidden="true">${GLYPH[kindOf(node)]}</span>`
+/** The drawn icon that says what a node is, in the node's colour. */
+const Badge = ({ node, size }) => html`<span class="badge"><${StatusIcon} kind=${kindOf(node)} size=${size} /></span>`
 const Alert = ({ node }) => problems.has(node.id) && html`<span class="alert" title=${t.anomaly[problems.get(node.id)]}>!</span>`
 
 function Step({ data: { node } }) {
@@ -203,7 +203,7 @@ function Step({ data: { node } }) {
     <div class=${`step ${classesOf(node, selected, arriving)}`}
       onMouseEnter=${e => hover(node, e.currentTarget)} onMouseLeave=${() => hover(null)}>
       <${Handle} type="target" position=${Position.Left} />
-      <${Badge} node=${node} />
+      <${Badge} node=${node} size=${20} />
       <div class="txt">
         <div class="title"><span class="nid">${node.id}</span> ${node.title}${node.uncertain && html` <span class="unsure" title=${node.uncertain} aria-label=${t.uncertain}>?</span>`}</div>
         <div class="meta">${labelText(node)}</div>
@@ -222,7 +222,7 @@ function Group({ data: { node } }) {
     <div class=${`group ${classesOf(node, selected, arriving)}`}>
       <${Handle} type="target" position=${Position.Left} />
       <div class="group-head" onMouseEnter=${e => hover(node, e.currentTarget)} onMouseLeave=${() => hover(null)}>
-        <${Badge} node=${node} />
+        <${Badge} node=${node} size=${20} />
         <div class="title"><span class="nid">${node.id}</span> ${node.title}</div>
         <div class="meta">${labelText(node)}</div>
         <button class="expand" aria-label=${t.close(node.title)}
@@ -263,7 +263,7 @@ function Tip({ tip }) {
 
 const Chip = ({ node, onSelect }) => html`
   <button class=${`chip k-${kindOf(node)}`} onClick=${() => onSelect(node.id)}>
-    <${Badge} node=${node} /><span>${node.title}</span>
+    <${Badge} node=${node} size=${14} /><span>${node.title}</span>
   </button>`
 
 /** One proof: a commit sha, a file that opens in the editor, or the message that approved it. */
@@ -312,7 +312,7 @@ function Panel({ node, expanded, focus, onSelect, onToggle, onFocus }) {
     <aside class="panel" aria-label=${t.panel.label}>
       <header class=${`panel-head k-${kindOf(node)}`}>
         <div class=${`status ${isCurrent ? 'is-here' : ''}`}>
-          <${Badge} node=${node} />
+          <${Badge} node=${node} size=${18} />
           <span>${labelText(node)}${isCurrent ? ` · ${t.here}` : ''}</span>
         </div>
         <h2><span class="nid">${node.id}</span> ${node.title}</h2>
@@ -350,12 +350,32 @@ function Panel({ node, expanded, focus, onSelect, onToggle, onFocus }) {
     </aside>`
 }
 
-/** The legend in the words of specifica § Testi, compact, at the bottom of the canvas. */
+const LEGEND_KEY = 'ariadne.legend'
+const KINDS = ['active', 'done', 'todo', 'deferred', 'detour', 'dropped']
+
+/**
+ * The legend behind a small button: open on the first visit, then as you left it.
+ * The same icons as the nodes, then the four cues that are not icons.
+ */
 function Legend() {
+  const [open, setOpen] = useState(() => localStorage.getItem(LEGEND_KEY) !== 'closed')
+  const flip = () => setOpen(o => {
+    localStorage.setItem(LEGEND_KEY, o ? 'closed' : 'open')
+    return !o
+  })
   return html`
-    <div class="legend" aria-label="Legend">
-      ${t.legend.map(([key, text]) => html`<span class=${`key-${key}`} key=${key}>${text}</span>`)}
-      ${problems.size > 0 && html`<span class="anomaly-key"><span class="alert">!</span>${t.anomalyKey}</span>`}
+    <div class="legend-wrap">
+      ${open && html`
+        <div class="legend" id="legend" role="region" aria-label=${t.legendTitle}>
+          <ul class="legend-kinds">
+            ${KINDS.map(kind => html`<li key=${kind} class=${`k-${kind}`}><${StatusIcon} kind=${kind} /> ${t.kinds[kind]}</li>`)}
+          </ul>
+          <ul class="legend-cues">
+            ${t.cues.map(([key, text]) => html`<li key=${key} class=${`cue-${key}`}><span class="cue" aria-hidden="true"></span>${text}</li>`)}
+            ${problems.size > 0 && html`<li class="cue-anomaly"><span class="alert">!</span>${t.anomalyKey}</li>`}
+          </ul>
+        </div>`}
+      <button class="tool" aria-expanded=${open} aria-controls="legend" onClick=${flip}>${t.legendTitle}</button>
     </div>`
 }
 

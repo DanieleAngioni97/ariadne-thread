@@ -43,10 +43,10 @@ const STRINGS = {
     showAll: 'Show all',
     open: (n, title) => `Open ${n} steps inside ${title}`,
     close: title => `Close ${title}`,
-    legend: [
-      ['current', '● current (red border)'], ['thread', 'red line: where it comes from'], ['done', '✓ done'],
-      ['todo', '○ to do'], ['deferred', '↷ deferred'], ['dropped', '⊘ replaced or rejected'], ['detour', '⤷ detour'],
-      ['review', 'orange dashes: to confirm'], ['uncertain', '? uncertain proof'], ['user', 'by you: decided by you'],
+    legendTitle: 'Legend',
+    kinds: { active: 'in progress', done: 'done', todo: 'to do', deferred: 'deferred', detour: 'detour', dropped: 'replaced or rejected' },
+    cues: [
+      ['current', 'current step'], ['thread', 'where it comes from'], ['review', 'to confirm'], ['uncertain', 'uncertain proof'],
     ],
     panel: {
       label: 'Step details',
@@ -108,10 +108,10 @@ const STRINGS = {
     showAll: 'Mostra tutto',
     open: (n, title) => `Apri i ${n} passi dentro ${title}`,
     close: title => `Chiudi ${title}`,
-    legend: [
-      ['current', '● corrente (bordo rosso)'], ['thread', 'linea rossa: da dove viene'], ['done', '✓ fatto'],
-      ['todo', '○ da fare'], ['deferred', '↷ rimandato'], ['dropped', '⊘ sostituito o rifiutato'], ['detour', '⤷ deviazione'],
-      ['review', 'tratteggio arancione: da confermare'], ['uncertain', '? prova incerta'], ['user', 'da te: deciso da te'],
+    legendTitle: 'Legenda',
+    kinds: { active: 'in corso', done: 'fatto', todo: 'da fare', deferred: 'rimandato', detour: 'deviazione', dropped: 'sostituito o rifiutato' },
+    cues: [
+      ['current', 'passo corrente'], ['thread', 'da dove viene'], ['review', 'da confermare'], ['uncertain', 'prova incerta'],
     ],
     panel: {
       label: 'Dettagli del passo',

@@ -95,12 +95,8 @@ button { font: inherit; color: inherit; }
 .k-detour { --k: var(--detour); --k-soft: var(--detour-soft); }
 .k-dropped { --k: var(--dropped); --k-soft: var(--dropped-soft); }
 
-.badge {
-  flex: none; display: inline-grid; place-items: center;
-  width: 26px; height: 26px; border-radius: 50%;
-  background: var(--k); color: #fff; font-size: 14px; font-weight: 700; line-height: 1;
-}
-.k-todo .badge, .k-dropped .badge { background: var(--surface); color: var(--k); border: 2px dashed var(--k); }
+.badge { flex: none; display: inline-grid; place-items: center; color: var(--k); line-height: 0; }
+.icon { display: block; flex: none; }
 
 /* Steps */
 .step {
@@ -206,18 +202,37 @@ button { font: inherit; color: inherit; }
 }
 .react-flow__node-group, .react-flow__node-step, .react-flow__node-more { padding: 0; border: 0; background: none; box-shadow: none; }
 
-/* Legend */
-.legend {
-  position: absolute; left: 16px; bottom: 16px; z-index: 5;
-  display: flex; flex-wrap: wrap; align-items: center; gap: 14px; max-width: calc(100% - 140px);
-  padding: 8px 12px; border-radius: 10px;
-  background: var(--surface); border: 1px solid var(--line); font-size: 12px; color: var(--ink);
+/* Small tools on the canvas: quiet until hovered, never taller than 28px. */
+.tool {
+  height: 28px; padding: 0 10px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface); font-size: 12px; font-weight: 500; color: var(--ink); cursor: pointer;
+  box-shadow: 0 1px 2px rgba(24, 32, 43, 0.06);
+  transition: border-color 120ms ease, transform 120ms var(--ease-out);
 }
-.legend > span { display: inline-flex; align-items: center; gap: 6px; }
-.legend .badge { width: 18px; height: 18px; font-size: 11px; }
-.legend .alert { width: 18px; height: 18px; font-size: 11px; }
-.legend .key-thread, .legend .key-current { color: var(--thread); }
-.legend .key-review { color: #d9822b; }
+.tool:hover { border-color: var(--line-strong); }
+.tool:active { transform: scale(0.97); }
+.tool[aria-expanded='true'], .tool[aria-pressed='true'] { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+
+/* Legend: behind its button, bottom left; the same icons as the nodes. */
+.legend-wrap { position: absolute; left: 16px; bottom: 16px; z-index: 5; display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.legend {
+  display: grid; grid-template-columns: auto auto; gap: 4px 20px; padding: 10px 14px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--line); box-shadow: 0 8px 24px rgba(24, 32, 43, 0.12);
+  font-size: 12px; transform-origin: bottom left;
+  transition: opacity 160ms var(--ease-out), transform 160ms var(--ease-out);
+}
+@starting-style { .legend { opacity: 0; transform: translateY(4px) scale(0.98); } }
+.legend ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; align-content: start; }
+.legend li { display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.legend-kinds li { color: var(--ink); }
+.legend-kinds .icon { color: var(--k); }
+.cue { flex: none; width: 16px; height: 12px; border-radius: 3px; }
+.cue-current .cue { border: 2px solid var(--thread); box-shadow: 0 0 0 2px var(--thread-soft); }
+.cue-thread .cue { height: 0; border-top: 2.5px solid var(--thread); border-radius: 0; }
+.cue-review .cue { border: 2px dashed #d9822b; }
+.cue-uncertain .cue { border: 1px solid var(--line); opacity: 0.6; }
+.cue-uncertain .cue::after { content: '?'; display: block; font-size: 9px; font-weight: 700; line-height: 8px; text-align: center; }
+.legend .alert { width: 16px; height: 16px; font-size: 10px; }
 
 /* Detail panel */
 .panel {
@@ -227,7 +242,6 @@ button { font: inherit; color: inherit; }
 .panel-head { padding: 22px 24px 18px; border-top: 6px solid var(--k); background: var(--k-soft); }
 .panel section { padding: 0 24px; }
 .status { font-size: 13px; color: var(--k); font-weight: 600; display: flex; gap: 8px; align-items: center; }
-.status .badge { width: 22px; height: 22px; font-size: 12px; }
 .status.is-here span:last-child { color: var(--thread); }
 .panel h2 { font-size: 22px; line-height: 1.25; margin: 10px 0 8px; }
 .panel h3 {
@@ -246,9 +260,8 @@ button { font: inherit; color: inherit; }
 .chip {
   display: inline-flex; align-items: center; gap: 6px;
   border: 1px solid var(--line); background: var(--surface); border-radius: 999px;
-  padding: 3px 10px 3px 4px; font-size: 13px; cursor: pointer;
+  padding: 3px 10px 3px 6px; font-size: 13px; cursor: pointer;
 }
-.chip .badge { width: 18px; height: 18px; font-size: 10px; }
 .chip:hover { border-color: var(--ink); }
 .chip:active { transform: scale(0.97); }
 .row-actions { display: flex; gap: 8px; margin-top: 8px; }
@@ -280,3 +293,4 @@ button { font: inherit; color: inherit; }
   .shell { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; }
   .panel { border-left: 0; border-top: 1px solid var(--line); max-height: 45vh; }
 }
+.legend .k-dropped, .chip.k-dropped { opacity: 1; }
