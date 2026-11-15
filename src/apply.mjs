@@ -102,6 +102,8 @@ export function apply({ text, thread, ops, at, by = 'agent' }) {
     const known = new Set((n.proof ?? []).map(p => `${p.type}:${p.ref}`))
     const fresh = proof.filter(p => !known.has(`${p.type}:${p.ref}`))
     if (fresh.length) n.proof = [...(n.proof ?? []), ...fresh]
+    // A commit or a file is the evidence an uncertain node was missing; a chat message is not.
+    if (n.uncertain && fresh.some(p => p.type !== 'message')) delete n.uncertain
     return fresh
   }
 

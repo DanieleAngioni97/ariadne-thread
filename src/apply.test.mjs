@@ -63,6 +63,15 @@ test('a plan under the current node starts its first step; under another node it
   assert.equal(elsewhere.get('m2.1').status, 'todo')
 })
 
+test('a commit or a file settles an uncertain node; a chat message alone does not', () => {
+  const text = TEXT + JSON.stringify(n('h', { parent: 'm1', proof: [], uncertain: 'historical node, no proof found in the trace' })) + '\n'
+  const chat = ok([{ op: 'fill', id: 'h', proof: [{ type: 'message', ref: 'chat' }] }], { text })
+  assert.equal(chat.get('h').uncertain, 'historical node, no proof found in the trace')
+  const file = ok([{ op: 'fill', id: 'h', proof: [{ type: 'file', ref: 'docs/research.md' }] }], { text })
+  assert.equal(file.get('h').uncertain, undefined)
+  assert.deepEqual(file.get('h').proof, [{ type: 'file', ref: 'docs/research.md' }])
+})
+
 test('close records the result and its proof, then starts the next step', () => {
   const r = ok([{ op: 'close', id: 'b', what: 'B is done.', proof: [{ type: 'commit', ref: 'abc1234' }] }])
   assert.equal(r.get('b').status, 'done')
