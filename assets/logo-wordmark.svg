@@ -1,9 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 236 64" role="img" aria-label="ariadne">
-  <title>ariadne</title>
-  <style>.t{stroke:#c0313b}.d{fill:#c0313b}.w{fill:#18202b}@media (prefers-color-scheme:dark){.t{stroke:#ec5a63}.d{fill:#ec5a63}.w{fill:#eef1f4}}</style>
-  <path class="t" d="M12 14 H40 a8 8 0 0 1 0 16 H37 c-4 0 -7 -3 -7 -7 a4.5 4.5 0 0 1 9 0 c0 4 -3 7 -7 7 H24 a8 8 0 0 0 0 16 H44" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle class="d" cx="12" cy="14" r="4"/>
-  <circle class="d" cx="48" cy="46" r="8" opacity="0.2"/>
-  <circle class="d" cx="48" cy="46" r="4.5"/>
-  <text class="w" x="66" y="43" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="34" font-weight="600" letter-spacing="-0.5">ariadne</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 64" role="img" aria-label="ariadne"><title>ariadne</title><style>.s{fill:none;stroke:#c0313b;stroke-width:6;stroke-linecap:round;stroke-linejoin:round}.f{fill:#c0313b}.w{fill:#18202b}@media (prefers-color-scheme: dark){.s{stroke:#ec5a63}.f{fill:#ec5a63}.w{fill:#eef1f4}}</style><mask id="m"><rect width="64" height="64" fill="#fff"/><g fill="none" stroke="#000" stroke-width="6" stroke-linecap="round" transform="rotate(-30 32 32)"><path d="M0 24 Q32 8 64 24"/><path d="M0 46 Q32 30 64 46"/></g></mask><circle class="f" cx="32" cy="32" r="29" mask="url(#m)"/><text class="w" x="78" y="46" font-family="ui-sans-serif,-apple-system,'Segoe UI',Helvetica,Arial,sans-serif" font-size="42" font-weight="700" letter-spacing="-0.5">ariadne</text></svg>
