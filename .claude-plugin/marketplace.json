@@ -1,0 +1,11 @@
+{
+  "name": "ariadne-thread",
+  "owner": { "name": "DanieleAngioni97" },
+  "plugins": [
+    {
+      "name": "ariadne",
+      "source": "./",
+      "description": "A thread through long work with Claude Code: where you are, where you came from, what comes next"
+    }
+  ]
+}
