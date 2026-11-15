@@ -39,14 +39,11 @@ export function summarize(nodes, thread) {
     ? ['Rientri in sospeso:', ...open.map(n => `- ${n.title} → rientra in ${n.reentry}`)]
     : ['Rientri in sospeso: nessuno']
 
-  const confirm = nodes.filter(n => n.review === 'confirm').length
-  const review = confirm > 0 ? [`Da confermare: ${confirm} modifiche dell'agente (ariadne confirm --all)`] : []
   const files = current ? usefulFiles(g, current.id) : []
 
   const nextId = current && g.next(current.id)
   const tail = [
     ...reentries,
-    ...review,
     `Prossimo: ${nextId ? `${nextId} ${g.get(nextId).title}` : 'nessuno nel piano'}`,
     ...(files.length ? [`File utili: ${files.join(' · ')}`] : []),
     'Per approfondire: ariadne show <id> · ariadne why <id>',

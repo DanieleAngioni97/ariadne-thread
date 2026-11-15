@@ -53,10 +53,9 @@ test('open detours are listed with where they re-enter', () => {
   assert.match(summarize(nodes, { current: 'x' }), /Rientri in sospeso:\n- Side question → rientra in d\n/)
 })
 
-test('the review line appears only when the agent left structure to confirm', () => {
-  assert.doesNotMatch(summarize(NODES, { current: 'd' }), /Da confermare/)
+test('the queue to confirm stays out of the summary: it is for the person, and it made the agent stop to ask', () => {
   const nodes = [...NODES, n('r1', { parent: 'm2', status: 'todo', review: 'confirm' }), n('r2', { parent: 'm2', status: 'todo', review: 'confirm' })]
-  assert.match(summarize(nodes, { current: 'd' }), /\nDa confermare: 2 modifiche dell'agente \(ariadne confirm --all\)\nProssimo:/)
+  assert.doesNotMatch(summarize(nodes, { current: 'd' }), /confermare|confirm/)
 })
 
 test('useful files come from the current node, then its containers, at most three', () => {
