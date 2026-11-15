@@ -322,3 +322,5 @@
 {"at":"2026-11-15T17:41Z","id":"m4.4.12.3.1","op":"undo","text":"annullato: m4.4.12.3.1 torna sotto m4.4.12.3"}
 {"at":"2026-11-15T17:41Z","id":"m4.4.12.3.1","op":"move","text":"spostato m4.4.12.3.1 sotto m4.4.12.3 (correzione tua)"}
 {"at":"2026-11-15T17:41Z","id":"m4.10","op":"add","text":"aggiunto passo m4.10 Rimettere un passo avviato tra quelli da fare sotto m4, da m4.8"}
+{"at":"2026-11-15T17:43Z","id":"m4.7","op":"close","text":"chiuso m4.7 Regola nella skill: registrare subito approvazioni e correzioni in chat: the skill asks to record chat approvals, directions and outside files at once; beats the old skill on 2 scenarios","proof":[{"type":"commit","ref":"1fefb4b"}]}
+{"at":"2026-11-15T17:43Z","id":"m4.8","op":"start","text":"iniziato m4.8 Controllo automatico a fine turno: segnala il filo rimasto indietro"}
