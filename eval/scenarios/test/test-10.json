@@ -1,0 +1,889 @@
+{
+  "id": "test-10",
+  "project": "registry-consent",
+  "start": "2026-03-02T09:00:00Z",
+  "events": [
+    {
+      "type": "commit",
+      "message": "chore: scaffold registry-consent service",
+      "files": {
+        "README.md": "# registry-consent\n\nConsent management service for the hospital research registry.\nRecords, validates and withdraws participant consent per study.\n",
+        "pyproject.toml": "[project]\nname = \"registry-consent\"\nversion = \"0.1.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"fastapi==0.110\", \"pydantic==2.6\", \"pyyaml==6.0.1\"]\n\n[project.optional-dependencies]\ntest = [\"pytest==8.0\"]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add Makefile and gitignore",
+      "files": {
+        "Makefile": "test:\n\tpytest -q\n\nrun:\n\tuvicorn src.app:app --reload\n",
+        ".gitignore": "__pycache__/\n.venv/\n*.sqlite\nvar/\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: describe the consent model",
+      "files": {
+        "docs/consent-model.md": "# Consent model\n\n## Records\nOne record per signature; corrections create a new record.\n\n## Granularity\nConsent is given per study, not for the whole registry, because the ethics committee approves each study separately and a participant may refuse one study but accept another.\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m1",
+      "title": "M1 Consent records",
+      "what": "Record, scope and validate participant consent for the registry studies."
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-02: consent schema, per-study scopes, validation and intake endpoint",
+      "steps": [
+        {
+          "key": "model",
+          "title": "Consent record schema"
+        },
+        {
+          "key": "scopes",
+          "title": "Consent scopes per study"
+        },
+        {
+          "key": "vform",
+          "title": "Validation of consent form versions"
+        },
+        {
+          "key": "vpid",
+          "title": "Validation of participant identifiers"
+        },
+        {
+          "key": "intake",
+          "title": "Consent intake endpoint"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "model"
+    },
+    {
+      "type": "commit",
+      "step": "model",
+      "message": "feat(model): add consent record dataclass",
+      "files": {
+        "src/model/consent.py": "from dataclasses import dataclass\nfrom datetime import datetime\n\n@dataclass(frozen=True)\nclass Consent:\n    participant_mrn: str\n    study_id: str\n    form_version: str\n    signed_at: datetime\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "model",
+      "message": "feat(model): make consent records append-only",
+      "files": {
+        "src/model/store.py": "class ConsentStore:\n    def __init__(self):\n        self._records = []\n\n    def append(self, consent):\n        self._records.append(consent)\n\n    def history(self, mrn):\n        return [c for c in self._records if c.participant_mrn == mrn]\n"
+      },
+      "done": true,
+      "why": "Records are append-only so a correction never overwrites what the participant originally signed."
+    },
+    {
+      "type": "commit",
+      "step": "scopes",
+      "message": "feat(scopes): attach each consent to a single study",
+      "files": {
+        "src/scopes/scope.py": "def scope_for(consent, studies):\n    if consent.study_id not in studies:\n        raise ValueError(f\"unknown study {consent.study_id}\")\n    return studies[consent.study_id]\n"
+      },
+      "proofFiles": [
+        "docs/consent-model.md#Granularity"
+      ]
+    },
+    {
+      "type": "commit",
+      "step": "scopes",
+      "message": "feat(scopes): reject consents naming several studies",
+      "files": {
+        "src/scopes/scope.py": "def single_study(study_field: str) -> str:\n    if \",\" in study_field:\n        raise ValueError(\"one consent covers one study\")\n    return study_field.strip()\n\ndef scope_for(consent, studies):\n    if consent.study_id not in studies:\n        raise ValueError(f\"unknown study {consent.study_id}\")\n    return studies[consent.study_id]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "scopes",
+      "message": "feat(scopes): load study list from registry config",
+      "files": {
+        "src/scopes/studies.py": "import yaml\n\ndef load_studies(path=\"config/studies.yaml\"):\n    with open(path) as f:\n        return {s[\"id\"]: s for s in yaml.safe_load(f)[\"studies\"]}\n",
+        "config/studies.yaml": "studies:\n  - id: CARDIO-07\n    title: Heart failure cohort\n  - id: ONCO-12\n    title: Breast cancer biobank\n"
+      },
+      "done": true
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump pydantic to 2.9",
+      "files": {
+        "pyproject.toml": "[project]\nname = \"registry-consent\"\nversion = \"0.1.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"fastapi==0.110\", \"pydantic==2.9\", \"pyyaml==6.0.1\"]\n\n[project.optional-dependencies]\ntest = [\"pytest==8.0\"]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vform",
+      "message": "feat(validation): check the signed form version",
+      "files": {
+        "src/validation/form_version.py": "APPROVED = {\"CARDIO-07\": {\"v3\", \"v4\"}, \"ONCO-12\": {\"v2\"}}\n\ndef check_form_version(consent):\n    if consent.form_version not in APPROVED.get(consent.study_id, set()):\n        raise ValueError(\"form version not approved by the ethics committee\")\n"
+      },
+      "why": "A consent is only valid for research if the signed form version was approved by the ethics committee."
+    },
+    {
+      "type": "commit",
+      "step": "vform",
+      "message": "feat(validation): load approved form versions from config",
+      "files": {
+        "src/validation/form_version.py": "import yaml\n\ndef approved_versions(path=\"config/form_versions.yaml\"):\n    with open(path) as f:\n        return yaml.safe_load(f)\n\ndef check_form_version(consent, approved):\n    if consent.form_version not in approved.get(consent.study_id, []):\n        raise ValueError(\"form version not approved by the ethics committee\")\n",
+        "config/form_versions.yaml": "CARDIO-07: [v3, v4]\nONCO-12: [v2]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vform",
+      "message": "test(validation): cover retired form versions",
+      "files": {
+        "tests/test_form_version.py": "import pytest\nfrom src.validation.form_version import check_form_version\n\ndef test_retired_version_rejected(consent_factory):\n    approved = {\"CARDIO-07\": [\"v4\"]}\n    with pytest.raises(ValueError):\n        check_form_version(consent_factory(form_version=\"v2\"), approved)\n"
+      },
+      "done": true
+    },
+    {
+      "type": "commit",
+      "step": "vpid",
+      "message": "feat(validation): verify participant MRN checksum",
+      "files": {
+        "src/validation/participant_id.py": "def mrn_is_valid(mrn: str) -> bool:\n    if len(mrn) != 8 or not mrn.isdigit():\n        return False\n    body, check = mrn[:7], int(mrn[7])\n    return sum(int(d) * (i + 2) for i, d in enumerate(body)) % 11 % 10 == check\n"
+      },
+      "why": "Identifiers are checked against the hospital MRN checksum so a typo cannot attach consent to the wrong patient."
+    },
+    {
+      "type": "detour",
+      "key": "tzfix",
+      "title": "Signature dates in local time",
+      "what": "Consents signed on the night ward were stored one day early because dates were parsed as UTC."
+    },
+    {
+      "type": "commit",
+      "step": "tzfix",
+      "message": "fix(model): parse signature dates in Europe/Rome",
+      "files": {
+        "src/model/dates.py": "from datetime import datetime\nfrom zoneinfo import ZoneInfo\n\nHOSPITAL_TZ = ZoneInfo(\"Europe/Rome\")\n\ndef parse_signed_at(value: str) -> datetime:\n    return datetime.fromisoformat(value).replace(tzinfo=HOSPITAL_TZ)\n"
+      },
+      "done": true
+    },
+    {
+      "type": "commit",
+      "step": "vpid",
+      "message": "test(validation): reject MRNs with a bad checksum",
+      "files": {
+        "tests/test_participant_id.py": "from src.validation.participant_id import mrn_is_valid\n\ndef test_bad_checksum_rejected():\n    assert not mrn_is_valid(\"12345670\")\n\ndef test_letters_rejected():\n    assert not mrn_is_valid(\"1234A678\")\n"
+      },
+      "done": true
+    },
+    {
+      "type": "commit",
+      "step": "intake",
+      "message": "feat(intake): add POST /consents",
+      "files": {
+        "src/intake/routes.py": "from fastapi import APIRouter\n\nrouter = APIRouter()\n\n@router.post(\"/consents\", status_code=201)\ndef create_consent(payload: dict):\n    return {\"status\": \"recorded\"}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: draft the public API",
+      "files": {
+        "docs/api-draft.md": "# API draft\n\n- POST /consent (single study per call)\n- DELETE /consent/{id} to withdraw\n\nOpen question: should withdrawal delete the record?\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "intake",
+      "message": "feat(intake): reject consents for unknown studies",
+      "files": {
+        "src/intake/errors.py": "from fastapi import HTTPException\n\nclass UnknownStudy(HTTPException):\n    def __init__(self, study_id):\n        super().__init__(status_code=422, detail=f\"unknown study {study_id}\")\n",
+        "src/intake/routes.py": "from fastapi import APIRouter\nfrom .errors import UnknownStudy\n\nrouter = APIRouter()\n\n@router.post(\"/consents\", status_code=201)\ndef create_consent(payload: dict, studies: dict):\n    if payload[\"study_id\"] not in studies:\n        raise UnknownStudy(payload[\"study_id\"])\n    return {\"status\": \"recorded\"}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "intake",
+      "message": "feat(intake): record signer role (participant or legal guardian)",
+      "files": {
+        "src/intake/signer.py": "SIGNER_ROLES = {\"participant\", \"legal_guardian\"}\n\ndef check_signer(role: str) -> str:\n    if role not in SIGNER_ROLES:\n        raise ValueError(f\"unsupported signer role {role}\")\n    return role\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: add contributing guide",
+      "files": {
+        "CONTRIBUTING.md": "# Contributing\n\n- Run `make test` before pushing.\n- Never commit real MRNs; use the fixtures in tests/.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "intake",
+      "message": "test(intake): cover intake happy path and errors",
+      "files": {
+        "tests/test_intake.py": "def test_unknown_study_is_rejected(client):\n    r = client.post(\"/consents\", json={\"study_id\": \"NOPE\"})\n    assert r.status_code == 422\n"
+      },
+      "done": true
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "milestone",
+      "key": "m2",
+      "title": "M2 Withdrawal and audit",
+      "what": "Let participants withdraw consent and keep an auditable trail of every change."
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-16: withdrawal flow, audit log and exports for coordinators, biobank and monitors",
+      "steps": [
+        {
+          "key": "wd",
+          "title": "Withdrawal endpoint"
+        },
+        {
+          "key": "auditdb",
+          "title": "Audit log in a database table"
+        },
+        {
+          "key": "exrec",
+          "title": "Export of consent records"
+        },
+        {
+          "key": "exwd",
+          "title": "Export of withdrawal events"
+        },
+        {
+          "key": "exaud",
+          "title": "Export of audit trail"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "wd"
+    },
+    {
+      "type": "commit",
+      "step": "wd",
+      "message": "feat(withdrawal): add POST /consents/{id}/withdraw",
+      "files": {
+        "src/withdrawal/routes.py": "from fastapi import APIRouter\n\nrouter = APIRouter()\n\n@router.post(\"/consents/{consent_id}/withdraw\")\ndef withdraw(consent_id: str, reason: str | None = None):\n    return {\"consent_id\": consent_id, \"status\": \"withdrawn\"}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "wd",
+      "message": "feat(withdrawal): flag linked biosamples for destruction",
+      "files": {
+        "src/withdrawal/samples.py": "from datetime import date, timedelta\n\nDESTRUCTION_DEADLINE = timedelta(days=30)\n\ndef flag_samples(sample_ids, withdrawn_on: date):\n    due = withdrawn_on + DESTRUCTION_DEADLINE\n    return [{\"sample_id\": s, \"destroy_by\": due.isoformat()} for s in sample_ids]\n"
+      },
+      "why": "The registry protocol promises that samples of withdrawn participants are destroyed within 30 days."
+    },
+    {
+      "type": "commit",
+      "step": "wd",
+      "message": "feat(withdrawal): record withdrawal reason code",
+      "files": {
+        "src/withdrawal/reasons.py": "REASON_CODES = {\n    \"PERSONAL\": \"Personal decision\",\n    \"HEALTH\": \"Change in health status\",\n    \"GUARDIAN\": \"Withdrawn by legal guardian\",\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "wd",
+      "message": "test(withdrawal): withdrawn consent stays readable",
+      "files": {
+        "tests/test_withdrawal.py": "def test_withdrawn_consent_stays_readable(client, consent_id):\n    client.post(f\"/consents/{consent_id}/withdraw\")\n    r = client.get(f\"/consents/{consent_id}\")\n    assert r.json()[\"status\"] == \"withdrawn\"\n"
+      },
+      "done": true
+    },
+    {
+      "type": "commit",
+      "step": "auditdb",
+      "message": "feat(audit): add audit table migration",
+      "files": {
+        "src/audit/migrations/001_audit.sql": "CREATE TABLE audit_log (\n  id BIGSERIAL PRIMARY KEY,\n  at TIMESTAMPTZ NOT NULL DEFAULT now(),\n  actor TEXT NOT NULL,\n  action TEXT NOT NULL,\n  consent_id TEXT\n);\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "auditdb",
+      "message": "feat(audit): write audit rows on intake",
+      "files": {
+        "src/audit/writer.py": "def write_audit(conn, actor, action, consent_id=None):\n    conn.execute(\n        \"INSERT INTO audit_log (actor, action, consent_id) VALUES (%s, %s, %s)\",\n        (actor, action, consent_id),\n    )\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "ci: run tests on every push",
+      "files": {
+        ".github/workflows/ci.yml": "name: ci\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - run: pip install -e .[test] && make test\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-20: DPO asked for a tamper-evident audit, switch to a hash-chained file",
+      "steps": [
+        {
+          "key": "auditchain",
+          "title": "Audit log as hash-chained file"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "auditdb",
+      "by": "auditchain"
+    },
+    {
+      "type": "start",
+      "step": "auditchain"
+    },
+    {
+      "type": "commit",
+      "step": "auditchain",
+      "message": "feat(auditchain): append entries to a hash chain",
+      "files": {
+        "src/auditchain/chain.py": "import hashlib, json\n\ndef append(path, entry, prev_hash):\n    body = json.dumps(entry, sort_keys=True)\n    h = hashlib.sha256((prev_hash + body).encode()).hexdigest()\n    with open(path, \"a\") as f:\n        f.write(json.dumps({\"hash\": h, \"prev\": prev_hash, \"entry\": entry}) + \"\\n\")\n    return h\n"
+      },
+      "why": "The data protection officer requires tamper evidence that a database administrator cannot silently edit away."
+    },
+    {
+      "type": "commit",
+      "step": "auditchain",
+      "message": "feat(auditchain): verify the chain on startup",
+      "files": {
+        "src/auditchain/verify.py": "import hashlib, json\n\ndef verify(path):\n    prev = \"\"\n    for line in open(path):\n        row = json.loads(line)\n        body = json.dumps(row[\"entry\"], sort_keys=True)\n        if row[\"prev\"] != prev or hashlib.sha256((prev + body).encode()).hexdigest() != row[\"hash\"]:\n            raise RuntimeError(\"audit chain broken\")\n        prev = row[\"hash\"]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "auditchain",
+      "message": "feat(auditchain): send intake and withdrawal events to the chain",
+      "files": {
+        "src/auditchain/hooks.py": "from .chain import append\n\n_last = {\"hash\": \"\"}\n\ndef on_event(actor, action, consent_id):\n    entry = {\"actor\": actor, \"action\": action, \"consent_id\": consent_id}\n    _last[\"hash\"] = append(\"var/audit.chain\", entry, _last[\"hash\"])\n"
+      },
+      "done": true
+    },
+    {
+      "type": "start",
+      "step": "exrec"
+    },
+    {
+      "type": "commit",
+      "step": "exrec",
+      "message": "feat(export): CSV export of consent records",
+      "files": {
+        "src/export_records/csv_export.py": "import csv, io\n\nCOLUMNS = [\"participant_mrn\", \"study_id\", \"signed_at\"]\n\ndef to_csv(consents):\n    buf = io.StringIO()\n    w = csv.writer(buf)\n    w.writerow(COLUMNS)\n    for c in consents:\n        w.writerow([getattr(c, col) for col in COLUMNS])\n    return buf.getvalue()\n"
+      },
+      "why": "Study coordinators load consent lists into REDCap, which only imports CSV."
+    },
+    {
+      "type": "commit",
+      "step": "exrec",
+      "message": "feat(export): include form version column",
+      "files": {
+        "src/export_records/csv_export.py": "import csv, io\n\nCOLUMNS = [\"participant_mrn\", \"study_id\", \"form_version\", \"signed_at\"]\n\ndef to_csv(consents):\n    buf = io.StringIO()\n    w = csv.writer(buf)\n    w.writerow(COLUMNS)\n    for c in consents:\n        w.writerow([getattr(c, col) for col in COLUMNS])\n    return buf.getvalue()\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add pre-commit hooks",
+      "files": {
+        ".pre-commit-config.yaml": "repos:\n  - repo: https://github.com/astral-sh/ruff-pre-commit\n    rev: v0.6.9\n    hooks:\n      - id: ruff\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "exrec",
+      "message": "test(export): consent CSV columns",
+      "files": {
+        "tests/test_export_records.py": "from src.export_records.csv_export import COLUMNS\n\ndef test_columns_match_redcap_import():\n    assert COLUMNS == [\"participant_mrn\", \"study_id\", \"form_version\", \"signed_at\"]\n"
+      },
+      "done": true
+    },
+    {
+      "type": "commit",
+      "step": "exwd",
+      "message": "feat(export): daily feed of withdrawal events",
+      "files": {
+        "src/export_withdrawals/feed.py": "def withdrawal_feed(withdrawals, since):\n    return [\n        {\"participant_mrn\": w.participant_mrn, \"study_id\": w.study_id, \"withdrawn_at\": w.at.isoformat()}\n        for w in withdrawals\n        if w.at >= since\n    ]\n"
+      },
+      "why": "The biobank must learn about withdrawals within a day so it stops shipping samples of withdrawn participants."
+    },
+    {
+      "type": "detour",
+      "key": "yamlfix",
+      "title": "Pin patched PyYAML",
+      "what": "A PyYAML security advisory made the CI audit job fail on every branch."
+    },
+    {
+      "type": "commit",
+      "step": "yamlfix",
+      "message": "fix(deps): pin PyYAML 6.0.2",
+      "files": {
+        "requirements.lock": "fastapi==0.110.0\npydantic==2.9.2\npyyaml==6.0.2\nuvicorn==0.29.0\n"
+      },
+      "done": true
+    },
+    {
+      "type": "commit",
+      "step": "exwd",
+      "message": "feat(export): schedule withdrawal feed at 02:00",
+      "files": {
+        "src/export_withdrawals/schedule.py": "FEED_CRON = \"0 2 * * *\"  # daily at 02:00, before the biobank shipping run\n\ndef register(scheduler, job):\n    scheduler.add_job(job, \"cron\", hour=2, minute=0)\n"
+      },
+      "done": true
+    },
+    {
+      "type": "commit",
+      "step": "exaud",
+      "message": "feat(export): JSON export of the audit trail",
+      "files": {
+        "src/export_audit/json_export.py": "import json\n\ndef export_trail(path):\n    with open(path) as f:\n        rows = [json.loads(line) for line in f]\n    return json.dumps({\"entries\": rows, \"head\": rows[-1][\"hash\"] if rows else \"\"})\n"
+      },
+      "why": "Sponsor monitors need the audit trail in a form they can verify against the hash chain themselves."
+    },
+    {
+      "type": "commit",
+      "message": "docs: replace API draft with v1 reference",
+      "files": {
+        "docs/api.md": "# API v1\n\n- POST /consents\n- POST /consents/{id}/withdraw (records are never deleted)\n- GET /exports/consents.csv\n- GET /exports/audit.json\n",
+        "docs/api-draft.md": "# API draft\n\nSuperseded by docs/api.md.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "exaud",
+      "message": "feat(export): sign audit export with the registry key",
+      "files": {
+        "src/export_audit/sign.py": "import hmac, hashlib, os\n\ndef sign(payload: str) -> str:\n    key = os.environ[\"REGISTRY_EXPORT_KEY\"].encode()\n    return hmac.new(key, payload.encode(), hashlib.sha256).hexdigest()\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "exaud",
+      "message": "test(export): exported trail verifies",
+      "files": {
+        "tests/test_export_audit.py": "from src.auditchain.verify import verify\n\ndef test_exported_trail_verifies(tmp_chain):\n    verify(tmp_chain)\n"
+      },
+      "done": true
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "milestone",
+      "key": "m3",
+      "title": "M3 Researcher access",
+      "what": "Let researchers request registry data and only receive participants whose consent covers their study."
+    },
+    {
+      "type": "plan",
+      "milestone": "m3",
+      "ref": "chat 2026-04-07: researcher access requests filtered by consent",
+      "steps": [
+        {
+          "key": "areq",
+          "title": "Access request intake"
+        },
+        {
+          "key": "vreq",
+          "title": "Validation of access request scopes"
+        },
+        {
+          "key": "filtersql",
+          "title": "Consent filter as SQL view"
+        },
+        {
+          "key": "exacc",
+          "title": "Export of access decisions"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "areq"
+    },
+    {
+      "type": "commit",
+      "step": "areq",
+      "message": "feat(access): add access request model",
+      "files": {
+        "src/access/request.py": "from dataclasses import dataclass, field\n\n@dataclass\nclass AccessRequest:\n    researcher: str\n    ethics_approval: str\n    studies: list[str] = field(default_factory=list)\n    status: str = \"submitted\"\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "areq",
+      "message": "feat(access): add POST /access-requests",
+      "files": {
+        "src/access/routes.py": "from fastapi import APIRouter\nfrom .request import AccessRequest\n\nrouter = APIRouter()\n\n@router.post(\"/access-requests\", status_code=202)\ndef submit(req: dict):\n    return AccessRequest(**req).__dict__\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "areq",
+      "message": "feat(access): store requester ethics approval number",
+      "files": {
+        "src/access/approval.py": "import re\n\nAPPROVAL_RE = re.compile(r\"^CE-\\d{4}-\\d{3}$\")\n\ndef check_approval_number(value: str) -> str:\n    if not APPROVAL_RE.match(value):\n        raise ValueError(\"ethics approval number must look like CE-2026-001\")\n    return value\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "areq",
+      "message": "test(access): request intake",
+      "files": {
+        "tests/test_access_request.py": "def test_request_is_accepted(client):\n    body = {\"researcher\": \"r.bianchi\", \"ethics_approval\": \"CE-2026-014\", \"studies\": [\"CARDIO-07\"]}\n    r = client.post(\"/access-requests\", json=body)\n    assert r.status_code == 202\n"
+      },
+      "done": true
+    },
+    {
+      "type": "commit",
+      "step": "vreq",
+      "message": "feat(validation): access requests may only name approved studies",
+      "files": {
+        "src/validation/request_scope.py": "def check_request_scope(request, approvals):\n    covered = approvals.get(request.ethics_approval, set())\n    outside = [s for s in request.studies if s not in covered]\n    if outside:\n        raise ValueError(f\"studies not covered by approval: {outside}\")\n"
+      },
+      "why": "A researcher may only receive data of studies their ethics approval covers, so each requested study is checked against the approval number."
+    },
+    {
+      "type": "commit",
+      "message": "chore: add ruff config",
+      "files": {
+        "ruff.toml": "line-length = 100\ntarget-version = \"py311\"\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vreq",
+      "message": "test(validation): reject requests outside the approval",
+      "files": {
+        "tests/test_request_scope.py": "import pytest\nfrom src.validation.request_scope import check_request_scope\n\ndef test_study_outside_approval_rejected(request_factory):\n    with pytest.raises(ValueError):\n        check_request_scope(request_factory(studies=[\"ONCO-12\"]), {\"CE-2026-014\": {\"CARDIO-07\"}})\n"
+      },
+      "done": true
+    },
+    {
+      "type": "commit",
+      "step": "filtersql",
+      "message": "feat(filter): add consented_participants SQL view",
+      "files": {
+        "src/filter_sql/view.sql": "CREATE VIEW consented_participants AS\nSELECT c.participant_mrn, c.study_id\nFROM consents c\nWHERE NOT EXISTS (\n  SELECT 1 FROM withdrawals w WHERE w.consent_id = c.id\n);\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "filtersql",
+      "message": "feat(filter): join the view with study scopes",
+      "files": {
+        "src/filter_sql/view.sql": "CREATE VIEW consented_participants AS\nSELECT c.participant_mrn, c.study_id, s.title\nFROM consents c\nJOIN studies s ON s.id = c.study_id\nWHERE NOT EXISTS (\n  SELECT 1 FROM withdrawals w WHERE w.consent_id = c.id\n);\n",
+        "src/filter_sql/query.py": "def consented_for(conn, study_id):\n    return conn.execute(\n        \"SELECT participant_mrn FROM consented_participants WHERE study_id = %s\", (study_id,)\n    ).fetchall()\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: note consent view timings on staging",
+      "files": {
+        "docs/performance.md": "# Performance notes\n\n## Consent view\nOn staging the consented_participants view takes about 40 s per data pull, because withdrawals are re-checked for every row.\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m3",
+      "ref": "chat 2026-04-14: drop the SQL view, filter consent in application code",
+      "steps": [
+        {
+          "key": "filterapp",
+          "title": "Consent filter in application code"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "filtersql",
+      "by": "filterapp"
+    },
+    {
+      "type": "start",
+      "step": "filterapp"
+    },
+    {
+      "type": "commit",
+      "step": "filterapp",
+      "message": "feat(filter): evaluate consent per participant in code",
+      "files": {
+        "src/filter_app/evaluate.py": "def is_consented(participant, study_id):\n    consents = [c for c in participant.consents if c.study_id == study_id]\n    if not consents:\n        return False\n    latest = max(consents, key=lambda c: c.signed_at)\n    return latest.status != \"withdrawn\"\n"
+      },
+      "why": "Evaluating consent in code reuses the withdrawal rules instead of duplicating them in SQL, and avoids the slow view."
+    },
+    {
+      "type": "commit",
+      "step": "filterapp",
+      "message": "feat(filter): stream consented participants in batches of 500",
+      "files": {
+        "src/filter_app/batch.py": "BATCH_SIZE = 500\n\ndef consented_batches(participants, study_id, is_consented):\n    batch = []\n    for p in participants:\n        if is_consented(p, study_id):\n            batch.append(p.mrn)\n        if len(batch) == BATCH_SIZE:\n            yield batch\n            batch = []\n    if batch:\n        yield batch\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "logpii",
+      "title": "Remove MRNs from request logs",
+      "what": "A log review found participant MRNs in the access request logs, which the DPO flagged as a breach risk."
+    },
+    {
+      "type": "commit",
+      "step": "logpii",
+      "message": "fix(logging): mask MRNs in request logs",
+      "files": {
+        "src/logging_mask/mask.py": "import re\n\nMRN_RE = re.compile(r\"\\b\\d{8}\\b\")\n\ndef mask_mrns(message: str) -> str:\n    return MRN_RE.sub(\"********\", message)\n"
+      },
+      "done": true
+    },
+    {
+      "type": "commit",
+      "step": "filterapp",
+      "message": "perf(filter): cache study scope lookups",
+      "files": {
+        "src/filter_app/scope_cache.py": "from functools import lru_cache\n\n@lru_cache(maxsize=256)\ndef study_scope(study_id: str):\n    from src.scopes.studies import load_studies\n    return load_studies()[study_id]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "filterapp",
+      "message": "test(filter): withdrawn participants are excluded",
+      "files": {
+        "tests/test_filter_app.py": "from src.filter_app.evaluate import is_consented\n\ndef test_withdrawn_participant_excluded(participant_factory):\n    p = participant_factory(study_id=\"CARDIO-07\", status=\"withdrawn\")\n    assert not is_consented(p, \"CARDIO-07\")\n"
+      },
+      "done": true
+    },
+    {
+      "type": "start",
+      "step": "exacc"
+    },
+    {
+      "type": "commit",
+      "step": "exacc",
+      "message": "feat(export): export access decisions for the data access committee",
+      "files": {
+        "src/export_access/decisions.py": "import csv, io\n\ndef decisions_csv(requests):\n    buf = io.StringIO()\n    w = csv.writer(buf)\n    w.writerow([\"researcher\", \"ethics_approval\", \"status\"])\n    for r in requests:\n        w.writerow([r.researcher, r.ethics_approval, r.status])\n    return buf.getvalue()\n"
+      },
+      "why": "The data access committee reviews every granted request at its monthly meeting and needs a list of decisions with the studies involved."
+    },
+    {
+      "type": "commit",
+      "step": "exacc",
+      "message": "feat(export): include requested studies in decisions export",
+      "files": {
+        "src/export_access/decisions.py": "import csv, io\n\ndef decisions_csv(requests):\n    buf = io.StringIO()\n    w = csv.writer(buf)\n    w.writerow([\"researcher\", \"ethics_approval\", \"studies\", \"status\"])\n    for r in requests:\n        w.writerow([r.researcher, r.ethics_approval, \";\".join(r.studies), r.status])\n    return buf.getvalue()\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(docker): add Dockerfile",
+      "files": {
+        "Dockerfile": "FROM python:3.11-slim\nWORKDIR /app\nCOPY . .\nRUN pip install --no-cache-dir .\nCMD [\"uvicorn\", \"src.app:app\", \"--host\", \"0.0.0.0\", \"--port\", \"8080\"]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "exacc",
+      "message": "test(export): access decisions header",
+      "files": {
+        "tests/test_export_access.py": "from src.export_access.decisions import decisions_csv\n\ndef test_header(request_factory):\n    out = decisions_csv([request_factory()])\n    assert out.splitlines()[0] == \"researcher,ethics_approval,studies,status\"\n"
+      },
+      "done": true
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump fastapi to 0.115",
+      "files": {
+        "pyproject.toml": "[project]\nname = \"registry-consent\"\nversion = \"0.3.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"fastapi==0.115\", \"pydantic==2.9\", \"pyyaml==6.0.2\"]\n\n[project.optional-dependencies]\ntest = [\"pytest==8.0\"]\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "milestone",
+      "key": "m4",
+      "title": "M4 Re-consent campaigns",
+      "what": "Ask participants to consent again when the form version they signed is retired."
+    },
+    {
+      "type": "plan",
+      "milestone": "m4",
+      "ref": "chat 2026-05-04: re-consent campaign with recipient list, letters, portal page and reminders",
+      "steps": [
+        {
+          "key": "recip",
+          "title": "Re-consent recipient list"
+        },
+        {
+          "key": "letters",
+          "title": "Re-consent letter templates"
+        },
+        {
+          "key": "portal",
+          "title": "Re-consent portal page"
+        },
+        {
+          "key": "remind",
+          "title": "Re-consent reminder schedule"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "recip"
+    },
+    {
+      "type": "commit",
+      "step": "recip",
+      "message": "feat(recipients): select participants on a retired form version",
+      "files": {
+        "src/recipients/select.py": "def needs_reconsent(consent, retired_versions):\n    return consent.form_version in retired_versions.get(consent.study_id, set())\n\ndef select_recipients(consents, retired_versions):\n    return [c for c in consents if needs_reconsent(c, retired_versions)]\n"
+      },
+      "why": "Only participants whose signed form version was retired need to re-consent; the others stay valid."
+    },
+    {
+      "type": "commit",
+      "step": "recip",
+      "message": "feat(recipients): skip withdrawn and deceased participants",
+      "files": {
+        "src/recipients/filters.py": "def eligible(participant):\n    return participant.status not in {\"withdrawn\", \"deceased\"}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "recip",
+      "message": "feat(recipients): write mailing list for the mail office",
+      "files": {
+        "src/recipients/mailing.py": "import csv\n\ndef write_mail_list(path, participants):\n    with open(path, \"w\", newline=\"\") as f:\n        w = csv.writer(f)\n        w.writerow([\"name\", \"address\", \"language\"])\n        for p in participants:\n            w.writerow([p.name, p.address, p.language])\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "recip",
+      "message": "test(recipients): selection rules",
+      "files": {
+        "tests/test_recipients.py": "from src.recipients.select import needs_reconsent\n\ndef test_retired_version_needs_reconsent(consent_factory):\n    c = consent_factory(study_id=\"CARDIO-07\", form_version=\"v3\")\n    assert needs_reconsent(c, {\"CARDIO-07\": {\"v3\"}})\n"
+      },
+      "done": true
+    },
+    {
+      "type": "milestone",
+      "key": "m5",
+      "title": "M5 Participant portal",
+      "what": "Give participants a web page where they can see and change their consents."
+    },
+    {
+      "type": "defer",
+      "step": "portal",
+      "to": "m5"
+    },
+    {
+      "type": "commit",
+      "step": "letters",
+      "message": "feat(letters): add Italian re-consent letter template",
+      "files": {
+        "src/letters/templates/reconsent_it.txt": "Gentile {name},\n\nil modulo di consenso dello studio {study_title} è stato aggiornato.\nLe chiediamo di firmare la nuova versione presso il Registro di Ricerca.\n\nCordiali saluti,\nUfficio Registro\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "letters",
+      "message": "feat(letters): render letters with participant and study names",
+      "files": {
+        "src/letters/render.py": "from pathlib import Path\n\nTEMPLATES = Path(__file__).parent / \"templates\"\n\ndef render(template_name, participant, study):\n    text = (TEMPLATES / template_name).read_text(encoding=\"utf-8\")\n    return text.format(name=participant.name, study_title=study[\"title\"])\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: add changelog for 0.3.0",
+      "files": {
+        "CHANGELOG.md": "# Changelog\n\n## 0.3.0\n- Researcher access requests with ethics approval check\n- Consent filter in application code\n- Access decisions export for the data access committee\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "letters",
+      "message": "feat(letters): add English template for non-Italian speakers",
+      "files": {
+        "src/letters/templates/reconsent_en.txt": "Dear {name},\n\nthe consent form for the study {study_title} has been updated.\nPlease sign the new version at the Research Registry office.\n\nKind regards,\nRegistry Office\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump pytest to 8.3",
+      "files": {
+        "pyproject.toml": "[project]\nname = \"registry-consent\"\nversion = \"0.3.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"fastapi==0.115\", \"pydantic==2.9\", \"pyyaml==6.0.2\"]\n\n[project.optional-dependencies]\ntest = [\"pytest==8.3\"]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "letters",
+      "message": "fix(letters): escape braces in participant names",
+      "files": {
+        "src/letters/escape.py": "def safe(value: str) -> str:\n    return value.replace(\"{\", \"{{\").replace(\"}\", \"}}\").strip()\n",
+        "src/letters/render.py": "from pathlib import Path\nfrom .escape import safe\n\nTEMPLATES = Path(__file__).parent / \"templates\"\n\ndef render(template_name, participant, study):\n    text = (TEMPLATES / template_name).read_text(encoding=\"utf-8\")\n    return text.format(name=safe(participant.name), study_title=safe(study[\"title\"]))\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "letters",
+      "message": "feat(letters): choose template by participant language",
+      "files": {
+        "src/letters/choose.py": "def template_for(participant):\n    return \"reconsent_it.txt\" if participant.language == \"it\" else \"reconsent_en.txt\"\n"
+      }
+    }
+  ],
+  "questions": [
+    {
+      "cat": "where",
+      "text": "In the re-consent campaign work, which step is in progress right now, and which step comes after it?",
+      "current": "letters",
+      "next": "remind"
+    },
+    {
+      "cat": "why",
+      "text": "Why was the export of withdrawal events built?",
+      "step": "exwd",
+      "reason": "The biobank must learn about withdrawals within a day so it stops shipping samples of withdrawn participants.",
+      "distractors": [
+        "Study coordinators load consent lists into REDCap, which only imports CSV.",
+        "Sponsor monitors need the audit trail in a form they can verify against the hash chain themselves.",
+        "The data access committee reviews every granted request at its monthly meeting and needs a list of decisions with the studies involved."
+      ]
+    },
+    {
+      "cat": "proof",
+      "text": "Which file holds the result of the participant identifier validation?",
+      "step": "vpid",
+      "file": "src/validation/participant_id.py"
+    },
+    {
+      "cat": "deferred",
+      "text": "Which milestone is the re-consent portal page planned for now?",
+      "step": "portal",
+      "milestone": "m5"
+    },
+    {
+      "cat": "update",
+      "text": "Which decision holds today on how the audit log is stored?",
+      "step": "auditchain"
+    },
+    {
+      "cat": "abstain",
+      "text": "Which SMS provider did the team choose for sending re-consent reminders to participants?"
+    },
+    {
+      "cat": "continue",
+      "text": "Resume the work: make the first change you would make.",
+      "next": "letters",
+      "dir": "src/letters/"
+    }
+  ]
+}

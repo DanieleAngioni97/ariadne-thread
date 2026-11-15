@@ -1,0 +1,814 @@
+{
+  "id": "test-03",
+  "project": "physio-booking-backend",
+  "start": "2026-03-02T09:00:00Z",
+  "events": [
+    {
+      "type": "commit",
+      "message": "chore: initial project scaffold",
+      "files": {
+        "package.json": "{\n  \"name\": \"physio-booking-backend\",\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"dev\": \"tsx src/server.ts\", \"test\": \"vitest run\" },\n  \"dependencies\": { \"fastify\": \"4.26.0\" },\n  \"devDependencies\": { \"typescript\": \"5.4.2\", \"vitest\": \"1.3.1\", \"tsx\": \"4.7.1\" }\n}\n",
+        "README.md": "# physio-booking-backend\n\nScheduling backend for the FisioSud chain of physiotherapy clinics.\nHandles treatment slots, bookings, therapist availability and reminders.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add tsconfig and gitignore",
+      "files": {
+        "tsconfig.json": "{\n  \"compilerOptions\": {\n    \"target\": \"ES2022\",\n    \"module\": \"NodeNext\",\n    \"strict\": true,\n    \"outDir\": \"dist\"\n  },\n  \"include\": [\"src\"]\n}\n",
+        ".gitignore": "node_modules/\ndist/\n.env\n*.sqlite\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m1",
+      "title": "M1 Booking core",
+      "what": "Patients can book, list and cancel treatment sessions at any clinic of the chain."
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-02: booking core with slot grid, patient profiles, booking endpoint, storage and cancellation",
+      "steps": [
+        {
+          "key": "slots",
+          "title": "Slot grid generation"
+        },
+        {
+          "key": "patients",
+          "title": "Patient profiles with fiscal code"
+        },
+        {
+          "key": "book",
+          "title": "Booking endpoint with overlap checks"
+        },
+        {
+          "key": "store",
+          "title": "Store bookings in SQLite"
+        },
+        {
+          "key": "cancel",
+          "title": "Cancellation with 24-hour rule"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "slots"
+    },
+    {
+      "type": "commit",
+      "step": "slots",
+      "message": "feat(slots): generate daily slot grid per clinic",
+      "files": {
+        "src/slots/grid.ts": "import { SLOT_MINUTES } from './config.js';\n\nexport function dailySlots(open: string, close: string): string[] {\n  const out: string[] = [];\n  let [h, m] = open.split(':').map(Number);\n  const [ch, cm] = close.split(':').map(Number);\n  while (h * 60 + m + SLOT_MINUTES <= ch * 60 + cm) {\n    out.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);\n    m += SLOT_MINUTES; h += Math.floor(m / 60); m %= 60;\n  }\n  return out;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "slots",
+      "message": "feat(slots): use 15-minute slot length",
+      "why": "Insurers bill physiotherapy in 15-minute units, so the slot length matches the billing unit.",
+      "files": {
+        "src/slots/config.ts": "// Insurers bill physiotherapy in 15-minute units.\nexport const SLOT_MINUTES = 15;\nexport const DEFAULT_SESSION_SLOTS = 3;\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "slots",
+      "message": "feat(slots): skip lunch break between 13:00 and 14:00",
+      "files": {
+        "src/slots/breaks.ts": "export const LUNCH = { from: '13:00', to: '14:00' };\n\nexport function withoutBreaks(slots: string[]): string[] {\n  return slots.filter((s) => s < LUNCH.from || s >= LUNCH.to);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "slots",
+      "done": true,
+      "message": "test(slots): cover grid boundaries and lunch break",
+      "files": {
+        "src/slots/grid.test.ts": "import { expect, test } from 'vitest';\nimport { dailySlots } from './grid.js';\nimport { withoutBreaks } from './breaks.js';\n\ntest('last slot fits before closing', () => {\n  expect(dailySlots('08:00', '09:00')).toEqual(['08:00', '08:15', '08:30', '08:45']);\n});\n\ntest('lunch slots removed', () => {\n  expect(withoutBreaks(['12:45', '13:00', '13:45', '14:00'])).toEqual(['12:45', '14:00']);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "patients",
+      "message": "feat(patients): patient profile model",
+      "files": {
+        "src/patients/model.ts": "export interface Patient {\n  id: string;\n  fullName: string;\n  fiscalCode: string;\n  phone: string;\n  insurerId?: string;\n  smsOptIn: boolean;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "patients",
+      "message": "feat(patients): validate fiscal code checksum at registration",
+      "why": "Insurers reject invoices whose patient fiscal code fails the checksum, so it is validated at registration.",
+      "files": {
+        "src/patients/fiscal-code.ts": "const PATTERN = /^[A-Z]{6}\\d{2}[A-Z]\\d{2}[A-Z]\\d{3}[A-Z]$/;\n\nexport function isValidFiscalCode(code: string): boolean {\n  const c = code.toUpperCase();\n  if (!PATTERN.test(c)) return false;\n  return checkChar(c.slice(0, 15)) === c[15];\n}\n\ndeclare function checkChar(body: string): string;\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "patients",
+      "done": true,
+      "message": "test(patients): fiscal code samples",
+      "files": {
+        "src/patients/fiscal-code.test.ts": "import { expect, test } from 'vitest';\nimport { isValidFiscalCode } from './fiscal-code.js';\n\ntest('rejects malformed code', () => {\n  expect(isValidFiscalCode('RSSMRA80A01')).toBe(false);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "ci: run tests on push",
+      "files": {
+        ".github/workflows/ci.yml": "name: ci\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with: { node-version: 20 }\n      - run: npm ci && npm test\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "book",
+      "message": "feat(booking): POST /bookings endpoint",
+      "files": {
+        "src/booking/routes.ts": "import type { FastifyInstance } from 'fastify';\n\nexport async function bookingRoutes(app: FastifyInstance) {\n  app.post('/bookings', async (req, reply) => {\n    const booking = await app.bookings.create(req.body as any);\n    return reply.code(201).send(booking);\n  });\n}\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "tzfix",
+      "title": "Fix timezone offset in slot dates",
+      "what": "Slots created at 9:00 Europe/Rome come back as 8:00 in the booking response, so front desks see wrong times."
+    },
+    {
+      "type": "commit",
+      "step": "tzfix",
+      "message": "fix(time): build slot dates in Europe/Rome",
+      "files": {
+        "src/time/tz.ts": "import { fromZonedTime } from 'date-fns-tz';\n\nexport const CLINIC_TZ = 'Europe/Rome';\n\nexport function slotToUtc(day: string, time: string): Date {\n  return fromZonedTime(`${day}T${time}:00`, CLINIC_TZ);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tzfix",
+      "done": true,
+      "message": "test(time): cover DST switch on 29 March",
+      "files": {
+        "src/time/tz.test.ts": "import { expect, test } from 'vitest';\nimport { slotToUtc } from './tz.js';\n\ntest('9:00 after DST switch is 7:00 UTC', () => {\n  expect(slotToUtc('2026-03-30', '09:00').toISOString()).toBe('2026-03-30T07:00:00.000Z');\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "book",
+      "message": "feat(booking): reject overlapping bookings for the same therapist",
+      "why": "One therapist cannot treat two patients at once, so overlaps are checked per therapist.",
+      "files": {
+        "src/booking/overlap.ts": "export interface Span { therapistId: string; start: number; end: number }\n\n// One therapist cannot treat two patients at once.\nexport function overlaps(a: Span, b: Span): boolean {\n  return a.therapistId === b.therapistId && a.start < b.end && b.start < a.end;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "book",
+      "message": "feat(booking): GET /bookings filtered by patient",
+      "files": {
+        "src/booking/list.ts": "import type { FastifyInstance } from 'fastify';\n\nexport async function listRoutes(app: FastifyInstance) {\n  app.get('/bookings', async (req) => {\n    const { patient } = req.query as { patient?: string };\n    return app.bookings.list({ patientId: patient });\n  });\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "book",
+      "done": true,
+      "message": "test(booking): overlap cases",
+      "files": {
+        "src/booking/overlap.test.ts": "import { expect, test } from 'vitest';\nimport { overlaps } from './overlap.js';\n\ntest('back-to-back sessions do not overlap', () => {\n  expect(overlaps({ therapistId: 't1', start: 0, end: 45 }, { therapistId: 't1', start: 45, end: 90 })).toBe(false);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "store",
+      "message": "feat(store): SQLite bookings table",
+      "files": {
+        "src/store/sqlite.ts": "import Database from 'better-sqlite3';\n\nexport const db = new Database(process.env.DB_FILE ?? 'bookings.sqlite');\ndb.exec(require('fs').readFileSync(new URL('./schema.sql', import.meta.url), 'utf8'));\n",
+        "src/store/schema.sql": "CREATE TABLE IF NOT EXISTS bookings (\n  id TEXT PRIMARY KEY,\n  patient_id TEXT NOT NULL,\n  therapist_id TEXT NOT NULL,\n  clinic_id TEXT NOT NULL,\n  starts_at TEXT NOT NULL,\n  ends_at TEXT NOT NULL\n);\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump fastify to 4.26.2",
+      "files": {
+        "package.json": "{\n  \"name\": \"physio-booking-backend\",\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"dev\": \"tsx src/server.ts\", \"test\": \"vitest run\" },\n  \"dependencies\": { \"fastify\": \"4.26.2\", \"date-fns-tz\": \"3.1.3\" },\n  \"devDependencies\": { \"typescript\": \"5.4.2\", \"vitest\": \"1.3.1\", \"tsx\": \"4.7.1\" }\n}\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-09: move bookings to one Postgres database shared by all clinics",
+      "steps": [
+        {
+          "key": "pg",
+          "title": "Store bookings in Postgres"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "store",
+      "by": "pg"
+    },
+    {
+      "type": "start",
+      "step": "pg"
+    },
+    {
+      "type": "commit",
+      "step": "pg",
+      "message": "feat(store): Postgres connection pool",
+      "why": "All five clinics write to one shared database, and SQLite locks the whole file on every write.",
+      "files": {
+        "src/store/postgres.ts": "import pg from 'pg';\n\n// All clinics write to one shared database.\nexport const pool = new pg.Pool({\n  connectionString: process.env.DATABASE_URL,\n  max: 10,\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pg",
+      "message": "feat(store): migration 001 bookings table",
+      "files": {
+        "migrations/001_bookings.sql": "CREATE TABLE bookings (\n  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n  patient_id UUID NOT NULL,\n  therapist_id UUID NOT NULL,\n  clinic_id TEXT NOT NULL,\n  during TSTZRANGE NOT NULL\n);\nCREATE INDEX bookings_therapist ON bookings (therapist_id);\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pg",
+      "message": "feat(store): bookings repository on Postgres",
+      "files": {
+        "src/store/bookings-repo.ts": "import { pool } from './postgres.js';\n\nexport async function listByPatient(patientId: string) {\n  const { rows } = await pool.query(\n    'SELECT * FROM bookings WHERE patient_id = $1 ORDER BY lower(during)',\n    [patientId],\n  );\n  return rows;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pg",
+      "done": true,
+      "message": "chore(store): docker-compose for local Postgres",
+      "files": {
+        "docker-compose.yml": "services:\n  db:\n    image: postgres:16\n    environment:\n      POSTGRES_PASSWORD: dev\n      POSTGRES_DB: physio\n    ports:\n      - \"5432:5432\"\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "cancel"
+    },
+    {
+      "type": "commit",
+      "step": "cancel",
+      "message": "feat(cancel): DELETE /bookings/:id",
+      "files": {
+        "src/cancel/routes.ts": "import type { FastifyInstance } from 'fastify';\nimport { cancellationFee } from './policy.js';\n\nexport async function cancelRoutes(app: FastifyInstance) {\n  app.delete('/bookings/:id', async (req) => {\n    const { id } = req.params as { id: string };\n    return app.bookings.cancel(id);\n  });\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: booking API overview",
+      "files": {
+        "docs/api.md": "# Booking API\n\n- `POST /bookings` creates a booking (409 on therapist overlap)\n- `GET /bookings?patient=<id>` lists a patient's bookings\n- `DELETE /bookings/:id` cancels a booking\n\nTimes are sent in UTC; clinics run on Europe/Rome.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cancel",
+      "message": "feat(cancel): charge late cancellations under 24 hours",
+      "why": "Clinic policy charges the session fee when a patient cancels less than 24 hours before the session.",
+      "files": {
+        "src/cancel/policy.ts": "const DAY_MS = 24 * 60 * 60 * 1000;\n\n// Clinic policy: full session fee if cancelled less than 24h before.\nexport function cancellationFee(startsAt: Date, now: Date, sessionFee: number): number {\n  return startsAt.getTime() - now.getTime() < DAY_MS ? sessionFee : 0;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cancel",
+      "message": "feat(cancel): cancellation reason codes",
+      "files": {
+        "src/cancel/reasons.ts": "export const CANCEL_REASONS = [\n  'patient_request',\n  'patient_illness',\n  'therapist_absent',\n  'clinic_closed',\n] as const;\nexport type CancelReason = (typeof CANCEL_REASONS)[number];\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cancel",
+      "done": true,
+      "message": "test(cancel): late cancellation fee",
+      "files": {
+        "src/cancel/policy.test.ts": "import { expect, test } from 'vitest';\nimport { cancellationFee } from './policy.js';\n\ntest('fee applies 23 hours before', () => {\n  const start = new Date('2026-03-12T09:00:00Z');\n  expect(cancellationFee(start, new Date('2026-03-11T10:00:00Z'), 45)).toBe(45);\n});\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "milestone",
+      "key": "m2",
+      "title": "M2 Availability and reminders",
+      "what": "Therapists and rooms publish when they can be booked, and patients get SMS reminders."
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-16: availability rules for therapists, rooms and holidays, then SMS reminders",
+      "steps": [
+        {
+          "key": "avth",
+          "title": "Availability rules per therapist"
+        },
+        {
+          "key": "avroom",
+          "title": "Availability rules per clinic room"
+        },
+        {
+          "key": "avhol",
+          "title": "Availability rules for public holidays"
+        },
+        {
+          "key": "gw",
+          "title": "SMS gateway client for Twilio"
+        },
+        {
+          "key": "smsnew",
+          "title": "Reminder SMS for new bookings"
+        },
+        {
+          "key": "smscan",
+          "title": "Reminder SMS for cancellations"
+        },
+        {
+          "key": "smsretry",
+          "title": "Reminder SMS retry on gateway errors"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "avth"
+    },
+    {
+      "type": "commit",
+      "step": "avth",
+      "message": "feat(availability): weekly working hours per therapist",
+      "why": "Therapists work part-time across several clinics, so hours are stored per therapist and per clinic.",
+      "files": {
+        "src/availability/therapist.ts": "export interface WorkingHours {\n  therapistId: string;\n  clinicId: string;\n  weekday: 1 | 2 | 3 | 4 | 5 | 6;\n  from: string;\n  to: string;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "avth",
+      "message": "feat(availability): filter slot grid by therapist hours",
+      "files": {
+        "src/availability/apply.ts": "import type { WorkingHours } from './therapist.js';\n\nexport function slotsForTherapist(slots: string[], hours: WorkingHours[], weekday: number): string[] {\n  const today = hours.filter((h) => h.weekday === weekday);\n  return slots.filter((s) => today.some((h) => s >= h.from && s < h.to));\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "avth",
+      "message": "feat(availability): GET /therapists/:id/availability",
+      "files": {
+        "src/availability/routes.ts": "import type { FastifyInstance } from 'fastify';\n\nexport async function availabilityRoutes(app: FastifyInstance) {\n  app.get('/therapists/:id/availability', async (req) => {\n    const { id } = req.params as { id: string };\n    const { day } = req.query as { day: string };\n    return app.availability.forTherapist(id, day);\n  });\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "avth",
+      "done": true,
+      "message": "test(availability): therapist hours on Saturdays",
+      "files": {
+        "src/availability/therapist.test.ts": "import { expect, test } from 'vitest';\nimport { slotsForTherapist } from './apply.js';\n\ntest('no slots outside working hours', () => {\n  const hours = [{ therapistId: 't1', clinicId: 'ca1', weekday: 6 as const, from: '09:00', to: '12:00' }];\n  expect(slotsForTherapist(['08:45', '09:00', '12:00'], hours, 6)).toEqual(['09:00']);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add eslint config",
+      "files": {
+        ".eslintrc.json": "{\n  \"root\": true,\n  \"parser\": \"@typescript-eslint/parser\",\n  \"plugins\": [\"@typescript-eslint\"],\n  \"extends\": [\"eslint:recommended\", \"plugin:@typescript-eslint/recommended\"]\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "avroom",
+      "message": "feat(availability): treatment rooms with equipment tags",
+      "why": "Shockwave and hydrotherapy sessions need a room with that equipment, so a free therapist is not enough.",
+      "files": {
+        "src/availability/rooms.ts": "export type Equipment = 'shockwave' | 'hydro_pool' | 'tecar' | 'gym';\n\nexport interface Room {\n  id: string;\n  clinicId: string;\n  equipment: Equipment[];\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "avroom",
+      "message": "feat(availability): require a matching free room when booking",
+      "files": {
+        "src/availability/room-check.ts": "import type { Equipment, Room } from './rooms.js';\n\nexport function pickRoom(rooms: Room[], busy: Set<string>, needs: Equipment[]): Room | undefined {\n  return rooms.find((r) => !busy.has(r.id) && needs.every((e) => r.equipment.includes(e)));\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "avroom",
+      "done": true,
+      "message": "test(availability): room equipment matching",
+      "files": {
+        "src/availability/rooms.test.ts": "import { expect, test } from 'vitest';\nimport { pickRoom } from './room-check.js';\n\ntest('shockwave needs the shockwave room', () => {\n  const rooms = [{ id: 'r1', clinicId: 'ca1', equipment: ['gym' as const] }, { id: 'r2', clinicId: 'ca1', equipment: ['shockwave' as const] }];\n  expect(pickRoom(rooms, new Set(), ['shockwave'])?.id).toBe('r2');\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: availability model",
+      "files": {
+        "docs/availability.md": "# Availability model\n\nA slot is bookable when the therapist works, a suitable room is free and the clinic is open.\n\n## Regional holidays\n\nSardinian clinics close on Sa Die de sa Sardigna (28 April), which national holiday calendars miss.\nClosed days are therefore kept per clinic in `data/holidays/<clinic>.json`, not taken from a national calendar.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "avhol",
+      "message": "feat(availability): load closed days per clinic from a holidays file",
+      "proofFiles": [
+        "docs/availability.md#Regional holidays"
+      ],
+      "files": {
+        "src/availability/holidays.ts": "import { readFileSync } from 'node:fs';\n\nexport function closedDays(clinicId: string): Set<string> {\n  const file = new URL(`../../data/holidays/${clinicId}.json`, import.meta.url);\n  return new Set(JSON.parse(readFileSync(file, 'utf8')) as string[]);\n}\n",
+        "data/holidays/cagliari.json": "[\n  \"2026-01-01\",\n  \"2026-01-06\",\n  \"2026-04-25\",\n  \"2026-04-28\",\n  \"2026-05-01\",\n  \"2026-06-02\"\n]\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "release",
+      "title": "Release slot when a booking is cancelled",
+      "what": "Cancelled bookings still block their slot, and the Quartu front desk cannot rebook it."
+    },
+    {
+      "type": "commit",
+      "step": "release",
+      "message": "fix(booking): free the slot on cancellation",
+      "files": {
+        "src/booking/release.ts": "import { pool } from '../store/postgres.js';\n\nexport async function releaseSlot(bookingId: string) {\n  await pool.query(\"UPDATE bookings SET status = 'cancelled' WHERE id = $1\", [bookingId]);\n  await pool.query('DELETE FROM slot_holds WHERE booking_id = $1', [bookingId]);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "release",
+      "done": true,
+      "message": "test(booking): cancelled slot can be booked again",
+      "files": {
+        "src/booking/release.test.ts": "import { expect, test } from 'vitest';\nimport { releaseSlot } from './release.js';\n\ntest('slot is free after cancellation', async () => {\n  await releaseSlot('b-1');\n  expect(await isHeld('b-1')).toBe(false);\n});\n\ndeclare function isHeld(id: string): Promise<boolean>;\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "avhol",
+      "message": "feat(availability): compute Easter Monday each year",
+      "files": {
+        "src/availability/easter.ts": "// Anonymous Gregorian algorithm.\nexport function easterMonday(y: number): string {\n  const a = y % 19, b = Math.floor(y / 100), c = y % 100;\n  const h = (19 * a + b - Math.floor(b / 4) - Math.floor((8 * b + 13) / 25) + 15) % 30;\n  const l = (32 + 2 * (b % 4) + 2 * Math.floor(c / 4) - h - (c % 4)) % 7;\n  const m = Math.floor((a + 11 * h + 22 * l) / 451);\n  const d = new Date(Date.UTC(y, Math.floor((h + l - 7 * m + 114) / 31) - 1, ((h + l - 7 * m + 114) % 31) + 2));\n  return d.toISOString().slice(0, 10);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "avhol",
+      "done": true,
+      "message": "test(availability): Sa Die de sa Sardigna closes Cagliari clinics",
+      "files": {
+        "src/availability/holidays.test.ts": "import { expect, test } from 'vitest';\nimport { closedDays } from './holidays.js';\nimport { easterMonday } from './easter.js';\n\ntest('28 April closed in Cagliari', () => {\n  expect(closedDays('cagliari').has('2026-04-28')).toBe(true);\n});\n\ntest('Easter Monday 2026', () => {\n  expect(easterMonday(2026)).toBe('2026-04-06');\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "gw",
+      "message": "feat(sms): Twilio client for outgoing SMS",
+      "files": {
+        "src/sms/twilio.ts": "import twilio from 'twilio';\n\nconst client = twilio(process.env.TWILIO_SID, process.env.TWILIO_TOKEN);\n\nexport async function sendSms(to: string, body: string) {\n  return client.messages.create({ to, body, from: process.env.TWILIO_FROM });\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: Twilio account setup",
+      "files": {
+        "docs/twilio-setup.md": "# Twilio setup\n\n1. Create a Twilio project and buy an Italian number.\n2. Set `TWILIO_SID`, `TWILIO_TOKEN`, `TWILIO_FROM` in `.env`.\n3. Reminders are sent from that number, 24 hours before each session.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): add twilio 5.0.1",
+      "files": {
+        "package.json": "{\n  \"name\": \"physio-booking-backend\",\n  \"version\": \"0.2.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"dev\": \"tsx src/server.ts\", \"test\": \"vitest run\" },\n  \"dependencies\": { \"fastify\": \"4.26.2\", \"date-fns-tz\": \"3.1.3\", \"pg\": \"8.11.3\", \"twilio\": \"5.0.1\" },\n  \"devDependencies\": { \"typescript\": \"5.4.2\", \"vitest\": \"1.3.1\", \"tsx\": \"4.7.1\" }\n}\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-23: drop Twilio and send reminders through Skebby with the clinic name as sender",
+      "steps": [
+        {
+          "key": "gw2",
+          "title": "SMS gateway client for Skebby"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "gw",
+      "by": "gw2"
+    },
+    {
+      "type": "start",
+      "step": "gw2"
+    },
+    {
+      "type": "commit",
+      "step": "gw2",
+      "message": "feat(sms): Skebby client for outgoing SMS",
+      "why": "Twilio needs weeks of sender ID registration for Italian numbers, while Skebby sends with the clinic name as alphanumeric sender right away.",
+      "files": {
+        "src/sms/skebby.ts": "const BASE = 'https://api.skebby.it/API/v1.0/REST';\n\nexport async function sendSms(to: string, body: string, sender = 'FisioSud') {\n  const res = await fetch(`${BASE}/sms`, {\n    method: 'POST',\n    headers: { user_key: process.env.SKEBBY_USER!, Session_key: process.env.SKEBBY_SESSION!, 'Content-Type': 'application/json' },\n    body: JSON.stringify({ message_type: 'GP', message: body, recipient: [to], sender }),\n  });\n  if (!res.ok) throw new Error(`skebby ${res.status}`);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "gw2",
+      "message": "docs: SMS gateway setup, supersedes the Twilio notes",
+      "files": {
+        "docs/sms-gateway.md": "# SMS gateway\n\nSupersedes `twilio-setup.md`: reminders now go through Skebby.\n\n1. Set `SKEBBY_USER` and `SKEBBY_SESSION` in `.env`.\n2. The sender is the clinic name (alphanumeric, max 11 chars).\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "gw2",
+      "message": "feat(sms): delivery receipts webhook",
+      "files": {
+        "src/sms/receipts.ts": "import type { FastifyInstance } from 'fastify';\n\nexport async function receiptRoutes(app: FastifyInstance) {\n  app.post('/sms/receipts', async (req) => {\n    const { order_id, status } = req.body as { order_id: string; status: string };\n    await app.sms.markDelivery(order_id, status);\n    return { ok: true };\n  });\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "gw2",
+      "done": true,
+      "message": "chore(sms): remove twilio dependency",
+      "files": {
+        "package.json": "{\n  \"name\": \"physio-booking-backend\",\n  \"version\": \"0.2.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"dev\": \"tsx src/server.ts\", \"test\": \"vitest run\" },\n  \"dependencies\": { \"fastify\": \"4.26.2\", \"date-fns-tz\": \"3.1.3\", \"pg\": \"8.11.3\" },\n  \"devDependencies\": { \"typescript\": \"5.4.2\", \"vitest\": \"1.3.1\", \"tsx\": \"4.7.1\" }\n}\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "smsnew"
+    },
+    {
+      "type": "commit",
+      "step": "smsnew",
+      "message": "feat(reminders): SMS reminder 24 hours before a new booking",
+      "why": "The reminder goes out 24 hours before so patients still have time to cancel without the late fee.",
+      "files": {
+        "src/reminders/new-booking.ts": "import { sendSms } from '../sms/skebby.js';\n\nexport async function remindBooking(phone: string, clinic: string, startsAt: Date) {\n  const when = startsAt.toLocaleString('it-IT', { timeZone: 'Europe/Rome' });\n  await sendSms(phone, `Promemoria: seduta di fisioterapia ${when} presso ${clinic}.`);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "smsnew",
+      "message": "feat(reminders): hourly scheduler for due reminders",
+      "files": {
+        "src/reminders/scheduler.ts": "import { remindBooking } from './new-booking.js';\n\nexport function startReminderLoop(findDue: () => Promise<any[]>) {\n  return setInterval(async () => {\n    for (const b of await findDue()) await remindBooking(b.phone, b.clinic, b.startsAt);\n  }, 60 * 60 * 1000);\n}\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "cifix",
+      "title": "Fix CI waiting for Postgres",
+      "what": "CI runs fail because tests start before the Postgres service accepts connections."
+    },
+    {
+      "type": "commit",
+      "step": "cifix",
+      "done": true,
+      "message": "ci: wait for Postgres before running tests",
+      "files": {
+        "scripts/wait-for-pg.sh": "#!/bin/sh\nfor i in $(seq 1 30); do\n  pg_isready -h localhost -p 5432 && exit 0\n  sleep 1\ndone\necho 'postgres not ready' >&2\nexit 1\n",
+        ".github/workflows/ci.yml": "name: ci\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    services:\n      postgres:\n        image: postgres:16\n        env: { POSTGRES_PASSWORD: dev }\n        ports: ['5432:5432']\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with: { node-version: 20 }\n      - run: sh scripts/wait-for-pg.sh && npm ci && npm test\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "smsnew",
+      "message": "feat(reminders): skip patients who opted out of SMS",
+      "files": {
+        "src/reminders/opt-out.ts": "import type { Patient } from '../patients/model.js';\n\nexport function canText(p: Patient): boolean {\n  return p.smsOptIn && p.phone.startsWith('+39');\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "smsnew",
+      "done": true,
+      "message": "test(reminders): reminder text and opt-out",
+      "files": {
+        "src/reminders/new-booking.test.ts": "import { expect, test } from 'vitest';\nimport { canText } from './opt-out.js';\n\ntest('opted-out patient gets no SMS', () => {\n  expect(canText({ id: 'p1', fullName: 'A', fiscalCode: 'X', phone: '+39333', smsOptIn: false })).toBe(false);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "smscan",
+      "message": "feat(reminders): SMS when the clinic cancels a session",
+      "why": "Patients only need an SMS when the clinic cancels, since they already see their own cancellations on screen.",
+      "files": {
+        "src/reminders/cancellation.ts": "import { readFileSync } from 'node:fs';\nimport { sendSms } from '../sms/skebby.js';\n\nconst TEMPLATE = readFileSync(new URL('./templates/cancel-it.txt', import.meta.url), 'utf8');\n\nexport async function notifyClinicCancel(phone: string, when: string, clinic: string) {\n  await sendSms(phone, TEMPLATE.replace('{when}', when).replace('{clinic}', clinic));\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "smscan",
+      "message": "feat(reminders): Italian template for clinic cancellations",
+      "files": {
+        "src/reminders/templates/cancel-it.txt": "La seduta del {when} presso {clinic} è stata annullata dalla clinica. Ci scusiamo: la ricontatteremo per fissare un nuovo appuntamento.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump vitest to 1.4.0",
+      "files": {
+        "package.json": "{\n  \"name\": \"physio-booking-backend\",\n  \"version\": \"0.2.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"dev\": \"tsx src/server.ts\", \"test\": \"vitest run\" },\n  \"dependencies\": { \"fastify\": \"4.26.2\", \"date-fns-tz\": \"3.1.3\", \"pg\": \"8.11.3\" },\n  \"devDependencies\": { \"typescript\": \"5.4.2\", \"vitest\": \"1.4.0\", \"tsx\": \"4.7.1\" }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "smscan",
+      "done": true,
+      "message": "test(reminders): clinic cancellation message",
+      "files": {
+        "src/reminders/cancellation.test.ts": "import { expect, test, vi } from 'vitest';\n\nvi.mock('../sms/skebby.js', () => ({ sendSms: vi.fn() }));\n\ntest('message names the clinic', async () => {\n  const { notifyClinicCancel } = await import('./cancellation.js');\n  await notifyClinicCancel('+39333', '12/03 09:00', 'Cagliari Centro');\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: local setup in README",
+      "files": {
+        "README.md": "# physio-booking-backend\n\nScheduling backend for the FisioSud chain of physiotherapy clinics.\n\n## Local setup\n\n    docker compose up -d\n    npm ci\n    npm run dev\n\nSMS settings are described in `docs/sms-gateway.md`.\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m3",
+      "title": "M3 Insurance billing",
+      "what": "Sessions covered by insurers are invoiced every month and exported to the insurers."
+    },
+    {
+      "type": "defer",
+      "step": "smsretry",
+      "to": "m3"
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "plan",
+      "milestone": "m3",
+      "ref": "chat 2026-04-06: insurer billing with tariff catalogue, monthly invoices and export",
+      "steps": [
+        {
+          "key": "insr",
+          "title": "Insurer catalogue with session tariffs"
+        },
+        {
+          "key": "inv",
+          "title": "Monthly invoice builder"
+        },
+        {
+          "key": "exp",
+          "title": "Invoice export for insurer portals"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "insr"
+    },
+    {
+      "type": "commit",
+      "step": "insr",
+      "message": "feat(insurers): insurer catalogue with tariff per session type",
+      "why": "Each insurer pays a different tariff per session type, so prices live in a catalogue instead of on the booking.",
+      "files": {
+        "src/insurers/catalogue.ts": "import { readFileSync } from 'node:fs';\n\nexport interface Tariff { sessionType: string; cents: number }\nexport interface Insurer { id: string; name: string; tariffs: Tariff[] }\n\nexport const insurers: Insurer[] = JSON.parse(\n  readFileSync(new URL('../../data/insurers.json', import.meta.url), 'utf8'),\n);\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "insr",
+      "message": "feat(insurers): seed UniSalute and FASI tariffs",
+      "files": {
+        "data/insurers.json": "[\n  { \"id\": \"unisalute\", \"name\": \"UniSalute\", \"tariffs\": [ { \"sessionType\": \"manual\", \"cents\": 3500 }, { \"sessionType\": \"shockwave\", \"cents\": 4500 } ] },\n  { \"id\": \"fasi\", \"name\": \"FASI\", \"tariffs\": [ { \"sessionType\": \"manual\", \"cents\": 3200 }, { \"sessionType\": \"hydro\", \"cents\": 4000 } ] }\n]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump pg to 8.11.5",
+      "files": {
+        "package.json": "{\n  \"name\": \"physio-booking-backend\",\n  \"version\": \"0.3.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"dev\": \"tsx src/server.ts\", \"test\": \"vitest run\" },\n  \"dependencies\": { \"fastify\": \"4.26.2\", \"date-fns-tz\": \"3.1.3\", \"pg\": \"8.11.5\" },\n  \"devDependencies\": { \"typescript\": \"5.4.2\", \"vitest\": \"1.4.0\", \"tsx\": \"4.7.1\" }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "insr",
+      "message": "feat(insurers): GET /insurers endpoint",
+      "files": {
+        "src/insurers/routes.ts": "import type { FastifyInstance } from 'fastify';\nimport { insurers } from './catalogue.js';\n\nexport async function insurerRoutes(app: FastifyInstance) {\n  app.get('/insurers', async () => insurers.map(({ id, name }) => ({ id, name })));\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "insr",
+      "done": true,
+      "message": "test(insurers): every insurer has a manual therapy tariff",
+      "files": {
+        "src/insurers/catalogue.test.ts": "import { expect, test } from 'vitest';\nimport { insurers } from './catalogue.js';\n\ntest('manual tariff present', () => {\n  for (const i of insurers) expect(i.tariffs.some((t) => t.sessionType === 'manual')).toBe(true);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: billing notes",
+      "files": {
+        "docs/billing.md": "# Billing\n\nInsurers are invoiced once a month for completed sessions of their members.\nTariffs come from `data/insurers.json`; amounts are in cents.\nPatients without an insurer pay at the front desk and are not invoiced here.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "inv",
+      "message": "feat(invoices): group completed sessions by insurer and month",
+      "files": {
+        "src/invoices/group.ts": "export interface Session { insurerId: string; sessionType: string; date: string; status: string }\n\nexport function groupByInsurerMonth(sessions: Session[]): Map<string, Session[]> {\n  const out = new Map<string, Session[]>();\n  for (const s of sessions) {\n    const key = `${s.insurerId}:${s.date.slice(0, 7)}`;\n    out.set(key, [...(out.get(key) ?? []), s]);\n  }\n  return out;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "inv",
+      "message": "feat(invoices): invoice totals from insurer tariffs",
+      "files": {
+        "src/invoices/totals.ts": "import { insurers } from '../insurers/catalogue.js';\nimport type { Session } from './group.js';\n\nexport function totalCents(insurerId: string, sessions: Session[]): number {\n  const tariffs = insurers.find((i) => i.id === insurerId)?.tariffs ?? [];\n  return sessions.reduce((sum, s) => sum + (tariffs.find((t) => t.sessionType === s.sessionType)?.cents ?? 0), 0);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "inv",
+      "message": "feat(invoices): invoice numbering per clinic and year",
+      "why": "Italian invoicing rules require a progressive number per issuer and year, so numbers restart every January for each clinic.",
+      "files": {
+        "src/invoices/numbering.ts": "const counters = new Map<string, number>();\n\n// Progressive number per issuing clinic and year.\nexport function nextInvoiceNumber(clinicId: string, year: number): string {\n  const key = `${clinicId}:${year}`;\n  const n = (counters.get(key) ?? 0) + 1;\n  counters.set(key, n);\n  return `${n}/${year}/${clinicId.toUpperCase()}`;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add editorconfig",
+      "files": {
+        ".editorconfig": "root = true\n\n[*]\nindent_style = space\nindent_size = 2\nend_of_line = lf\ninsert_final_newline = true\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "inv",
+      "message": "feat(invoices): leave out sessions cancelled by the clinic",
+      "files": {
+        "src/invoices/filter.ts": "import type { Session } from './group.js';\n\nexport function billable(sessions: Session[]): Session[] {\n  return sessions.filter((s) => s.status === 'completed');\n}\n"
+      }
+    }
+  ],
+  "questions": [
+    {
+      "cat": "where",
+      "text": "Which part of the insurance billing work is under way right now, and what comes after it?",
+      "current": "inv",
+      "next": "exp"
+    },
+    {
+      "cat": "why",
+      "text": "Why does a booking need a matching free treatment room and not just a free therapist?",
+      "step": "avroom",
+      "reason": "Shockwave and hydrotherapy sessions need a room with that equipment, so a free therapist is not enough.",
+      "distractors": [
+        "Therapists work part-time across several clinics, so hours are stored per therapist and per clinic.",
+        "Sardinian clinics close on Sa Die de sa Sardigna (28 April), which national holiday calendars miss.",
+        "One therapist cannot treat two patients at once, so overlaps are checked per therapist."
+      ]
+    },
+    {
+      "cat": "proof",
+      "text": "Which file holds the result of the work on charging a fee for late cancellations?",
+      "step": "cancel",
+      "file": "src/cancel/policy.ts"
+    },
+    {
+      "cat": "deferred",
+      "text": "What happened to retrying reminder SMS when the gateway returns an error?",
+      "step": "smsretry",
+      "milestone": "m3"
+    },
+    {
+      "cat": "update",
+      "text": "Which decision holds today on the SMS provider used for patient reminders?",
+      "step": "gw2"
+    },
+    {
+      "cat": "abstain",
+      "text": "Which video-call provider was chosen for remote physiotherapy sessions?"
+    },
+    {
+      "cat": "continue",
+      "text": "Resume the work: make the first change you would make.",
+      "next": "inv",
+      "dir": "src/invoices/"
+    }
+  ]
+}

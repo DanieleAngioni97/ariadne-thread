@@ -1,0 +1,569 @@
+{
+  "id": "test-08",
+  "project": "migralint-plugins",
+  "start": "2026-03-02T09:00:00Z",
+  "events": [
+    {
+      "type": "commit",
+      "message": "chore: scaffold migralint project",
+      "files": {
+        "package.json": "{\n  \"name\": \"migralint\",\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"bin\": { \"migralint\": \"dist/cli.js\" },\n  \"devDependencies\": { \"typescript\": \"5.5.4\", \"vitest\": \"2.0.5\" }\n}\n",
+        "tsconfig.json": "{\n  \"compilerOptions\": { \"target\": \"ES2022\", \"module\": \"NodeNext\", \"strict\": true, \"outDir\": \"dist\" }\n}\n",
+        "README.md": "# migralint\n\nStatic analysis for SQL migrations.\n\n    npx migralint migrations/\n",
+        "src/cli.ts": "import { lintFolder } from './lint.js';\n\nconst dir = process.argv[2] ?? 'migrations';\nconst findings = await lintFolder(dir);\nprocess.exitCode = findings.length > 0 ? 1 : 0;\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: add plugin system design notes",
+      "files": {
+        "docs/design.md": "# Plugin system\n\nRules move out of the core into plugins.\nA plugin exports a manifest and a list of rules.\nEach rule receives the parsed migration and returns findings.\nThe host loads plugins listed in migralint.config.json.\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m1",
+      "title": "M1 Plugin loading",
+      "what": "Load third-party rule plugins listed in the config and run their rules against migrations."
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-02: approved the plugin loading plan (manifest, local and npm loaders, vm sandbox, error reporting)",
+      "steps": [
+        {
+          "key": "manifest",
+          "title": "Plugin manifest format"
+        },
+        {
+          "key": "locload",
+          "title": "Loader for local plugins"
+        },
+        {
+          "key": "pkgload",
+          "title": "Loader for npm plugins"
+        },
+        {
+          "key": "sandvm",
+          "title": "Sandbox plugins with vm contexts"
+        },
+        {
+          "key": "lderr",
+          "title": "Loader error reporting"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "manifest"
+    },
+    {
+      "type": "commit",
+      "step": "manifest",
+      "message": "feat(manifest): define plugin manifest type",
+      "files": {
+        "src/manifest/types.ts": "export interface PluginManifest {\n  name: string;\n  apiVersion: number;\n  rules: string[];\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "manifest",
+      "message": "feat(manifest): validate manifest fields",
+      "done": true,
+      "why": "apiVersion is a single integer so the host can reject incompatible plugins with a plain comparison.",
+      "files": {
+        "src/manifest/validate.ts": "import type { PluginManifest } from './types.js';\n\nexport const HOST_API_VERSION = 1;\n\nexport function validateManifest(m: PluginManifest): string[] {\n  const errors: string[] = [];\n  if (!m.name) errors.push('manifest.name is required');\n  if (m.apiVersion !== HOST_API_VERSION) errors.push(`apiVersion ${m.apiVersion} is not supported`);\n  return errors;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add editorconfig",
+      "files": {
+        ".editorconfig": "root = true\n\n[*]\nindent_style = space\nindent_size = 2\nend_of_line = lf\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "locload",
+      "message": "feat(loader-local): resolve plugins from relative paths",
+      "files": {
+        "src/loader/local.ts": "import path from 'node:path';\n\nexport function resolveLocal(spec: string, configDir: string): string {\n  return path.resolve(configDir, spec);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: bump typescript to 5.6",
+      "files": {
+        "package.json": "{\n  \"name\": \"migralint\",\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"bin\": { \"migralint\": \"dist/cli.js\" },\n  \"devDependencies\": { \"typescript\": \"5.6.2\", \"vitest\": \"2.0.5\" }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "locload",
+      "message": "feat(loader-local): load local plugins via dynamic import",
+      "done": true,
+      "files": {
+        "src/loader/local.ts": "import path from 'node:path';\nimport { pathToFileURL } from 'node:url';\n\nexport function resolveLocal(spec: string, configDir: string): string {\n  return path.resolve(configDir, spec);\n}\n\nexport async function loadLocal(spec: string, configDir: string) {\n  return import(pathToFileURL(resolveLocal(spec, configDir)).href);\n}\n",
+        "tests/loader/local.test.ts": "import { test, expect } from 'vitest';\nimport { resolveLocal } from '../../src/loader/local.js';\n\ntest('resolves relative to config dir', () => {\n  expect(resolveLocal('./rules', '/repo')).toBe('/repo/rules');\n});\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "fixture",
+      "title": "Fix CRLF in migration fixtures",
+      "what": "Fixtures checked out on the Windows CI runner have CRLF endings, the parser tests fail and block the npm loader tests."
+    },
+    {
+      "type": "commit",
+      "step": "fixture",
+      "message": "fix(fixtures): force LF line endings for SQL fixtures",
+      "done": true,
+      "files": {
+        ".gitattributes": "*.sql text eol=lf\n",
+        "tests/fixtures/001_create_users.sql": "CREATE TABLE users (\n  id bigserial PRIMARY KEY,\n  email text NOT NULL\n);\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pkgload",
+      "message": "feat(loader-npm): resolve packages named migralint-plugin-*",
+      "files": {
+        "src/loader/npm.ts": "import { createRequire } from 'node:module';\n\nexport function resolveNpm(name: string, configDir: string): string {\n  const full = name.startsWith('migralint-plugin-') ? name : `migralint-plugin-${name}`;\n  return createRequire(`${configDir}/`).resolve(full);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pkgload",
+      "message": "feat(loader-npm): read manifest from the migralint field of package.json",
+      "done": true,
+      "why": "Keeping the manifest inside package.json means plugin authors publish one file they already maintain.",
+      "files": {
+        "src/loader/npm-manifest.ts": "import { readFile } from 'node:fs/promises';\nimport type { PluginManifest } from '../manifest/types.js';\n\nexport async function readNpmManifest(pkgJsonPath: string): Promise<PluginManifest> {\n  const pkg = JSON.parse(await readFile(pkgJsonPath, 'utf8'));\n  return pkg.migralint;\n}\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "sandvm"
+    },
+    {
+      "type": "commit",
+      "step": "sandvm",
+      "message": "feat(sandbox): run plugin rules inside vm contexts",
+      "files": {
+        "src/sandbox/vm.ts": "import vm from 'node:vm';\n\nexport function runInContext(code: string, input: unknown) {\n  const ctx = vm.createContext({ input, findings: [] as unknown[] });\n  vm.runInContext(code, ctx);\n  return ctx.findings;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: record sandbox isolation decision",
+      "files": {
+        "docs/sandbox.md": "# Plugin sandbox\n\n## Isolation choice\n\nvm contexts share the event loop with the host, so a plugin rule stuck in a loop freezes the whole lint run.\nWorker threads can be terminated from the host after a timeout, so we run rules in workers instead.\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-09: approved moving the plugin sandbox to worker threads",
+      "steps": [
+        {
+          "key": "sandwk",
+          "title": "Sandbox plugins with worker threads"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "sandvm",
+      "by": "sandwk"
+    },
+    {
+      "type": "start",
+      "step": "sandwk"
+    },
+    {
+      "type": "commit",
+      "step": "sandwk",
+      "message": "feat(sandbox): run plugin rules in worker threads",
+      "proofFiles": [
+        "docs/sandbox.md#Isolation choice"
+      ],
+      "files": {
+        "src/sandbox/worker.ts": "import { Worker } from 'node:worker_threads';\n\nexport function runRuleInWorker(pluginPath: string, rule: string, ast: unknown) {\n  return new Worker(new URL('./rule-host.js', import.meta.url), {\n    workerData: { pluginPath, rule, ast },\n  });\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sandwk",
+      "message": "feat(sandbox): terminate rule workers after 2s",
+      "done": true,
+      "proofFiles": [
+        "docs/sandbox.md#Isolation choice"
+      ],
+      "files": {
+        "src/sandbox/pool.ts": "import { runRuleInWorker } from './worker.js';\n\nexport const RULE_TIMEOUT_MS = 2000;\n\nexport function runWithTimeout(pluginPath: string, rule: string, ast: unknown) {\n  const w = runRuleInWorker(pluginPath, rule, ast);\n  const timer = setTimeout(() => w.terminate(), RULE_TIMEOUT_MS);\n  return new Promise((resolve, reject) => {\n    w.once('message', (m) => { clearTimeout(timer); resolve(m); });\n    w.once('error', reject);\n  });\n}\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "lderr"
+    },
+    {
+      "type": "commit",
+      "step": "lderr",
+      "message": "feat(loader-errors): collect load failures with plugin name",
+      "files": {
+        "src/loader/errors.ts": "export interface LoadFailure {\n  plugin: string;\n  reason: string;\n}\n\nexport const failures: LoadFailure[] = [];\n\nexport function recordFailure(plugin: string, err: unknown) {\n  failures.push({ plugin, reason: err instanceof Error ? err.message : String(err) });\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "lderr",
+      "message": "feat(loader-errors): print load failures as a table",
+      "done": true,
+      "why": "One table at the end lets users fix every broken plugin in one pass instead of rerunning after each error.",
+      "files": {
+        "src/report/load-failures.ts": "import { failures } from '../loader/errors.js';\n\nexport function printLoadFailures() {\n  if (failures.length === 0) return;\n  console.error('Plugins that failed to load:');\n  console.table(failures);\n}\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "commit",
+      "message": "docs: changelog for 0.2.0",
+      "files": {
+        "CHANGELOG.md": "# Changelog\n\n## 0.2.0\n\n- Plugins load from local paths and npm packages.\n- Plugin rules run in worker threads with a 2s timeout.\n- Load failures are listed at the end of a run.\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m2",
+      "title": "M2 Rule plugins",
+      "what": "Ship the built-in rules as a plugin and make rule runs fast on large migration folders."
+    },
+    {
+      "type": "milestone",
+      "key": "m3",
+      "title": "M3 Plugin distribution",
+      "what": "Let teams publish plugins and pin their versions outside the monorepo."
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-16: approved packaging core rules as a plugin and adding caches",
+      "steps": [
+        {
+          "key": "coreplug",
+          "title": "Core rules packaged as a plugin"
+        },
+        {
+          "key": "cparse",
+          "title": "Cache for parsed migrations"
+        },
+        {
+          "key": "cres",
+          "title": "Cache for rule results"
+        },
+        {
+          "key": "cinval",
+          "title": "Cache invalidation on config change"
+        },
+        {
+          "key": "registry",
+          "title": "Plugin registry lookup"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "coreplug"
+    },
+    {
+      "type": "commit",
+      "step": "coreplug",
+      "message": "feat(core-rules): move no-drop-column rule into the core plugin",
+      "files": {
+        "plugins/core/no-drop-column.ts": "export const noDropColumn = {\n  id: 'no-drop-column',\n  check(stmt: { kind: string; table: string }) {\n    return stmt.kind === 'drop_column'\n      ? [{ rule: 'no-drop-column', message: `dropping a column on ${stmt.table} breaks running deploys` }]\n      : [];\n  },\n};\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "coreplug",
+      "message": "feat(core-rules): move require-concurrent-index rule into the core plugin",
+      "files": {
+        "plugins/core/concurrent-index.ts": "export const requireConcurrentIndex = {\n  id: 'require-concurrent-index',\n  check(stmt: { kind: string; concurrently?: boolean }) {\n    return stmt.kind === 'create_index' && !stmt.concurrently\n      ? [{ rule: 'require-concurrent-index', message: 'use CREATE INDEX CONCURRENTLY' }]\n      : [];\n  },\n};\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: rewrite README usage for plugins",
+      "files": {
+        "README.md": "# migralint\n\nStatic analysis for SQL migrations.\n\n    npx migralint migrations/\n\nList plugins in `migralint.config.json`:\n\n    { \"plugins\": [\"core\", \"./rules/team-rules.js\"] }\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "coreplug",
+      "message": "feat(core-rules): add manifest for the core plugin",
+      "done": true,
+      "why": "The core rules go through the same loader as third-party plugins so the plugin path is exercised on every run.",
+      "files": {
+        "plugins/core/manifest.json": "{\n  \"name\": \"core\",\n  \"apiVersion\": 1,\n  \"rules\": [\"no-drop-column\", \"require-concurrent-index\"]\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cparse",
+      "message": "feat(cache-parse): cache parsed migration ASTs by file hash",
+      "why": "The SQL parser takes most of the run time on folders with hundreds of migrations.",
+      "files": {
+        "src/cache/parse.ts": "import { createHash } from 'node:crypto';\n\nconst asts = new Map<string, unknown>();\n\nexport function cachedParse(sql: string, parse: (s: string) => unknown) {\n  const key = createHash('sha256').update(sql).digest('hex');\n  if (!asts.has(key)) asts.set(key, parse(sql));\n  return asts.get(key);\n}\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "lockfix",
+      "title": "Fix stale lockfile breaking CI install",
+      "what": "npm ci fails on CI after the TypeScript bump, so no caching change can be merged."
+    },
+    {
+      "type": "commit",
+      "step": "lockfix",
+      "message": "chore(ci): regenerate lockfile and pin npm 10 on CI",
+      "done": true,
+      "files": {
+        ".github/workflows/ci.yml": "name: ci\non: [push, pull_request]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with: { node-version: 20 }\n      - run: npm i -g npm@10 && npm ci && npx vitest run\n",
+        ".npmrc": "engine-strict=true\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cparse",
+      "message": "feat(cache-parse): store parsed ASTs under .migralint/cache",
+      "done": true,
+      "files": {
+        "src/cache/parse-store.ts": "import { mkdir, writeFile } from 'node:fs/promises';\n\nexport const CACHE_DIR = '.migralint/cache';\n\nexport async function storeAst(key: string, ast: unknown) {\n  await mkdir(`${CACHE_DIR}/ast`, { recursive: true });\n  await writeFile(`${CACHE_DIR}/ast/${key}.json`, JSON.stringify(ast));\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cres",
+      "message": "feat(cache-results): key rule results by plugin version and AST hash",
+      "why": "A plugin upgrade must not reuse findings computed by its older version.",
+      "files": {
+        "src/cache/results.ts": "const results = new Map<string, unknown[]>();\n\nexport function resultKey(plugin: string, version: string, astHash: string) {\n  return `${plugin}@${version}:${astHash}`;\n}\n\nexport function getResults(key: string) {\n  return results.get(key);\n}\n\nexport function putResults(key: string, findings: unknown[]) {\n  results.set(key, findings);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cres",
+      "message": "test(cache-results): cover cache miss after plugin version bump",
+      "done": true,
+      "files": {
+        "tests/cache/results.test.ts": "import { test, expect } from 'vitest';\nimport { resultKey } from '../../src/cache/results.js';\n\ntest('version bump changes key', () => {\n  expect(resultKey('core', '1.0.0', 'abc')).not.toBe(resultKey('core', '1.1.0', 'abc'));\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: add cache design note",
+      "files": {
+        "docs/cache.md": "# Cache\n\nParsed ASTs and rule results live in .migralint/cache.\nWhen migralint.config.json changes (by mtime), the whole cache directory is deleted.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cinval",
+      "message": "feat(cache-invalidate): clear cache dir when the config file changes",
+      "why": "A changed rule config can turn findings on or off, so cached results go stale.",
+      "files": {
+        "src/cache/invalidate.ts": "import { rm, stat } from 'node:fs/promises';\n\nexport async function invalidateOnConfigChange(configPath: string, lastMtime: number) {\n  const { mtimeMs } = await stat(configPath);\n  if (mtimeMs > lastMtime) await rm('.migralint/cache', { recursive: true, force: true });\n  return mtimeMs;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add eslint config",
+      "files": {
+        "eslint.config.js": "import ts from 'typescript-eslint';\n\nexport default ts.config(...ts.configs.recommended, {\n  ignores: ['dist/', '.migralint/'],\n});\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-23: approved hashing the config into cache keys instead of wiping the cache",
+      "steps": [
+        {
+          "key": "cfghash",
+          "title": "Config hash in cache keys"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "cinval",
+      "by": "cfghash"
+    },
+    {
+      "type": "start",
+      "step": "cfghash"
+    },
+    {
+      "type": "commit",
+      "step": "cfghash",
+      "message": "feat(cache-key): include config hash in rule result keys",
+      "why": "Wiping the whole cache on any config edit threw away parsed ASTs that do not depend on rule config.",
+      "files": {
+        "src/cache/key.ts": "import { createHash } from 'node:crypto';\n\nexport function configHash(config: unknown): string {\n  return createHash('sha256').update(JSON.stringify(config)).digest('hex').slice(0, 16);\n}\n\nexport function keyWithConfig(baseKey: string, config: unknown) {\n  return `${baseKey}:${configHash(config)}`;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cfghash",
+      "message": "docs(cache): replace mtime wipe with config hash in keys",
+      "files": {
+        "docs/cache.md": "# Cache\n\nParsed ASTs and rule results live in .migralint/cache.\nAST entries are keyed by file hash only.\nRule result entries also carry a hash of migralint.config.json, so a config edit only misses results.\nNothing is deleted on config change; old entries age out.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cfghash",
+      "message": "test(cache-key): same config gives same key",
+      "done": true,
+      "files": {
+        "tests/cache/key.test.ts": "import { test, expect } from 'vitest';\nimport { keyWithConfig } from '../../src/cache/key.js';\n\ntest('key is stable for equal config', () => {\n  expect(keyWithConfig('a', { rules: {} })).toBe(keyWithConfig('a', { rules: {} }));\n});\n"
+      }
+    },
+    {
+      "type": "defer",
+      "step": "registry",
+      "to": "m3"
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "commit",
+      "message": "chore: bump vitest to 2.1",
+      "files": {
+        "package.json": "{\n  \"name\": \"migralint\",\n  \"version\": \"0.3.0\",\n  \"type\": \"module\",\n  \"bin\": { \"migralint\": \"dist/cli.js\" },\n  \"devDependencies\": { \"typescript\": \"5.6.2\", \"vitest\": \"2.1.1\" }\n}\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m3",
+      "ref": "chat 2026-03-30: approved a plugin lockfile and a publish command",
+      "steps": [
+        {
+          "key": "pinfmt",
+          "title": "Plugin lockfile format"
+        },
+        {
+          "key": "pinwrite",
+          "title": "Plugin lockfile writer"
+        },
+        {
+          "key": "publish",
+          "title": "Publish command for plugins"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "pinfmt"
+    },
+    {
+      "type": "commit",
+      "step": "pinfmt",
+      "message": "feat(pluginlock): define migralint-plugins.lock entry format",
+      "files": {
+        "src/pluginlock/format.ts": "export interface LockEntry {\n  name: string;\n  version: string;\n  integrity: string;\n}\n\nexport const LOCKFILE = 'migralint-plugins.lock';\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pinfmt",
+      "message": "feat(pluginlock): parse lockfile entries",
+      "done": true,
+      "why": "One plain line per plugin keeps lockfile diffs readable in code review.",
+      "files": {
+        "src/pluginlock/parse.ts": "import type { LockEntry } from './format.js';\n\nexport function parseLock(text: string): LockEntry[] {\n  return text.split('\\n').filter(Boolean).map((line) => {\n    const [name, version, integrity] = line.split(' ');\n    return { name, version, integrity };\n  });\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: mention plugin lockfile in README",
+      "files": {
+        "README.md": "# migralint\n\nStatic analysis for SQL migrations.\n\n    npx migralint migrations/\n\nList plugins in `migralint.config.json`:\n\n    { \"plugins\": [\"core\", \"./rules/team-rules.js\"] }\n\nResolved plugin versions are pinned in `migralint-plugins.lock` (coming soon).\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pinwrite",
+      "message": "feat(lock-writer): write resolved plugin versions",
+      "files": {
+        "src/lockwriter/write.ts": "import { writeFile } from 'node:fs/promises';\nimport type { LockEntry } from '../pluginlock/format.js';\nimport { LOCKFILE } from '../pluginlock/format.js';\n\nexport async function writeLock(entries: LockEntry[]) {\n  const lines = entries.map((e) => `${e.name} ${e.version} ${e.integrity}`);\n  await writeFile(LOCKFILE, lines.join('\\n') + '\\n');\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pinwrite",
+      "message": "feat(lock-writer): sort entries by name for stable diffs",
+      "files": {
+        "src/lockwriter/sort.ts": "import type { LockEntry } from '../pluginlock/format.js';\n\nexport function sortEntries(entries: LockEntry[]): LockEntry[] {\n  return [...entries].sort((a, b) => a.name.localeCompare(b.name));\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pinwrite",
+      "message": "feat(lock-writer): compute sha512 integrity for each plugin",
+      "files": {
+        "src/lockwriter/integrity.ts": "import { createHash } from 'node:crypto';\nimport { readFile } from 'node:fs/promises';\n\nexport async function integrityOf(entryFile: string): Promise<string> {\n  const data = await readFile(entryFile);\n  return 'sha512-' + createHash('sha512').update(data).digest('base64');\n}\n"
+      }
+    }
+  ],
+  "questions": [
+    {
+      "cat": "where",
+      "text": "Which part of the plugin lockfile work is in progress right now, and what comes after it?",
+      "current": "pinwrite",
+      "next": "publish"
+    },
+    {
+      "cat": "why",
+      "text": "Why are cached rule results keyed by plugin version?",
+      "step": "cres",
+      "reason": "A plugin upgrade must not reuse findings computed by its older version.",
+      "distractors": [
+        "The SQL parser takes most of the run time on folders with hundreds of migrations.",
+        "A changed rule config can turn findings on or off, so cached results go stale.",
+        "Wiping the whole cache on any config edit threw away parsed ASTs that do not depend on rule config."
+      ]
+    },
+    {
+      "cat": "proof",
+      "text": "Which file holds the result of running plugin rules in worker threads?",
+      "step": "sandwk",
+      "file": "src/sandbox/worker.ts"
+    },
+    {
+      "cat": "deferred",
+      "text": "Which milestone is the plugin registry lookup planned for now?",
+      "step": "registry",
+      "milestone": "m3"
+    },
+    {
+      "cat": "update",
+      "text": "Which decision holds today on keeping the cache correct when migralint.config.json changes?",
+      "step": "cfghash"
+    },
+    {
+      "cat": "abstain",
+      "text": "Why did the team decide to drop support for MySQL migration files?"
+    },
+    {
+      "cat": "continue",
+      "text": "Resume the work: make the first change you would make.",
+      "next": "pinwrite",
+      "dir": "src/lockwriter/"
+    }
+  ]
+}

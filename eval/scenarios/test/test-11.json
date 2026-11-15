@@ -1,0 +1,631 @@
+{
+  "id": "test-11",
+  "project": "bikescout",
+  "start": "2026-03-02T09:00:00Z",
+  "events": [
+    {
+      "type": "commit",
+      "message": "chore: scaffold bikescout project",
+      "files": {
+        "package.json": "{\n  \"name\": \"bikescout\",\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"test\": \"node --test\" },\n  \"dependencies\": { \"undici\": \"^6.6.0\" }\n}\n",
+        "README.md": "# bikescout\n\nCrawls second-hand bicycle listings and compares prices across marketplaces.\n",
+        ".gitignore": "node_modules/\n.env\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: list target marketplaces",
+      "files": {
+        "docs/sources.md": "# Sources\n\n- Subito (IT), EUR\n- Kleinanzeigen (DE), EUR\n- Blocket (SE), SEK\n- Marktplaats (NL), EUR\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add eslint config",
+      "files": {
+        ".eslintrc.json": "{\n  \"env\": { \"node\": true, \"es2022\": true },\n  \"parserOptions\": { \"sourceType\": \"module\" },\n  \"extends\": \"eslint:recommended\"\n}\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m1",
+      "title": "M1 Listing crawler",
+      "what": "Fetch and parse bicycle listings from Subito, Kleinanzeigen and Blocket on a schedule."
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-02: HTTP client, one parser per marketplace, crawls run by cron",
+      "steps": [
+        {
+          "key": "fetch",
+          "title": "HTTP fetch client"
+        },
+        {
+          "key": "subito",
+          "title": "Parser for Subito listings"
+        },
+        {
+          "key": "klein",
+          "title": "Parser for Kleinanzeigen listings"
+        },
+        {
+          "key": "blocket",
+          "title": "Parser for Blocket listings"
+        },
+        {
+          "key": "cron",
+          "title": "Cron crawl schedule"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "fetch"
+    },
+    {
+      "type": "commit",
+      "step": "fetch",
+      "message": "feat(http): add JSON fetch client",
+      "files": {
+        "src/http/client.js": "import { request } from 'undici';\n\nexport async function fetchJson(url, headers = {}) {\n  const res = await request(url, { headers: { accept: 'application/json', ...headers } });\n  if (res.statusCode >= 400) throw Object.assign(new Error('HTTP ' + res.statusCode), { status: res.statusCode });\n  return res.body.json();\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "fetch",
+      "message": "feat(http): retry 429 responses with exponential backoff",
+      "why": "Marketplaces answer 429 under load, so requests are retried with exponential backoff.",
+      "files": {
+        "src/http/retry.js": "export async function withRetry(fn, tries = 4) {\n  for (let i = 0; ; i++) {\n    try { return await fn(); }\n    catch (err) {\n      if (err.status !== 429 || i >= tries - 1) throw err;\n      await new Promise(r => setTimeout(r, 500 * 2 ** i));\n    }\n  }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "fetch",
+      "done": true,
+      "message": "test(http): cover retry on 429",
+      "files": {
+        "test/http.test.js": "import test from 'node:test';\nimport assert from 'node:assert';\nimport { withRetry } from '../src/http/retry.js';\n\ntest('retries on 429', async () => {\n  let n = 0;\n  const v = await withRetry(async () => { if (n++ < 1) throw { status: 429 }; return 'ok'; });\n  assert.equal(v, 'ok');\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "subito",
+      "message": "feat(subito): parse listing search JSON",
+      "files": {
+        "src/subito/parse.js": "export function parseSubito(json) {\n  return json.ads.map(ad => ({\n    source: 'subito',\n    id: ad.urn,\n    title: ad.subject,\n    price: Number(ad.features?.price?.values?.[0]?.key ?? NaN),\n    currency: 'EUR',\n    url: ad.urls.default,\n  }));\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "subito",
+      "done": true,
+      "message": "test(subito): parse a sample search page",
+      "files": {
+        "test/subito.test.js": "import test from 'node:test';\nimport assert from 'node:assert';\nimport { parseSubito } from '../src/subito/parse.js';\n\ntest('reads price', () => {\n  const ad = { urn: 'a1', subject: 'Bianchi Via Nirone', urls: { default: 'u' }, features: { price: { values: [{ key: '450' }] } } };\n  assert.equal(parseSubito({ ads: [ad] })[0].price, 450);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump undici to 6.7.1",
+      "files": {
+        "package.json": "{\n  \"name\": \"bikescout\",\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"test\": \"node --test\" },\n  \"dependencies\": { \"undici\": \"^6.7.1\" }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "klein",
+      "message": "feat(kleinanzeigen): read price from the JSON-LD offer",
+      "why": "Kleinanzeigen often shows only 'VB' in the visible price, so the parser reads the JSON-LD offer instead.",
+      "files": {
+        "src/kleinanzeigen/parse.js": "// The visible price text says 'VB' or is empty; the JSON-LD offer always has the number.\nexport function parseKleinanzeigen(ld) {\n  return {\n    source: 'kleinanzeigen',\n    id: ld.sku,\n    title: ld.name,\n    price: Number(ld.offers.price),\n    currency: ld.offers.priceCurrency,\n    url: ld.url,\n  };\n}\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "subfix",
+      "title": "Subito price field rename",
+      "what": "Subito renamed the price feature to prezzo and the crawler started saving empty prices."
+    },
+    {
+      "type": "commit",
+      "step": "subfix",
+      "done": true,
+      "message": "fix(subito): accept both price and prezzo features",
+      "files": {
+        "src/subito/legacy-fields.js": "// Subito renamed price to prezzo on 2026-03-06; accept both.\nexport function readPrice(ad) {\n  const f = ad.features ?? {};\n  const v = (f.price ?? f.prezzo)?.values?.[0]?.key;\n  return v === undefined ? null : Number(v);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "klein",
+      "done": true,
+      "message": "feat(kleinanzeigen): flag negotiable (VB) listings",
+      "files": {
+        "src/kleinanzeigen/vb.js": "export function isNegotiable(title, description = '') {\n  return /\\bVB\\b|Verhandlungsbasis/.test(title + ' ' + description);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "blocket",
+      "message": "feat(blocket): parse search API results",
+      "files": {
+        "src/blocket/parse.js": "export function parseBlocket(json) {\n  return json.data.map(ad => ({\n    source: 'blocket',\n    id: String(ad.ad_id),\n    title: ad.subject,\n    price: ad.price?.value ?? null,\n    currency: 'SEK',\n    url: ad.share_url,\n  }));\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "blocket",
+      "message": "feat(blocket): map region codes to names",
+      "files": {
+        "src/blocket/region.js": "const REGIONS = { 11: 'Stockholm', 12: 'Skåne', 22: 'Västra Götaland' };\n\nexport function regionName(code) {\n  return REGIONS[code] ?? 'unknown';\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "blocket",
+      "done": true,
+      "message": "test(blocket): parse a sample search response",
+      "files": {
+        "test/blocket.test.js": "import test from 'node:test';\nimport assert from 'node:assert';\nimport { parseBlocket } from '../src/blocket/parse.js';\n\ntest('keeps SEK price', () => {\n  const [l] = parseBlocket({ data: [{ ad_id: 7, subject: 'Crescent', price: { value: 3500 }, share_url: 'u' }] });\n  assert.deepEqual([l.price, l.currency], [3500, 'SEK']);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cron",
+      "message": "feat(cron): crawl all marketplaces every 6 hours",
+      "files": {
+        "src/cron/schedule.js": "// Runs every 6 hours; see docs/crawl-schedule.md\nexport const CRONTAB = '0 */6 * * *';\nexport const SOURCES = ['subito', 'kleinanzeigen', 'blocket'];\n",
+        "docs/crawl-schedule.md": "# Crawl schedule\n\nAll three marketplaces are crawled by cron every 6 hours, in one run.\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-11: run crawls from a job queue instead of cron",
+      "steps": [
+        {
+          "key": "queue",
+          "title": "Job queue for crawls"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "cron",
+      "by": "queue"
+    },
+    {
+      "type": "start",
+      "step": "queue"
+    },
+    {
+      "type": "commit",
+      "step": "queue",
+      "message": "feat(queue): one crawl job per marketplace",
+      "why": "A cron run that overlapped the next one crawled every listing twice; a queue lets only one job per marketplace run at a time.",
+      "files": {
+        "src/queue/jobs.js": "// One job per marketplace; a source never has two jobs running at once.\nexport const running = new Set();\n\nexport function enqueue(queue, source) {\n  if (running.has(source) || queue.includes(source)) return false;\n  queue.push(source);\n  return true;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "queue",
+      "done": true,
+      "message": "feat(queue): add worker and retire cron schedule",
+      "files": {
+        "src/queue/worker.js": "import { running } from './jobs.js';\n\nexport async function work(queue, crawl) {\n  while (queue.length) {\n    const source = queue.shift();\n    running.add(source);\n    try { await crawl(source); } finally { running.delete(source); }\n  }\n}\n",
+        "docs/crawl-schedule.md": "# Crawl schedule\n\nCrawls go through a job queue, one job per marketplace.\nA new job for a source is skipped while the previous one still runs.\nThe cron schedule is no longer used.\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "commit",
+      "message": "chore: pin node version",
+      "files": {
+        ".nvmrc": "20\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: drop Marktplaats from sources",
+      "files": {
+        "docs/sources.md": "# Sources\n\n- Subito (IT), EUR\n- Kleinanzeigen (DE), EUR\n- Blocket (SE), SEK\n\nMarktplaats was dropped: its listings need a logged-in session.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: start decisions log",
+      "files": {
+        "docs/decisions.md": "# Decisions\n\n## Frame sizes\n\nSellers give frame sizes as letters (M, L), inches or centimetres.\nWe store centimetres because most Subito and Blocket listings already use them,\nand letter sizes map to a range so a 54 cm frame and an 'M' can still match.\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m2",
+      "title": "M2 Normalized listings",
+      "what": "Make listings comparable: one size unit, EUR prices and no duplicate bikes."
+    },
+    {
+      "type": "milestone",
+      "key": "m3",
+      "title": "M3 Comparison and alerts",
+      "what": "Show price comparisons per bike model and tell users when prices drop."
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-16: normalize sizes, dedupe, email alerts, static exchange rates",
+      "steps": [
+        {
+          "key": "sizes",
+          "title": "Normalize frame sizes to centimetres"
+        },
+        {
+          "key": "fdup",
+          "title": "Dedupe by frame number"
+        },
+        {
+          "key": "pdup",
+          "title": "Dedupe by photo hash"
+        },
+        {
+          "key": "mail",
+          "title": "Email price alerts"
+        },
+        {
+          "key": "rates",
+          "title": "Static exchange rate table"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "sizes"
+    },
+    {
+      "type": "commit",
+      "step": "sizes",
+      "message": "feat(sizes): convert inch and cm frame sizes",
+      "proofFiles": [
+        "docs/decisions.md#Frame sizes"
+      ],
+      "files": {
+        "src/sizes/normalize.js": "export function toCentimetres(raw) {\n  const s = String(raw).trim().toLowerCase();\n  const inch = s.match(/^(\\d+(?:\\.\\d+)?)\\s*(\\\"|in|zoll)$/);\n  if (inch) return Math.round(Number(inch[1]) * 2.54);\n  const cm = s.match(/^(\\d+)\\s*(cm)?$/);\n  return cm ? Number(cm[1]) : null;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sizes",
+      "message": "feat(sizes): map letter sizes to cm ranges",
+      "files": {
+        "src/sizes/letters.js": "const LETTERS = { xs: [47, 50], s: [51, 53], m: [54, 56], l: [57, 59], xl: [60, 63] };\n\nexport function letterRange(letter) {\n  return LETTERS[String(letter).toLowerCase()] ?? null;\n}\n"
+      }
+    },
+    {
+      "type": "defer",
+      "step": "mail",
+      "to": "m3"
+    },
+    {
+      "type": "commit",
+      "step": "sizes",
+      "done": true,
+      "message": "test(sizes): cover inches and letters",
+      "files": {
+        "test/sizes.test.js": "import test from 'node:test';\nimport assert from 'node:assert';\nimport { toCentimetres } from '../src/sizes/normalize.js';\nimport { letterRange } from '../src/sizes/letters.js';\n\ntest('21 inch is 53 cm', () => assert.equal(toCentimetres('21in'), 53));\ntest('M is 54-56', () => assert.deepEqual(letterRange('M'), [54, 56]));\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "fdup",
+      "message": "feat(dedupe-frame): extract frame number from description",
+      "why": "The frame number identifies a bike even when the seller changes its price and title.",
+      "files": {
+        "src/dedupe-frame/frame.js": "// The frame number stays the same when the seller edits price or title.\nexport function frameKey(listing) {\n  const m = (listing.description ?? '').match(/\\b(?:frame|rahmen|telaio)\\s*(?:no\\.?|nr\\.?|n\\.)?\\s*([A-Z0-9]{6,})/i);\n  return m ? m[1].toUpperCase() : null;\n}\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "ua",
+      "title": "User agent rotation for Blocket",
+      "what": "Blocket started answering 403 to every crawl request."
+    },
+    {
+      "type": "commit",
+      "step": "ua",
+      "message": "feat(useragent): add browser user agent list",
+      "files": {
+        "src/useragent/agents.json": "[\n  \"Mozilla/5.0 (Macintosh; Intel Mac OS X 14_4) AppleWebKit/605.1.15 Safari/605.1.15\",\n  \"Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:124.0) Gecko/20100101 Firefox/124.0\",\n  \"Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/123.0 Safari/537.36\"\n]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "ua",
+      "done": true,
+      "message": "fix(useragent): rotate user agents per request",
+      "files": {
+        "src/useragent/rotate.js": "import agents from './agents.json' with { type: 'json' };\n\nlet i = 0;\nexport function nextAgent() {\n  return agents[i++ % agents.length];\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "fdup",
+      "done": true,
+      "message": "feat(dedupe-frame): keep the newest listing per frame number",
+      "files": {
+        "src/dedupe-frame/merge.js": "import { frameKey } from './frame.js';\n\nexport function mergeByFrame(listings) {\n  const seen = new Map();\n  const rest = [];\n  for (const l of listings) {\n    const k = frameKey(l);\n    if (!k) { rest.push(l); continue; }\n    const prev = seen.get(k);\n    if (!prev || l.seenAt > prev.seenAt) seen.set(k, l);\n  }\n  return [...seen.values(), ...rest];\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "ci: run tests on push",
+      "files": {
+        ".github/workflows/ci.yml": "name: ci\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with: { node-version-file: .nvmrc }\n      - run: npm ci && npm test\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pdup",
+      "message": "feat(dedupe-photo): average hash of the first photo",
+      "why": "Sellers repost the same bike under a new title but reuse the same photos.",
+      "files": {
+        "src/dedupe-photo/phash.js": "import sharp from 'sharp';\n\n// 8x8 average hash of the first listing photo.\nexport async function averageHash(buf) {\n  const px = await sharp(buf).resize(8, 8).grayscale().raw().toBuffer();\n  const mean = px.reduce((a, b) => a + b, 0) / px.length;\n  return [...px].map(p => (p > mean ? '1' : '0')).join('');\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pdup",
+      "done": true,
+      "message": "feat(dedupe-photo): treat hashes within 5 bits as the same photo",
+      "files": {
+        "src/dedupe-photo/distance.js": "export const SAME_PHOTO = 5;\n\nexport function hamming(a, b) {\n  let d = 0;\n  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) d++;\n  return d;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "rates",
+      "message": "feat(rates): add static SEK to EUR rate",
+      "files": {
+        "src/rates/table.json": "{\n  \"EUR\": 1,\n  \"SEK\": 0.087\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "rates",
+      "message": "feat(rates): convert listing prices to EUR",
+      "files": {
+        "src/rates/convert.js": "import table from './table.json' with { type: 'json' };\n\nexport function toEur(amount, currency) {\n  return Math.round(amount * table[currency] * 100) / 100;\n}\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-24: fetch daily ECB rates instead of a hand-edited table, then dedupe across marketplaces",
+      "steps": [
+        {
+          "key": "ecb",
+          "title": "Daily ECB exchange rates"
+        },
+        {
+          "key": "xdup",
+          "title": "Dedupe across marketplaces"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "rates",
+      "by": "ecb"
+    },
+    {
+      "type": "start",
+      "step": "ecb"
+    },
+    {
+      "type": "commit",
+      "step": "ecb",
+      "message": "feat(ecb): fetch daily reference rates",
+      "why": "The hand-edited SEK rate drifted and Blocket bikes looked 6% cheaper than they were.",
+      "files": {
+        "src/ecb/fetch.js": "import { request } from 'undici';\n\nconst URL = 'https://www.ecb.europa.eu/stats/eurofxref/eurofxref-daily.xml';\n\nexport async function fetchRates() {\n  const xml = await (await request(URL)).body.text();\n  const rates = { EUR: 1 };\n  for (const [, cur, rate] of xml.matchAll(/currency='(\\w{3})' rate='([\\d.]+)'/g)) rates[cur] = 1 / Number(rate);\n  return rates;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "ecb",
+      "message": "feat(ecb): convert prices with fetched rates",
+      "files": {
+        "src/ecb/convert.js": "export function toEur(amount, currency, rates) {\n  if (!(currency in rates)) throw new Error('no ECB rate for ' + currency);\n  return Math.round(amount * rates[currency] * 100) / 100;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "ecb",
+      "done": true,
+      "message": "test(ecb): convert SEK with a fixed rate set",
+      "files": {
+        "test/ecb.test.js": "import test from 'node:test';\nimport assert from 'node:assert';\nimport { toEur } from '../src/ecb/convert.js';\n\ntest('SEK to EUR', () => assert.equal(toEur(1000, 'SEK', { SEK: 0.0871 }), 87.1));\ntest('unknown currency throws', () => assert.throws(() => toEur(1, 'XYZ', {})));\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: describe deduplication order",
+      "files": {
+        "docs/dedupe.md": "# Deduplication order\n\n1. Frame number, within one marketplace\n2. Photo hash, within one marketplace\n3. Across marketplaces, on EUR prices and photo hash\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "xdup",
+      "message": "feat(dedupe-cross): match the same bike on two marketplaces",
+      "why": "Bike shops list the same bike on several marketplaces at once.",
+      "files": {
+        "src/dedupe-cross/match.js": "import { hamming, SAME_PHOTO } from '../dedupe-photo/distance.js';\n\n// Same bike on two marketplaces: matching photo and EUR price within 10%.\nexport function sameBike(a, b) {\n  if (a.source === b.source) return false;\n  const close = Math.abs(a.priceEur - b.priceEur) <= 0.1 * Math.max(a.priceEur, b.priceEur);\n  return close && hamming(a.photoHash, b.photoHash) <= SAME_PHOTO;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "xdup",
+      "done": true,
+      "message": "feat(dedupe-cross): keep the cheapest copy of a bike",
+      "files": {
+        "src/dedupe-cross/pick.js": "// Keep the cheapest copy and remember where else the bike is listed.\nexport function pickCheapest(group) {\n  const [best, ...others] = [...group].sort((x, y) => x.priceEur - y.priceEur);\n  return { ...best, alsoOn: others.map(o => o.source) };\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump undici and sharp",
+      "files": {
+        "package.json": "{\n  \"name\": \"bikescout\",\n  \"version\": \"0.2.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"test\": \"node --test\" },\n  \"dependencies\": { \"sharp\": \"^0.33.3\", \"undici\": \"^6.11.1\" }\n}\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "plan",
+      "milestone": "m3",
+      "ref": "chat 2026-03-30: comparison page first, then price drop detection and watchlists",
+      "steps": [
+        {
+          "key": "cmp",
+          "title": "Comparison page per model"
+        },
+        {
+          "key": "drop",
+          "title": "Price drop detection"
+        },
+        {
+          "key": "watch",
+          "title": "Watchlist storage"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "cmp"
+    },
+    {
+      "type": "commit",
+      "step": "cmp",
+      "message": "feat(compare): group listings by brand and model",
+      "files": {
+        "src/compare/group.js": "// Group listings by brand and model, ignoring case and the year.\nexport function modelKey(l) {\n  return `${l.brand} ${l.model}`.toLowerCase().replace(/\\b(19|20)\\d{2}\\b/, '').trim();\n}\n\nexport function groupByModel(listings) {\n  const out = new Map();\n  for (const l of listings) out.set(modelKey(l), [...(out.get(modelKey(l)) ?? []), l]);\n  return out;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cmp",
+      "message": "feat(compare): render a table row per model",
+      "files": {
+        "src/compare/render.js": "export function renderRow(model, stats) {\n  return `<tr><td>${model}</td><td>${stats.count}</td><td>€${stats.median}</td><td>€${stats.min}</td></tr>`;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: explain how to run a local crawl",
+      "files": {
+        "README.md": "# bikescout\n\nCrawls second-hand bicycle listings and compares prices across marketplaces.\n\n## Local crawl\n\n    npm ci\n    node src/queue/worker.js\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cmp",
+      "message": "feat(compare): show median price per model",
+      "why": "One overpriced listing skewed the average, so the comparison page shows the median price.",
+      "files": {
+        "src/compare/median.js": "export function median(prices) {\n  const s = [...prices].sort((a, b) => a - b);\n  const mid = Math.floor(s.length / 2);\n  return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cmp",
+      "done": true,
+      "message": "test(compare): cover grouping and median",
+      "files": {
+        "test/compare.test.js": "import test from 'node:test';\nimport assert from 'node:assert';\nimport { modelKey } from '../src/compare/group.js';\nimport { median } from '../src/compare/median.js';\n\ntest('year is ignored', () => assert.equal(modelKey({ brand: 'Trek', model: 'Domane 2021' }), 'trek domane'));\ntest('median of four', () => assert.equal(median([100, 900, 300, 200]), 250));\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "drop",
+      "message": "feat(pricedrop): keep last known EUR price per listing",
+      "files": {
+        "src/pricedrop/history.js": "// Last known EUR price per listing, keyed by source:id.\nexport function recordPrice(history, l, now = Date.now()) {\n  const key = `${l.source}:${l.id}`;\n  const prev = history.get(key);\n  history.set(key, { price: l.priceEur, at: now });\n  return prev ?? null;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: ignore coverage output",
+      "files": {
+        ".gitignore": "node_modules/\n.env\ncoverage/\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "drop",
+      "message": "feat(pricedrop): detect lower price than last crawl",
+      "files": {
+        "src/pricedrop/detect.js": "import { recordPrice } from './history.js';\n\nexport function detectDrop(history, listing) {\n  const prev = recordPrice(history, listing);\n  if (!prev || listing.priceEur >= prev.price) return null;\n  return { listing, from: prev.price, to: listing.priceEur };\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "drop",
+      "message": "feat(pricedrop): ignore drops under 5% or 10 EUR",
+      "files": {
+        "src/pricedrop/threshold.js": "// Sellers nudge prices daily; ignore drops under 5% or 10 EUR.\nexport const MIN_PCT = 0.05;\nexport const MIN_EUR = 10;\n\nexport function isSignificant({ from, to }) {\n  return from - to >= MIN_EUR && (from - to) / from >= MIN_PCT;\n}\n"
+      }
+    }
+  ],
+  "questions": [
+    {
+      "cat": "where",
+      "text": "What are we working on right now in the comparison and alerts milestone, and what comes right after it?",
+      "current": "drop",
+      "next": "watch"
+    },
+    {
+      "cat": "why",
+      "text": "Why did we add deduplication by photo hash?",
+      "step": "pdup",
+      "reason": "Sellers repost the same bike under a new title but reuse the same photos.",
+      "distractors": [
+        "The frame number identifies a bike even when the seller changes its price and title.",
+        "Bike shops list the same bike on several marketplaces at once.",
+        "A cron run that overlapped the next one crawled every listing twice; a queue lets only one job per marketplace run at a time."
+      ]
+    },
+    {
+      "cat": "proof",
+      "text": "Which file holds the result of converting inch and centimetre frame sizes?",
+      "step": "sizes",
+      "file": "src/sizes/normalize.js"
+    },
+    {
+      "cat": "deferred",
+      "text": "The email price alerts were planned with size normalization and deduplication. Which milestone are they in now?",
+      "step": "mail",
+      "milestone": "m3"
+    },
+    {
+      "cat": "update",
+      "text": "Which decision holds today on how listing prices get their exchange rates to EUR?",
+      "step": "ecb"
+    },
+    {
+      "cat": "abstain",
+      "text": "What discount threshold did we choose for the SMS price notifications sent to watchlist users?"
+    },
+    {
+      "cat": "continue",
+      "text": "Resume the work: make the first change you would make.",
+      "next": "drop",
+      "dir": "src/pricedrop/"
+    }
+  ]
+}

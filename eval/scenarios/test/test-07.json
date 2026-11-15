@@ -1,0 +1,899 @@
+{
+  "id": "test-07",
+  "project": "langcentre-exams",
+  "start": "2026-03-02T09:00:00Z",
+  "events": [
+    {
+      "type": "commit",
+      "message": "chore: scaffold exam booking portal",
+      "files": {
+        "package.json": "{\n  \"name\": \"langcentre-exams\",\n  \"version\": \"0.1.0\",\n  \"private\": true,\n  \"scripts\": { \"start\": \"node src/index.js\", \"test\": \"node --test\" },\n  \"dependencies\": { \"express\": \"^4.21.1\", \"pg\": \"^8.13.0\" }\n}\n",
+        "README.md": "# langcentre-exams\n\nExam booking portal for the University Language Centre.\nCandidates browse exam sessions (CEFR A2-C1) and book a seat.\n",
+        "src/index.js": "const express = require('express');\n\nconst app = express();\napp.use(express.json());\n\napp.get('/health', (req, res) => res.json({ ok: true }));\n\napp.listen(process.env.PORT || 3000);\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add eslint config",
+      "files": {
+        ".eslintrc.json": "{\n  \"env\": { \"node\": true, \"es2022\": true },\n  \"extends\": \"eslint:recommended\",\n  \"rules\": { \"no-unused-vars\": \"warn\" }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: add contributing guide",
+      "files": {
+        "CONTRIBUTING.md": "# Contributing\n\n- Branch from main, one feature per branch.\n- Run `npm test` before opening a pull request.\n- Commit subjects follow Conventional Commits.\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m1",
+      "title": "M1 Sessions and booking",
+      "what": "Candidates can browse exam sessions and book a seat."
+    },
+    {
+      "type": "commit",
+      "message": "docs: first draft of booking rules",
+      "files": {
+        "docs/booking-rules.md": "# Booking rules (draft)\n\n- A candidate books one seat per session.\n- Seats are held for 30 minutes while the candidate confirms.\n- Bookings close 7 days before the exam.\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-02: session model, listing with a cache, seat locking with row locks, booking confirmation, profile cache",
+      "steps": [
+        {
+          "key": "sess-model",
+          "title": "Exam session model"
+        },
+        {
+          "key": "sess-list",
+          "title": "Session listing page"
+        },
+        {
+          "key": "cache-sess",
+          "title": "Cache for session listings"
+        },
+        {
+          "key": "seat-row",
+          "title": "Seat locking with row locks"
+        },
+        {
+          "key": "book-confirm",
+          "title": "Booking confirmation flow"
+        },
+        {
+          "key": "cache-cand",
+          "title": "Cache for candidate profiles"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "sess-model"
+    },
+    {
+      "type": "commit",
+      "step": "sess-model",
+      "message": "feat(sessions): add exam session model",
+      "files": {
+        "src/sessions/model.js": "class ExamSession {\n  constructor({ id, language, level, startsAt, room, capacity }) {\n    Object.assign(this, { id, language, level, startsAt, room, capacity });\n    this.booked = 0;\n  }\n  get seatsLeft() { return this.capacity - this.booked; }\n}\n\nmodule.exports = { ExamSession };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sess-model",
+      "message": "feat(sessions): validate level and capacity",
+      "files": {
+        "src/sessions/validate.js": "const LEVELS = ['A2', 'B1', 'B2', 'C1'];\n\nfunction validateSession(s) {\n  if (!LEVELS.includes(s.level)) throw new Error(`unknown level ${s.level}`);\n  if (!Number.isInteger(s.capacity) || s.capacity < 1) throw new Error('capacity must be a positive integer');\n  return s;\n}\n\nmodule.exports = { validateSession, LEVELS };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sess-model",
+      "message": "test(sessions): model validation tests",
+      "files": {
+        "test/sessions/model.test.js": "const test = require('node:test');\nconst assert = require('node:assert');\nconst { validateSession } = require('../../src/sessions/validate');\n\ntest('rejects unknown level', () => {\n  assert.throws(() => validateSession({ level: 'D1', capacity: 10 }));\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sess-model",
+      "message": "feat(sessions): seed spring term sessions",
+      "done": true,
+      "why": "Spring term sessions are seeded from the centre's timetable so the listing shows real dates from day one.",
+      "files": {
+        "src/sessions/seed.js": "module.exports = [\n  { language: 'English', level: 'B2', startsAt: '2026-04-18T09:00', room: 'Aula 3', capacity: 40 },\n  { language: 'Spanish', level: 'B1', startsAt: '2026-04-18T14:00', room: 'Aula 5', capacity: 25 },\n  { language: 'Italian L2', level: 'A2', startsAt: '2026-04-25T09:00', room: 'Aula 1', capacity: 30 }\n];\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sess-list",
+      "message": "feat(sessions): listing endpoint by language and level",
+      "files": {
+        "src/sessions/listing.js": "async function listSessions(db, { language, level }) {\n  const { rows } = await db.query(\n    'SELECT * FROM sessions WHERE ($1::text IS NULL OR language = $1) AND ($2::text IS NULL OR level = $2) ORDER BY starts_at',\n    [language || null, level || null]\n  );\n  return rows;\n}\n\nmodule.exports = { listSessions };\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "tz-fix",
+      "title": "Fix session times shown in UTC",
+      "what": "Candidates in the pilot saw 09:00 sessions listed at 08:00 because dates were rendered in UTC."
+    },
+    {
+      "type": "commit",
+      "step": "tz-fix",
+      "message": "fix(sessions): render session times in Europe/Rome",
+      "done": true,
+      "why": "Exams are held at the centre in Cagliari, so times are always shown in Europe/Rome whatever the browser's timezone.",
+      "files": {
+        "src/sessions/tz.js": "const fmt = new Intl.DateTimeFormat('it-IT', {\n  timeZone: 'Europe/Rome', dateStyle: 'medium', timeStyle: 'short'\n});\n\nfunction formatSessionTime(date) {\n  return fmt.format(new Date(date));\n}\n\nmodule.exports = { formatSessionTime };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sess-list",
+      "message": "feat(web): session listing page",
+      "files": {
+        "src/web/listing-page.js": "const { formatSessionTime } = require('../sessions/tz');\n\nfunction renderListing(sessions) {\n  return sessions.map(s =>\n    `<li>${s.language} ${s.level} - ${formatSessionTime(s.starts_at)} - ${s.capacity - s.booked} seats left</li>`\n  ).join('\\n');\n}\n\nmodule.exports = { renderListing };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sess-list",
+      "message": "feat(sessions): paginate listing",
+      "done": true,
+      "files": {
+        "src/sessions/paginate.js": "function paginate(rows, page = 1, perPage = 20) {\n  const start = (page - 1) * perPage;\n  return { items: rows.slice(start, start + perPage), page, pages: Math.ceil(rows.length / perPage) };\n}\n\nmodule.exports = { paginate };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump express to 4.21.2",
+      "files": {
+        "package.json": "{\n  \"name\": \"langcentre-exams\",\n  \"version\": \"0.1.0\",\n  \"private\": true,\n  \"scripts\": { \"start\": \"node src/index.js\", \"test\": \"node --test\" },\n  \"dependencies\": { \"express\": \"^4.21.2\", \"pg\": \"^8.13.0\" }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: caching notes",
+      "files": {
+        "docs/caching.md": "# Caching\n\n## Listing cache\nSession listings are cached for 60 seconds: on the last enrolment day the old portal took about 40 requests per second on the listing, and every request hit the database.\n\n## Profile cache\nCandidate profiles come from the university directory, which is slow and allows only 10 requests per second, so profiles are kept for 24 hours.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cache-sess",
+      "message": "feat(cache): cache session listings for 60 seconds",
+      "proofFiles": [
+        "docs/caching.md#Listing cache"
+      ],
+      "files": {
+        "src/cache/sessions.js": "const TTL_MS = 60 * 1000;\nconst store = new Map();\n\nasync function cachedListing(key, load) {\n  const hit = store.get(key);\n  if (hit && hit.expires > Date.now()) return hit.value;\n  const value = await load();\n  store.set(key, { value, expires: Date.now() + TTL_MS });\n  return value;\n}\n\nmodule.exports = { cachedListing, store };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cache-sess",
+      "message": "feat(cache): count listing cache hits",
+      "done": true,
+      "files": {
+        "src/cache/metrics.js": "const counters = { hits: 0, misses: 0 };\n\nfunction record(hit) {\n  counters[hit ? 'hits' : 'misses'] += 1;\n}\n\nmodule.exports = { counters, record };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "seat-row",
+      "message": "feat(seats): lock seat rows with SELECT FOR UPDATE",
+      "files": {
+        "src/seats/rowlock.js": "async function reserveSeat(client, sessionId) {\n  await client.query('BEGIN');\n  const { rows } = await client.query('SELECT capacity, booked FROM sessions WHERE id = $1 FOR UPDATE', [sessionId]);\n  if (rows[0].booked >= rows[0].capacity) { await client.query('ROLLBACK'); return false; }\n  await client.query('UPDATE sessions SET booked = booked + 1 WHERE id = $1', [sessionId]);\n  await client.query('COMMIT');\n  return true;\n}\n\nmodule.exports = { reserveSeat };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "seat-row",
+      "message": "test(seats): concurrent booking test",
+      "files": {
+        "test/seats/rowlock.test.js": "const test = require('node:test');\nconst assert = require('node:assert');\n\ntest('50 parallel bookings never exceed capacity', async () => {\n  const results = await Promise.all(Array.from({ length: 50 }, () => global.book(1)));\n  assert.ok(results.filter(Boolean).length <= 40);\n});\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-11: switch seat locking to Postgres advisory locks",
+      "steps": [
+        {
+          "key": "seat-adv",
+          "title": "Seat locking with advisory locks"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "seat-row",
+      "by": "seat-adv"
+    },
+    {
+      "type": "start",
+      "step": "seat-adv"
+    },
+    {
+      "type": "commit",
+      "step": "seat-adv",
+      "message": "feat(seats): advisory lock per session",
+      "why": "Row locks blocked listing reads during the enrolment-day load test; advisory locks keyed by session id leave the sessions table readable.",
+      "files": {
+        "src/seats/advisory.js": "async function withSessionLock(client, sessionId, fn) {\n  await client.query('SELECT pg_advisory_lock($1)', [sessionId]);\n  try {\n    return await fn();\n  } finally {\n    await client.query('SELECT pg_advisory_unlock($1)', [sessionId]);\n  }\n}\n\nmodule.exports = { withSessionLock };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "seat-adv",
+      "message": "refactor(seats): route bookings through the advisory lock",
+      "done": true,
+      "files": {
+        "src/seats/index.js": "const { withSessionLock } = require('./advisory');\n\nasync function reserveSeat(client, sessionId) {\n  return withSessionLock(client, sessionId, async () => {\n    const { rowCount } = await client.query('UPDATE sessions SET booked = booked + 1 WHERE id = $1 AND booked < capacity', [sessionId]);\n    return rowCount === 1;\n  });\n}\n\nmodule.exports = { reserveSeat };\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "book-confirm"
+    },
+    {
+      "type": "commit",
+      "step": "book-confirm",
+      "message": "feat(booking): confirmation endpoint",
+      "files": {
+        "src/booking/confirm.js": "const { reserveSeat } = require('../seats');\nconst { newReference } = require('./reference');\n\nasync function confirmBooking(client, { sessionId, candidateId }) {\n  if (!(await reserveSeat(client, sessionId))) return { ok: false, reason: 'full' };\n  const ref = newReference();\n  await client.query('INSERT INTO bookings (ref, session_id, candidate_id) VALUES ($1, $2, $3)', [ref, sessionId, candidateId]);\n  return { ok: true, ref };\n}\n\nmodule.exports = { confirmBooking };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "book-confirm",
+      "message": "feat(booking): booking reference codes",
+      "files": {
+        "src/booking/reference.js": "const crypto = require('node:crypto');\n\nfunction newReference() {\n  return 'CLA-' + crypto.randomBytes(4).toString('hex').toUpperCase();\n}\n\nmodule.exports = { newReference };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: rewrite booking rules after seat locking change",
+      "files": {
+        "docs/booking-rules.md": "# Booking rules\n\nThis replaces the March draft.\n\n- A candidate books one seat per session.\n- A seat is taken when the booking is confirmed; there is no 30-minute hold.\n- Candidates can cancel their own booking up to 10 days before the exam.\n- Bookings close 7 days before the exam.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "book-confirm",
+      "message": "feat(booking): cancel own booking before deadline",
+      "files": {
+        "src/booking/cancel-own.js": "const DEADLINE_DAYS = 10;\n\nfunction canCancel(session, now = new Date()) {\n  const limit = new Date(session.starts_at);\n  limit.setDate(limit.getDate() - DEADLINE_DAYS);\n  return now < limit;\n}\n\nmodule.exports = { canCancel };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "book-confirm",
+      "message": "feat(web): booking confirmation page",
+      "done": true,
+      "files": {
+        "src/web/confirm-page.js": "function renderConfirmation({ ref, session }) {\n  return `<h1>Booking confirmed</h1>\n<p>Your reference is <strong>${ref}</strong>.</p>\n<p>${session.language} ${session.level}, room ${session.room}.</p>`;\n}\n\nmodule.exports = { renderConfirmation };\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m3",
+      "title": "M3 Staff tools and performance",
+      "what": "Staff can export booking lists, attendance sheets and results, and slow lookups are cached."
+    },
+    {
+      "type": "defer",
+      "step": "cache-cand",
+      "to": "m3"
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "milestone",
+      "key": "m2",
+      "title": "M2 Payments and notifications",
+      "what": "Bookings are paid through the university gateway and candidates receive emails."
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): add mail transport",
+      "files": {
+        "package.json": "{\n  \"name\": \"langcentre-exams\",\n  \"version\": \"0.2.0\",\n  \"private\": true,\n  \"scripts\": { \"start\": \"node src/index.js\", \"test\": \"node --test\" },\n  \"dependencies\": { \"express\": \"^4.21.2\", \"nodemailer\": \"^6.9.16\", \"pg\": \"^8.13.0\" }\n}\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-04-06: gateway payment and webhook, receipt and cancellation emails, cache invalidation, reminders scheduled with system cron",
+      "steps": [
+        {
+          "key": "pay-intent",
+          "title": "Payment request to the university gateway"
+        },
+        {
+          "key": "pay-hook",
+          "title": "Gateway webhook handler"
+        },
+        {
+          "key": "mail-receipt",
+          "title": "Email receipt for payment"
+        },
+        {
+          "key": "mail-cancel",
+          "title": "Email notice for cancelled sessions"
+        },
+        {
+          "key": "cache-inval",
+          "title": "Cache invalidation on session edit"
+        },
+        {
+          "key": "sched-cron",
+          "title": "Reminder scheduling with system cron"
+        },
+        {
+          "key": "mail-remind",
+          "title": "Email reminder for exam day"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "pay-intent"
+    },
+    {
+      "type": "commit",
+      "step": "pay-intent",
+      "message": "feat(payments): read gateway config from env",
+      "files": {
+        "src/payments/config.js": "module.exports = {\n  gatewayUrl: process.env.GATEWAY_URL || 'https://pagamenti.example-univ.it/api',\n  merchantId: process.env.GATEWAY_MERCHANT_ID,\n  merchantKey: process.env.GATEWAY_MERCHANT_KEY,\n  returnUrl: process.env.PUBLIC_URL + '/booking/paid'\n};\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pay-intent",
+      "message": "feat(payments): create payment request",
+      "files": {
+        "src/payments/request.js": "const cfg = require('./config');\nconst { sign } = require('./sign');\n\nfunction paymentRequest(booking, amountCents) {\n  const body = { merchant: cfg.merchantId, order: booking.ref, amount: amountCents, currency: 'EUR', returnUrl: cfg.returnUrl };\n  return { ...body, signature: sign(body) };\n}\n\nmodule.exports = { paymentRequest };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pay-intent",
+      "message": "feat(payments): sign requests with the merchant key",
+      "why": "The gateway rejects unsigned requests, so every payment request carries an HMAC-SHA256 signature made with the centre's merchant key.",
+      "files": {
+        "src/payments/sign.js": "const crypto = require('node:crypto');\nconst cfg = require('./config');\n\nfunction sign(body) {\n  const payload = Object.keys(body).sort().map(k => `${k}=${body[k]}`).join('&');\n  return crypto.createHmac('sha256', cfg.merchantKey).update(payload).digest('hex');\n}\n\nmodule.exports = { sign };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pay-intent",
+      "message": "feat(booking): keep bookings pending until paid",
+      "done": true,
+      "files": {
+        "src/booking/pending.js": "async function markPending(client, ref) {\n  await client.query(\"UPDATE bookings SET status = 'pending' WHERE ref = $1\", [ref]);\n}\n\nasync function expirePending(client) {\n  await client.query(\"UPDATE bookings SET status = 'expired' WHERE status = 'pending' AND created_at < now() - interval '2 hours'\");\n}\n\nmodule.exports = { markPending, expirePending };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pay-hook",
+      "message": "feat(payments): webhook endpoint",
+      "files": {
+        "src/payments/webhook.js": "const { verify } = require('./verify');\nconst { settle } = require('./settle');\n\nasync function handleWebhook(req, res) {\n  if (!verify(req.body)) return res.status(401).end();\n  await settle(req.app.locals.db, req.body);\n  res.status(204).end();\n}\n\nmodule.exports = { handleWebhook };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "ci: run tests on pull requests",
+      "files": {
+        ".github/workflows/ci.yml": "name: ci\non: [pull_request]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with: { node-version: 20 }\n      - run: npm ci && npm test\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pay-hook",
+      "message": "feat(payments): verify webhook signature",
+      "files": {
+        "src/payments/verify.js": "const crypto = require('node:crypto');\nconst { sign } = require('./sign');\n\nfunction verify({ signature, ...body }) {\n  const expected = Buffer.from(sign(body));\n  const got = Buffer.from(signature || '');\n  return got.length === expected.length && crypto.timingSafeEqual(got, expected);\n}\n\nmodule.exports = { verify };\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "dbl-fix",
+      "title": "Fix double booking on payment retry",
+      "what": "A candidate who retried a failed payment ended up with two confirmed seats in the same session."
+    },
+    {
+      "type": "commit",
+      "step": "dbl-fix",
+      "message": "fix(booking): apply each payment confirmation once",
+      "why": "The gateway sends the same callback again on retry, so confirmations are keyed by the payment reference and applied only once.",
+      "files": {
+        "src/booking/idempotency.js": "async function applyOnce(client, paymentRef, fn) {\n  const { rowCount } = await client.query(\n    'INSERT INTO applied_payments (payment_ref) VALUES ($1) ON CONFLICT DO NOTHING', [paymentRef]\n  );\n  if (rowCount === 0) return false;\n  await fn();\n  return true;\n}\n\nmodule.exports = { applyOnce };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "dbl-fix",
+      "message": "test(booking): regression test for payment retry",
+      "done": true,
+      "files": {
+        "test/booking/retry.test.js": "const test = require('node:test');\nconst assert = require('node:assert');\n\ntest('same payment callback twice books one seat', async () => {\n  await global.callback({ paymentRef: 'TX-1', order: 'CLA-0001' });\n  await global.callback({ paymentRef: 'TX-1', order: 'CLA-0001' });\n  assert.strictEqual(await global.seatsBooked(1), 1);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pay-hook",
+      "message": "feat(payments): mark booking paid on success",
+      "done": true,
+      "files": {
+        "src/payments/settle.js": "const { applyOnce } = require('../booking/idempotency');\n\nasync function settle(db, { order, paymentRef, outcome }) {\n  if (outcome !== 'OK') return;\n  await applyOnce(db, paymentRef, () =>\n    db.query(\"UPDATE bookings SET status = 'paid', payment_ref = $2 WHERE ref = $1\", [order, paymentRef])\n  );\n}\n\nmodule.exports = { settle };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: notification plan",
+      "files": {
+        "docs/notifications.md": "# Notifications\n\n## Receipts\nSent as soon as the gateway confirms a payment.\n\n## Reminder timing\nExam-day reminders go out 48 hours before the exam, not 24: candidates must bring an ID and the printed booking reference, and in the pilot many asked for a working day to prepare.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "mail-receipt",
+      "message": "feat(mail): payment receipt template",
+      "why": "The finance office requires every receipt to show the gateway transaction reference and the VAT-exemption note.",
+      "files": {
+        "src/mail/receipt.js": "function receiptMail({ booking, paymentRef, amount }) {\n  return {\n    subject: `Receipt for booking ${booking.ref}`,\n    text: `Amount paid: EUR ${(amount / 100).toFixed(2)}\\nTransaction: ${paymentRef}\\nVAT exempt under art. 10 DPR 633/72.`\n  };\n}\n\nmodule.exports = { receiptMail };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "mail-receipt",
+      "message": "feat(mail): Italian and English receipt text",
+      "files": {
+        "src/mail/receipt-text.js": "module.exports = {\n  it: { subject: 'Ricevuta di pagamento', thanks: 'Grazie per la prenotazione.' },\n  en: { subject: 'Payment receipt', thanks: 'Thank you for your booking.' }\n};\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "mail-receipt",
+      "message": "feat(mail): send receipt after settlement",
+      "done": true,
+      "files": {
+        "src/mail/send-receipt.js": "const nodemailer = require('nodemailer');\nconst { receiptMail } = require('./receipt');\n\nconst transport = nodemailer.createTransport(process.env.SMTP_URL);\n\nasync function sendReceipt(to, data) {\n  await transport.sendMail({ from: 'esami.cla@example-univ.it', to, ...receiptMail(data) });\n}\n\nmodule.exports = { sendReceipt };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "mail-cancel",
+      "message": "feat(mail): cancelled session notice template",
+      "why": "When the centre cancels a session, candidates must be told the same day and offered either a refund or a move to another date.",
+      "files": {
+        "src/mail/cancel.js": "function cancelMail({ session, booking }) {\n  return {\n    subject: `Session cancelled: ${session.language} ${session.level}`,\n    text: `Your booking ${booking.ref} has been cancelled by the Language Centre.\\nReply REFUND for a refund or pick another date in the portal.`\n  };\n}\n\nmodule.exports = { cancelMail };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "mail-cancel",
+      "message": "feat(sessions): cancelling a session sends notices",
+      "done": true,
+      "files": {
+        "src/sessions/cancel.js": "const { cancelMail } = require('../mail/cancel');\n\nasync function cancelSession(db, mailer, sessionId) {\n  const { rows } = await db.query(\"UPDATE bookings SET status = 'cancelled' WHERE session_id = $1 RETURNING *\", [sessionId]);\n  const session = (await db.query('SELECT * FROM sessions WHERE id = $1', [sessionId])).rows[0];\n  for (const booking of rows) await mailer.send(booking.email, cancelMail({ session, booking }));\n}\n\nmodule.exports = { cancelSession };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cache-inval",
+      "message": "feat(cache): purge listing keys on session edit",
+      "why": "Staff who moved a session to another room saw the old room on the listing for up to a minute, so edits now purge the listing keys at once.",
+      "files": {
+        "src/cache/invalidate.js": "const { store } = require('./sessions');\n\nfunction purgeListings(session) {\n  for (const key of store.keys()) {\n    if (key.includes(session.language) || key === 'all') store.delete(key);\n  }\n}\n\nmodule.exports = { purgeListings };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump pg to 8.13.1",
+      "files": {
+        "package.json": "{\n  \"name\": \"langcentre-exams\",\n  \"version\": \"0.2.0\",\n  \"private\": true,\n  \"scripts\": { \"start\": \"node src/index.js\", \"test\": \"node --test\" },\n  \"dependencies\": { \"express\": \"^4.21.2\", \"nodemailer\": \"^6.9.16\", \"pg\": \"^8.13.1\" }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cache-inval",
+      "message": "test(cache): editing a session purges its listing",
+      "done": true,
+      "files": {
+        "test/cache/invalidate.test.js": "const test = require('node:test');\nconst assert = require('node:assert');\nconst { store } = require('../../src/cache/sessions');\nconst { purgeListings } = require('../../src/cache/invalidate');\n\ntest('edit purges matching keys', () => {\n  store.set('English:B2', { value: [], expires: Infinity });\n  purgeListings({ language: 'English' });\n  assert.strictEqual(store.has('English:B2'), false);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sched-cron",
+      "message": "feat(reminders): crontab entry for daily reminders",
+      "files": {
+        "ops/reminders.cron": "# Send exam-day reminders every morning at 07:30 Europe/Rome\nCRON_TZ=Europe/Rome\n30 7 * * * cd /srv/langcentre-exams && node src/reminders/cron-batch.js >> /var/log/reminders.log 2>&1\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sched-cron",
+      "message": "feat(reminders): reminder batch script",
+      "files": {
+        "src/reminders/cron-batch.js": "const { Pool } = require('pg');\n\nasync function main() {\n  const db = new Pool();\n  const { rows } = await db.query(\"SELECT * FROM bookings WHERE status = 'paid' AND exam_date = current_date + 2\");\n  console.log(`would remind ${rows.length} candidates`);\n  await db.end();\n}\n\nmain();\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-04-20: run reminders from a jobs table polled by the app instead of system cron",
+      "steps": [
+        {
+          "key": "sched-table",
+          "title": "Reminder scheduling with a jobs table"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "sched-cron",
+      "by": "sched-table"
+    },
+    {
+      "type": "start",
+      "step": "sched-table"
+    },
+    {
+      "type": "commit",
+      "step": "sched-table",
+      "message": "feat(reminders): jobs table migration",
+      "why": "The university hosting does not allow crontab on the app servers, so reminders are rows in a jobs table that the app polls.",
+      "files": {
+        "db/migrations/004_jobs.sql": "CREATE TABLE jobs (\n  id serial PRIMARY KEY,\n  kind text NOT NULL,\n  payload jsonb NOT NULL,\n  run_at timestamptz NOT NULL,\n  attempts int NOT NULL DEFAULT 0,\n  done_at timestamptz\n);\nCREATE INDEX jobs_due ON jobs (run_at) WHERE done_at IS NULL;\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sched-table",
+      "message": "feat(reminders): job poller",
+      "files": {
+        "src/reminders/poller.js": "async function pollOnce(db, handlers) {\n  const { rows } = await db.query(\n    'SELECT * FROM jobs WHERE done_at IS NULL AND run_at <= now() ORDER BY run_at LIMIT 20 FOR UPDATE SKIP LOCKED'\n  );\n  for (const job of rows) {\n    await handlers[job.kind](job.payload);\n    await db.query('UPDATE jobs SET done_at = now() WHERE id = $1', [job.id]);\n  }\n}\n\nmodule.exports = { pollOnce };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sched-table",
+      "message": "feat(reminders): retry failed jobs with backoff",
+      "done": true,
+      "files": {
+        "src/reminders/retry.js": "async function reschedule(db, job) {\n  const delayMin = Math.min(2 ** job.attempts, 60);\n  await db.query(\n    \"UPDATE jobs SET attempts = attempts + 1, run_at = now() + ($2 || ' minutes')::interval WHERE id = $1\",\n    [job.id, delayMin]\n  );\n}\n\nmodule.exports = { reschedule };\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "mail-remind"
+    },
+    {
+      "type": "commit",
+      "step": "mail-remind",
+      "message": "feat(mail): exam day reminder template",
+      "proofFiles": [
+        "docs/notifications.md#Reminder timing"
+      ],
+      "files": {
+        "src/mail/reminder.js": "const { formatSessionTime } = require('../sessions/tz');\n\nfunction reminderMail({ session, booking }) {\n  return {\n    subject: `Your ${session.language} ${session.level} exam is in two days`,\n    text: `${formatSessionTime(session.starts_at)}, room ${session.room}.\\nBring an ID and your booking reference ${booking.ref}.`\n  };\n}\n\nmodule.exports = { reminderMail };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "mail-remind",
+      "message": "feat(reminders): enqueue reminder when a booking is paid",
+      "done": true,
+      "files": {
+        "src/reminders/enqueue.js": "const HOURS_BEFORE = 48;\n\nasync function enqueueReminder(db, booking, session) {\n  const runAt = new Date(new Date(session.starts_at).getTime() - HOURS_BEFORE * 3600 * 1000);\n  await db.query(\"INSERT INTO jobs (kind, payload, run_at) VALUES ('reminder', $1, $2)\", [{ ref: booking.ref }, runAt]);\n}\n\nmodule.exports = { enqueueReminder };\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "commit",
+      "message": "chore: add editorconfig",
+      "files": {
+        ".editorconfig": "root = true\n\n[*]\nindent_style = space\nindent_size = 2\nend_of_line = lf\ninsert_final_newline = true\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m3",
+      "ref": "chat 2026-05-11: staff exports of booking lists, attendance sheets and registry results",
+      "steps": [
+        {
+          "key": "exp-book",
+          "title": "Export of booking lists"
+        },
+        {
+          "key": "exp-attend",
+          "title": "Export of attendance sheets"
+        },
+        {
+          "key": "exp-results",
+          "title": "Export of results to the registry"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "cache-cand"
+    },
+    {
+      "type": "commit",
+      "step": "cache-cand",
+      "message": "feat(cache): cache candidate profiles from the directory",
+      "proofFiles": [
+        "docs/caching.md#Profile cache"
+      ],
+      "files": {
+        "src/cache/profiles.js": "const { ttlFor } = require('./profiles-ttl');\nconst profiles = new Map();\n\nasync function getProfile(directory, candidateId) {\n  const hit = profiles.get(candidateId);\n  if (hit && hit.expires > Date.now()) return hit.value;\n  const value = await directory.lookup(candidateId);\n  profiles.set(candidateId, { value, expires: Date.now() + ttlFor(value) });\n  return value;\n}\n\nmodule.exports = { getProfile };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cache-cand",
+      "message": "feat(cache): keep profiles for 24 hours",
+      "done": true,
+      "files": {
+        "src/cache/profiles-ttl.js": "const DAY_MS = 24 * 3600 * 1000;\n\nfunction ttlFor(profile) {\n  return profile && profile.matricola ? DAY_MS : 5 * 60 * 1000;\n}\n\nmodule.exports = { ttlFor };\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "exp-book"
+    },
+    {
+      "type": "commit",
+      "step": "exp-book",
+      "message": "feat(export): booking list as CSV",
+      "files": {
+        "src/export/bookings.js": "function csvCell(v) {\n  const s = String(v ?? '');\n  return /[\";\\n]/.test(s) ? `\"${s.replace(/\"/g, '\"\"')}\"` : s;\n}\n\nfunction bookingsCsv(rows) {\n  const head = 'reference;surname;name;email;status';\n  return [head, ...rows.map(r => [r.ref, r.surname, r.name, r.email, r.status].map(csvCell).join(';'))].join('\\n');\n}\n\nmodule.exports = { bookingsCsv };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "exp-book",
+      "message": "test(export): escape semicolons in booking CSV",
+      "files": {
+        "test/export/bookings.test.js": "const test = require('node:test');\nconst assert = require('node:assert');\nconst { bookingsCsv } = require('../../src/export/bookings');\n\ntest('quotes cells with semicolons', () => {\n  const csv = bookingsCsv([{ ref: 'CLA-1', surname: 'Rossi; Jr', name: 'Anna', email: 'a@x.it', status: 'paid' }]);\n  assert.match(csv, /\"Rossi; Jr\"/);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "exp-book",
+      "message": "feat(export): staff-only export routes",
+      "done": true,
+      "files": {
+        "src/export/routes.js": "const express = require('express');\nconst { bookingsCsv } = require('./bookings');\n\nconst router = express.Router();\nrouter.use((req, res, next) => (req.user && req.user.role === 'staff' ? next() : res.status(403).end()));\nrouter.get('/sessions/:id/bookings.csv', async (req, res) => {\n  const { rows } = await req.app.locals.db.query('SELECT * FROM booking_list WHERE session_id = $1', [req.params.id]);\n  res.type('text/csv').send(bookingsCsv(rows));\n});\n\nmodule.exports = router;\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "exp-attend",
+      "message": "feat(export): attendance sheet as printable PDF",
+      "why": "Examiners have candidates sign a paper sheet in the room, so attendance is exported as a printable PDF with a signature column.",
+      "files": {
+        "src/export/attendance.js": "const PDFDocument = require('pdfkit');\n\nfunction attendancePdf(session, candidates, out) {\n  const doc = new PDFDocument({ size: 'A4' });\n  doc.pipe(out);\n  doc.fontSize(14).text(`${session.language} ${session.level} - ${session.room}`);\n  candidates.forEach((c, i) => doc.fontSize(10).text(`${i + 1}. ${c.surname} ${c.name}    ID: ________    Signature: ______________`));\n  doc.end();\n}\n\nmodule.exports = { attendancePdf };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): add pdfkit",
+      "files": {
+        "package.json": "{\n  \"name\": \"langcentre-exams\",\n  \"version\": \"0.3.0\",\n  \"private\": true,\n  \"scripts\": { \"start\": \"node src/index.js\", \"test\": \"node --test\" },\n  \"dependencies\": { \"express\": \"^4.21.2\", \"nodemailer\": \"^6.9.16\", \"pdfkit\": \"^0.15.1\", \"pg\": \"^8.13.1\" }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "exp-attend",
+      "message": "feat(export): sort attendance by surname",
+      "done": true,
+      "files": {
+        "src/export/sort.js": "const collator = new Intl.Collator('it', { sensitivity: 'base' });\n\nfunction bySurname(a, b) {\n  return collator.compare(a.surname, b.surname) || collator.compare(a.name, b.name);\n}\n\nmodule.exports = { bySurname };\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "login-fix",
+      "title": "Fix staff login loop after SSO update",
+      "what": "The university SSO changed its callback path and staff were sent back to the login page instead of reaching the export pages."
+    },
+    {
+      "type": "commit",
+      "step": "login-fix",
+      "message": "fix(auth): use the new SSO callback path",
+      "done": true,
+      "files": {
+        "src/auth/sso.js": "module.exports = {\n  entryPoint: 'https://idp.example-univ.it/idp/profile/SAML2/Redirect/SSO',\n  callbackPath: '/auth/saml/acs',\n  issuer: 'langcentre-exams'\n};\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "exp-results",
+      "message": "feat(export): results file in registry format",
+      "why": "The university registry imports results only as semicolon-separated files with the matriculation number in the first column.",
+      "files": {
+        "src/export/results.js": "const { checkGrade } = require('./grades');\n\nfunction resultsFile(rows) {\n  return rows.map(r => [r.matricola, r.exam_code, checkGrade(r.grade), r.exam_date].join(';')).join('\\r\\n');\n}\n\nmodule.exports = { resultsFile };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "exp-results",
+      "message": "feat(export): validate CEFR grades before export",
+      "files": {
+        "src/export/grades.js": "const GRADES = ['A2', 'B1', 'B2', 'C1', 'NOT PASSED', 'ABSENT'];\n\nfunction checkGrade(g) {\n  if (!GRADES.includes(g)) throw new Error(`invalid grade ${g}`);\n  return g;\n}\n\nmodule.exports = { checkGrade };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "exp-results",
+      "message": "test(export): registry results file format",
+      "done": true,
+      "files": {
+        "test/export/results.test.js": "const test = require('node:test');\nconst assert = require('node:assert');\nconst { resultsFile } = require('../../src/export/results');\n\ntest('matriculation number first, CRLF lines', () => {\n  const out = resultsFile([{ matricola: '60/61/12345', exam_code: 'ENG-B2', grade: 'B2', exam_date: '2026-04-18' }]);\n  assert.strictEqual(out, '60/61/12345;ENG-B2;B2;2026-04-18');\n});\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "milestone",
+      "key": "m4",
+      "title": "M4 Waitlist",
+      "what": "Candidates can join a waitlist for full sessions and are offered seats that free up."
+    },
+    {
+      "type": "commit",
+      "message": "docs: document staff exports in README",
+      "files": {
+        "README.md": "# langcentre-exams\n\nExam booking portal for the University Language Centre.\nCandidates browse exam sessions (CEFR A2-C1), book and pay for a seat.\n\n## Staff exports\n- Booking lists (CSV) and attendance sheets (PDF) per session\n- Results file for the registry\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m4",
+      "ref": "chat 2026-06-01: waitlist for full sessions, then seat offers to waitlisted candidates, then expiry of unanswered offers",
+      "steps": [
+        {
+          "key": "waitlist",
+          "title": "Waitlist for full sessions"
+        },
+        {
+          "key": "wl-offer",
+          "title": "Seat offers to waitlisted candidates"
+        },
+        {
+          "key": "wl-expiry",
+          "title": "Expiry of unanswered seat offers"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "waitlist"
+    },
+    {
+      "type": "commit",
+      "step": "waitlist",
+      "message": "feat(waitlist): waitlist table",
+      "files": {
+        "src/waitlist/migration.sql": "CREATE TABLE waitlist (\n  id serial PRIMARY KEY,\n  session_id int NOT NULL REFERENCES sessions(id),\n  candidate_id int NOT NULL,\n  joined_at timestamptz NOT NULL DEFAULT now(),\n  UNIQUE (session_id, candidate_id)\n);\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "waitlist",
+      "message": "feat(waitlist): waitlist entry model",
+      "files": {
+        "src/waitlist/model.js": "class WaitlistEntry {\n  constructor({ id, session_id, candidate_id, joined_at }) {\n    this.id = id;\n    this.sessionId = session_id;\n    this.candidateId = candidate_id;\n    this.joinedAt = new Date(joined_at);\n  }\n}\n\nmodule.exports = { WaitlistEntry };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "waitlist",
+      "message": "feat(waitlist): join the waitlist of a full session",
+      "files": {
+        "src/waitlist/join.js": "const { WaitlistEntry } = require('./model');\n\nasync function joinWaitlist(db, sessionId, candidateId) {\n  const { rows } = await db.query(\n    'INSERT INTO waitlist (session_id, candidate_id) VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING *',\n    [sessionId, candidateId]\n  );\n  return rows[0] ? new WaitlistEntry(rows[0]) : null;\n}\n\nmodule.exports = { joinWaitlist };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "ci: cache npm dependencies",
+      "files": {
+        ".github/workflows/ci.yml": "name: ci\non: [pull_request]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with: { node-version: 20, cache: npm }\n      - run: npm ci && npm test\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "waitlist",
+      "message": "feat(waitlist): show position in queue",
+      "files": {
+        "src/waitlist/position.js": "async function positionOf(db, sessionId, candidateId) {\n  const { rows } = await db.query(\n    'SELECT count(*)::int AS ahead FROM waitlist w JOIN waitlist me ON me.session_id = w.session_id WHERE me.session_id = $1 AND me.candidate_id = $2 AND w.joined_at < me.joined_at',\n    [sessionId, candidateId]\n  );\n  return rows[0].ahead + 1;\n}\n\nmodule.exports = { positionOf };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "waitlist",
+      "message": "feat(waitlist): leave the waitlist",
+      "files": {
+        "src/waitlist/leave.js": "async function leaveWaitlist(db, sessionId, candidateId) {\n  const { rowCount } = await db.query('DELETE FROM waitlist WHERE session_id = $1 AND candidate_id = $2', [sessionId, candidateId]);\n  return rowCount === 1;\n}\n\nmodule.exports = { leaveWaitlist };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "waitlist",
+      "message": "feat(waitlist): candidate routes for joining and leaving",
+      "files": {
+        "src/waitlist/routes.js": "const express = require('express');\nconst { joinWaitlist } = require('./join');\nconst { leaveWaitlist } = require('./leave');\nconst { positionOf } = require('./position');\n\nconst router = express.Router();\nrouter.post('/sessions/:id/waitlist', async (req, res) => {\n  await joinWaitlist(req.app.locals.db, req.params.id, req.user.id);\n  res.json({ position: await positionOf(req.app.locals.db, req.params.id, req.user.id) });\n});\nrouter.delete('/sessions/:id/waitlist', async (req, res) => res.json({ left: await leaveWaitlist(req.app.locals.db, req.params.id, req.user.id) }));\n\nmodule.exports = router;\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "waitlist",
+      "message": "test(waitlist): joining twice keeps one entry",
+      "files": {
+        "src/waitlist/join.test.js": "const test = require('node:test');\nconst assert = require('node:assert');\nconst { joinWaitlist } = require('./join');\n\ntest('second join returns null', async () => {\n  const first = await joinWaitlist(global.db, 1, 42);\n  const second = await joinWaitlist(global.db, 1, 42);\n  assert.ok(first);\n  assert.strictEqual(second, null);\n});\n"
+      }
+    }
+  ],
+  "questions": [
+    {
+      "cat": "where",
+      "text": "What is being worked on right now in the exam booking portal, and what is planned right after it?",
+      "current": "waitlist",
+      "next": "wl-offer"
+    },
+    {
+      "cat": "why",
+      "text": "Why are session listings cached?",
+      "step": "cache-sess",
+      "reason": "On the last enrolment day the old portal took about 40 requests per second on the listing, and every request hit the database.",
+      "distractors": [
+        "Staff who moved a session to another room saw the old room on the listing for up to a minute, so edits purge the listing keys at once.",
+        "Candidate profiles come from the university directory, which is slow and allows only 10 requests per second.",
+        "The university hosting does not allow crontab on the app servers, so reminders are rows in a jobs table that the app polls."
+      ]
+    },
+    {
+      "cat": "proof",
+      "text": "Which file holds the result of the gateway webhook handler work?",
+      "step": "pay-hook",
+      "file": "src/payments/webhook.js"
+    },
+    {
+      "cat": "deferred",
+      "text": "The cache for candidate profiles was planned with sessions and booking; in which milestone was it moved?",
+      "step": "cache-cand",
+      "milestone": "m3"
+    },
+    {
+      "cat": "update",
+      "text": "Which decision holds today on how seats are locked during booking?",
+      "step": "seat-adv"
+    },
+    {
+      "cat": "abstain",
+      "text": "Which SMS provider was chosen to send the exam-day reminders?"
+    },
+    {
+      "cat": "continue",
+      "text": "Resume the work: make the first change you would make.",
+      "next": "waitlist",
+      "dir": "src/waitlist/"
+    }
+  ]
+}

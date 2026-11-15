@@ -1,0 +1,558 @@
+{
+  "id": "test-01",
+  "project": "parcel-trail",
+  "start": "2026-03-02T09:00:00Z",
+  "events": [
+    {
+      "type": "commit",
+      "message": "chore: scaffold parcel-trail service",
+      "files": {
+        "package.json": "{\n  \"name\": \"parcel-trail\",\n  \"version\": \"0.1.0\",\n  \"main\": \"src/server.js\",\n  \"scripts\": { \"start\": \"node src/server.js\", \"test\": \"node --test\" },\n  \"dependencies\": { \"express\": \"^4.18.2\", \"better-sqlite3\": \"^9.4.0\" }\n}\n",
+        "README.md": "# parcel-trail\n\nParcel tracking for the regional courier: depot scans in, tracking page and recipient messages out.\n",
+        "src/server.js": "const express = require('express');\nconst app = express();\napp.use(express.json());\nmodule.exports = app;\nif (require.main === module) app.listen(process.env.PORT || 3000);\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: add architecture notes",
+      "files": {
+        "docs/architecture.md": "# Architecture\n\n## Scan ingestion\nDepot scanners upload CSV batches every five minutes instead of streaming single events. Rural depots lose connectivity several times a day, and a batch survives a dropped link: it is replayed whole on reconnect.\n\n## Storage\nParcel statuses live in SQLite, one row per scan. Postgres can wait until partners query us directly.\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m1",
+      "title": "M1 Tracking core",
+      "what": "Ingest depot scans and let recipients look up a parcel by its tracking code."
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-02: scan ingestion, status store, public lookup and two caches",
+      "steps": [
+        {
+          "key": "scan",
+          "title": "Scan batch ingestion"
+        },
+        {
+          "key": "store",
+          "title": "Parcel status store"
+        },
+        {
+          "key": "lookup",
+          "title": "Public tracking lookup"
+        },
+        {
+          "key": "cplk",
+          "title": "Cache for parcel lookups"
+        },
+        {
+          "key": "cdep",
+          "title": "Cache for depot list"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "scan"
+    },
+    {
+      "type": "commit",
+      "step": "scan",
+      "message": "feat(scan): parse depot scanner CSV batches",
+      "files": {
+        "src/scan/parse.js": "function parseBatch(csv) {\n  return csv.trim().split('\\n').slice(1).map((line) => {\n    const [code, depot, status, at] = line.split(',');\n    return { code, depot, status, at };\n  });\n}\nmodule.exports = { parseBatch };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "scan",
+      "message": "feat(scan): validate barcodes and replay whole batches",
+      "done": true,
+      "proofFiles": [
+        "docs/architecture.md#Scan ingestion"
+      ],
+      "files": {
+        "src/scan/validate.js": "const CODE = /^PT\\d{10}$/;\nfunction validateBatch(rows) {\n  const bad = rows.filter((r) => !CODE.test(r.code));\n  if (bad.length) throw new Error(`batch rejected: ${bad.length} bad codes`);\n  return rows;\n}\nmodule.exports = { validateBatch };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "store",
+      "message": "feat(store): parcel status table",
+      "files": {
+        "src/store/schema.sql": "CREATE TABLE status (\n  code TEXT NOT NULL,\n  depot TEXT NOT NULL,\n  status TEXT NOT NULL,\n  at TEXT NOT NULL\n);\nCREATE INDEX status_code ON status (code, at);\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "store",
+      "message": "feat(store): whitelist status transitions",
+      "done": true,
+      "why": "Transitions are whitelisted so a late scan cannot move a delivered parcel back to in transit.",
+      "files": {
+        "src/store/transitions.js": "const ALLOWED = {\n  accepted: ['in_transit'],\n  in_transit: ['in_transit', 'out_for_delivery'],\n  out_for_delivery: ['delivered', 'in_transit'],\n  delivered: []\n};\nconst canMove = (from, to) => !from || ALLOWED[from].includes(to);\nmodule.exports = { canMove };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "lookup",
+      "message": "feat(lookup): GET /track/:code",
+      "files": {
+        "src/lookup/route.js": "const router = require('express').Router();\nconst db = require('../store/db');\nrouter.get('/track/:code', (req, res) => {\n  const rows = db.prepare('SELECT * FROM status WHERE code = ? ORDER BY at').all(req.params.code);\n  if (!rows.length) return res.status(404).end();\n  res.json(rows);\n});\nmodule.exports = router;\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "d1",
+      "title": "Fix timezone in scan timestamps",
+      "what": "Scanners send local depot time, so the tracking page shows deliveries an hour off."
+    },
+    {
+      "type": "commit",
+      "step": "d1",
+      "message": "fix(scan): convert depot local time to UTC",
+      "done": true,
+      "files": {
+        "src/scan/timezone.js": "function toUtc(localIso, tz = 'Europe/Rome') {\n  const d = new Date(localIso);\n  const offset = new Date(d.toLocaleString('en-US', { timeZone: tz })) - new Date(d.toLocaleString('en-US', { timeZone: 'UTC' }));\n  return new Date(d.getTime() - offset).toISOString();\n}\nmodule.exports = { toUtc };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "lookup",
+      "message": "feat(lookup): hide recipient name on public page",
+      "done": true,
+      "files": {
+        "src/lookup/redact.js": "function redact(row) {\n  const { recipient, ...rest } = row;\n  return { ...rest, recipient: recipient ? recipient[0] + '***' : null };\n}\nmodule.exports = { redact };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cplk",
+      "message": "feat(cache): cache parcel lookups for 30 seconds",
+      "why": "Lookups spike right after out-for-delivery messages go out, and 30 seconds stays well under the five-minute scanner upload interval.",
+      "files": {
+        "src/cache/lookups.js": "const TTL = 30_000;\nconst entries = new Map();\nfunction get(code) {\n  const e = entries.get(code);\n  return e && Date.now() - e.at < TTL ? e.value : undefined;\n}\nfunction set(code, value) { entries.set(code, { value, at: Date.now() }); }\nmodule.exports = { get, set, entries };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cplk",
+      "message": "test(cache): parcel lookup cache expiry",
+      "done": true,
+      "files": {
+        "src/cache/lookups.test.js": "const test = require('node:test');\nconst assert = require('node:assert');\nconst cache = require('./lookups');\ntest('returns fresh entries', () => {\n  cache.set('PT0000000001', ['accepted']);\n  assert.deepStrictEqual(cache.get('PT0000000001'), ['accepted']);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cdep",
+      "message": "feat(cache): load depot list at boot, refresh nightly",
+      "why": "The depot list only changes when a depot opens or closes, so it is loaded once at boot and refreshed nightly.",
+      "files": {
+        "src/cache/depots.js": "const db = require('../store/db');\nlet depots = [];\nfunction load() { depots = db.prepare('SELECT id, name, town FROM depot').all(); }\nfunction all() { return depots; }\nload();\nsetInterval(load, 24 * 60 * 60 * 1000).unref();\nmodule.exports = { all, load };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cdep",
+      "message": "test(cache): depot list cache",
+      "done": true,
+      "files": {
+        "src/cache/depots.test.js": "const test = require('node:test');\nconst assert = require('node:assert');\nconst depots = require('./depots');\ntest('depot list is loaded at boot', () => {\n  assert.ok(Array.isArray(depots.all()));\n});\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump express to 4.19.2",
+      "files": {
+        "package.json": "{\n  \"name\": \"parcel-trail\",\n  \"version\": \"0.1.0\",\n  \"main\": \"src/server.js\",\n  \"scripts\": { \"start\": \"node src/server.js\", \"test\": \"node --test\" },\n  \"dependencies\": { \"express\": \"^4.19.2\", \"better-sqlite3\": \"^9.4.0\" }\n}\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m2",
+      "title": "M2 Recipient notifications",
+      "what": "Tell recipients and partners when a parcel changes status."
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-16: status webhooks, SMS and email messages, cache invalidation",
+      "steps": [
+        {
+          "key": "whst",
+          "title": "Webhook for status changes"
+        },
+        {
+          "key": "whrt",
+          "title": "Webhook retry on failure"
+        },
+        {
+          "key": "whsig",
+          "title": "Webhook signature check"
+        },
+        {
+          "key": "sms",
+          "title": "SMS on out-for-delivery"
+        },
+        {
+          "key": "email",
+          "title": "Email delivery receipts"
+        },
+        {
+          "key": "cinv",
+          "title": "Cache invalidation on scan"
+        }
+      ]
+    },
+    {
+      "type": "commit",
+      "message": "docs: draft notification rollout",
+      "files": {
+        "docs/notify-rollout.md": "# Notification rollout (draft)\n\nOut-for-delivery: SMS through the regional gateway.\nDelivery receipts: email with proof photo.\nStart with the Sassari depot, then all depots in April.\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "whst"
+    },
+    {
+      "type": "commit",
+      "step": "whst",
+      "message": "feat(webhook): emit status changes to partner URLs",
+      "files": {
+        "src/webhook/emit.js": "const { buildPayload } = require('./payload');\nasync function emit(partner, row) {\n  return fetch(partner.url, {\n    method: 'POST',\n    headers: { 'content-type': 'application/json' },\n    body: JSON.stringify(buildPayload(row))\n  });\n}\nmodule.exports = { emit };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "whst",
+      "message": "feat(webhook): versioned status payload",
+      "done": true,
+      "files": {
+        "src/webhook/payload.js": "function buildPayload(row) {\n  return { version: 1, code: row.code, status: row.status, depot: row.depot, at: row.at };\n}\nmodule.exports = { buildPayload };\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m3",
+      "title": "M3 Partner integrations",
+      "what": "Give partner shops keys, exports and limits so they can track their own parcels."
+    },
+    {
+      "type": "defer",
+      "step": "whsig",
+      "to": "m3"
+    },
+    {
+      "type": "commit",
+      "step": "whrt",
+      "message": "feat(webhook): retry failed partner calls",
+      "why": "Partner endpoints go down during their nightly deploys, so failed calls are retried with exponential backoff for up to six hours.",
+      "files": {
+        "src/webhook/retry.js": "const { emit } = require('./emit');\nconst { delayFor, MAX_AGE } = require('./backoff');\nasync function deliver(partner, row, attempt = 0, firstAt = Date.now()) {\n  const res = await emit(partner, row).catch(() => null);\n  if (res && res.ok) return;\n  if (Date.now() - firstAt > MAX_AGE) return;\n  setTimeout(() => deliver(partner, row, attempt + 1, firstAt), delayFor(attempt));\n}\nmodule.exports = { deliver };\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "d2",
+      "title": "Drop duplicate scan rows",
+      "what": "A depot replaying the same batch twice creates duplicate status rows and double webhooks."
+    },
+    {
+      "type": "commit",
+      "step": "d2",
+      "message": "fix(store): ignore scans already stored",
+      "done": true,
+      "files": {
+        "src/store/dedupe.js": "const db = require('./db');\nconst seen = db.prepare('SELECT 1 FROM status WHERE code = ? AND status = ? AND at = ?');\nfunction isDuplicate(row) {\n  return Boolean(seen.get(row.code, row.status, row.at));\n}\nmodule.exports = { isDuplicate };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "whrt",
+      "message": "feat(webhook): exponential backoff capped at six hours",
+      "done": true,
+      "files": {
+        "src/webhook/backoff.js": "const MAX_AGE = 6 * 60 * 60 * 1000;\nfunction delayFor(attempt) {\n  return Math.min(60_000 * 2 ** attempt, 60 * 60 * 1000);\n}\nmodule.exports = { delayFor, MAX_AGE };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sms",
+      "message": "feat(sms): send out-for-delivery text via regional gateway",
+      "files": {
+        "src/sms/send.js": "async function sendSms(phone, code) {\n  const text = `Your parcel ${code} is out for delivery today.`;\n  return fetch(process.env.SMS_GATEWAY_URL, {\n    method: 'POST',\n    body: new URLSearchParams({ to: phone, text })\n  });\n}\nmodule.exports = { sendSms };\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-24: send out-for-delivery messages on WhatsApp instead of SMS",
+      "steps": [
+        {
+          "key": "wapp",
+          "title": "WhatsApp out-for-delivery message"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "sms",
+      "by": "wapp"
+    },
+    {
+      "type": "start",
+      "step": "wapp"
+    },
+    {
+      "type": "commit",
+      "step": "wapp",
+      "message": "feat(whatsapp): out-for-delivery template",
+      "why": "The regional SMS gateway bills per segment and most recipients already read WhatsApp, so out-for-delivery messages move to a WhatsApp template.",
+      "files": {
+        "src/whatsapp/template.js": "function outForDelivery(code, window) {\n  return {\n    name: 'out_for_delivery',\n    language: { code: 'it' },\n    components: [{ type: 'body', parameters: [{ type: 'text', text: code }, { type: 'text', text: window }] }]\n  };\n}\nmodule.exports = { outForDelivery };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "wapp",
+      "message": "feat(whatsapp): send template through business API",
+      "done": true,
+      "files": {
+        "src/whatsapp/send.js": "const { outForDelivery } = require('./template');\nasync function sendWhatsApp(phone, code, window) {\n  return fetch(`${process.env.WA_API_URL}/messages`, {\n    method: 'POST',\n    headers: { authorization: `Bearer ${process.env.WA_TOKEN}`, 'content-type': 'application/json' },\n    body: JSON.stringify({ to: phone, type: 'template', template: outForDelivery(code, window) })\n  });\n}\nmodule.exports = { sendWhatsApp };\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "email"
+    },
+    {
+      "type": "commit",
+      "step": "email",
+      "message": "feat(email): delivery receipt message",
+      "files": {
+        "src/email/receipt.js": "function receipt(row) {\n  return {\n    subject: `Parcel ${row.code} delivered`,\n    text: `Your parcel was delivered at ${row.at} by the ${row.depot} depot.`\n  };\n}\nmodule.exports = { receipt };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: supersede notification rollout draft",
+      "files": {
+        "docs/notify-rollout.md": "# Notification rollout\n\nSupersedes the March 17 draft.\n\nOut-for-delivery: WhatsApp template message; SMS is dropped.\nDelivery receipts: email with proof photo.\nStart with the Sassari depot, then all depots in April.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "email",
+      "message": "feat(email): attach proof-of-delivery photo",
+      "done": true,
+      "files": {
+        "src/email/proof-photo.js": "const fs = require('node:fs/promises');\nasync function proofAttachment(code) {\n  const path = `${process.env.PHOTO_DIR}/${code}.jpg`;\n  const content = await fs.readFile(path).catch(() => null);\n  return content ? [{ filename: `${code}.jpg`, content }] : [];\n}\nmodule.exports = { proofAttachment };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cinv",
+      "message": "feat(cache): evict parcel lookup on new scan",
+      "why": "A new scan must evict the cached lookup at once so the tracking page never shows a parcel as in transit after it was delivered.",
+      "files": {
+        "src/cache/invalidate.js": "const lookups = require('./lookups');\nfunction onScan(rows) {\n  for (const row of rows) lookups.entries.delete(row.code);\n}\nmodule.exports = { onScan };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cinv",
+      "message": "test(cache): scan evicts cached lookup",
+      "done": true,
+      "files": {
+        "src/cache/invalidate.test.js": "const test = require('node:test');\nconst assert = require('node:assert');\nconst lookups = require('./lookups');\nconst { onScan } = require('./invalidate');\ntest('scan evicts cached lookup', () => {\n  lookups.set('PT0000000002', ['in_transit']);\n  onScan([{ code: 'PT0000000002' }]);\n  assert.strictEqual(lookups.get('PT0000000002'), undefined);\n});\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "commit",
+      "message": "ci: run tests on Node 20 and 22",
+      "files": {
+        ".github/workflows/ci.yml": "name: ci\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    strategy:\n      matrix: { node: [20, 22] }\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with: { node-version: '${{ matrix.node }}' }\n      - run: npm ci && npm test\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m3",
+      "ref": "chat 2026-04-07: partner keys, nightly CSV feed, rate limits and usage report",
+      "steps": [
+        {
+          "key": "keys",
+          "title": "Partner API keys"
+        },
+        {
+          "key": "feed",
+          "title": "Nightly CSV feed for partners"
+        },
+        {
+          "key": "rate",
+          "title": "Rate limits per partner key"
+        },
+        {
+          "key": "usage",
+          "title": "Usage report per partner key"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "keys"
+    },
+    {
+      "type": "commit",
+      "step": "keys",
+      "message": "feat(partners): issue hashed API keys",
+      "files": {
+        "src/partners/keys.js": "const crypto = require('node:crypto');\nfunction issueKey() {\n  const key = 'pk_' + crypto.randomBytes(24).toString('hex');\n  const hash = crypto.createHash('sha256').update(key).digest('hex');\n  return { key, hash };\n}\nconst hashOf = (key) => crypto.createHash('sha256').update(key).digest('hex');\nmodule.exports = { issueKey, hashOf };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "keys",
+      "message": "test(partners): key hash matches issued key",
+      "done": true,
+      "files": {
+        "src/partners/keys.test.js": "const test = require('node:test');\nconst assert = require('node:assert');\nconst { issueKey, hashOf } = require('./keys');\ntest('hash matches issued key', () => {\n  const { key, hash } = issueKey();\n  assert.strictEqual(hashOf(key), hash);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "feed",
+      "message": "feat(feed): nightly CSV of partner parcel statuses",
+      "files": {
+        "src/feed/nightly.js": "const db = require('../store/db');\nfunction buildCsv(partnerId, since) {\n  const rows = db.prepare('SELECT code, status, at FROM status WHERE partner = ? AND at >= ?').all(partnerId, since);\n  return ['code,status,at', ...rows.map((r) => `${r.code},${r.status},${r.at}`)].join('\\n');\n}\nmodule.exports = { buildCsv };\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m3",
+      "ref": "chat 2026-04-10: replace the nightly CSV with a streaming export partners can poll",
+      "steps": [
+        {
+          "key": "stream",
+          "title": "Streaming status export for partners"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "feed",
+      "by": "stream"
+    },
+    {
+      "type": "start",
+      "step": "stream"
+    },
+    {
+      "type": "commit",
+      "step": "stream",
+      "message": "feat(export): cursor-based status stream",
+      "why": "Partners asked for statuses within minutes, and a nightly CSV left them a day behind.",
+      "files": {
+        "src/export/cursor.js": "const encode = (at, rowid) => Buffer.from(`${at}|${rowid}`).toString('base64url');\nfunction decode(cursor) {\n  if (!cursor) return { at: '1970-01-01T00:00:00Z', rowid: 0 };\n  const [at, rowid] = Buffer.from(cursor, 'base64url').toString().split('|');\n  return { at, rowid: Number(rowid) };\n}\nmodule.exports = { encode, decode };\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "d3",
+      "title": "Fix CORS on the tracking page",
+      "what": "The courier's new website embeds the tracking lookup and the browser blocks the cross-origin call."
+    },
+    {
+      "type": "commit",
+      "step": "d3",
+      "message": "fix(lookup): allow the courier website origin",
+      "done": true,
+      "files": {
+        "src/lookup/cors.js": "const ALLOWED = (process.env.CORS_ORIGINS || '').split(',');\nfunction cors(req, res, next) {\n  const origin = req.get('origin');\n  if (ALLOWED.includes(origin)) res.set('access-control-allow-origin', origin);\n  next();\n}\nmodule.exports = { cors };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "stream",
+      "message": "feat(export): GET /partners/export?cursor=",
+      "done": true,
+      "files": {
+        "src/export/stream.js": "const router = require('express').Router();\nconst db = require('../store/db');\nconst { encode, decode } = require('./cursor');\nrouter.get('/partners/export', (req, res) => {\n  const c = decode(req.query.cursor);\n  const rows = db.prepare('SELECT rowid, code, status, at FROM status WHERE partner = ? AND rowid > ? ORDER BY rowid LIMIT 500').all(req.partner.id, c.rowid);\n  const last = rows[rows.length - 1];\n  res.json({ rows, cursor: last ? encode(last.at, last.rowid) : req.query.cursor });\n});\nmodule.exports = router;\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "rate"
+    },
+    {
+      "type": "commit",
+      "step": "rate",
+      "message": "feat(ratelimit): token bucket per partner key",
+      "files": {
+        "src/ratelimit/bucket.js": "class Bucket {\n  constructor(capacity, perSecond) { Object.assign(this, { capacity, perSecond, tokens: capacity, at: Date.now() }); }\n  take() {\n    const now = Date.now();\n    this.tokens = Math.min(this.capacity, this.tokens + ((now - this.at) / 1000) * this.perSecond);\n    this.at = now;\n    if (this.tokens < 1) return false;\n    this.tokens -= 1;\n    return true;\n  }\n}\nmodule.exports = { Bucket };\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "rate",
+      "message": "feat(ratelimit): middleware returning 429 per key",
+      "files": {
+        "src/ratelimit/middleware.js": "const { Bucket } = require('./bucket');\nconst buckets = new Map();\nfunction rateLimit(req, res, next) {\n  const id = req.partner.id;\n  if (!buckets.has(id)) buckets.set(id, new Bucket(60, 1));\n  if (!buckets.get(id).take()) return res.status(429).set('retry-after', '1').end();\n  next();\n}\nmodule.exports = { rateLimit };\n"
+      }
+    }
+  ],
+  "questions": [
+    {
+      "cat": "where",
+      "text": "Where does the partner integrations work stand: what is being worked on now, and what comes after it?",
+      "current": "rate",
+      "next": "usage"
+    },
+    {
+      "cat": "why",
+      "text": "Why does the cache for the depot list work the way it does?",
+      "step": "cdep",
+      "reason": "The depot list only changes when a depot opens or closes, so it is loaded once at boot and refreshed nightly.",
+      "distractors": [
+        "Lookups spike right after out-for-delivery messages go out, and 30 seconds stays well under the five-minute scanner upload interval.",
+        "A new scan must evict the cached lookup at once so the tracking page never shows a parcel as in transit after it was delivered.",
+        "Partner endpoints go down during their nightly deploys, so failed calls are retried with exponential backoff for up to six hours."
+      ]
+    },
+    {
+      "cat": "proof",
+      "text": "Which file holds the result of the cache for the depot list?",
+      "step": "cdep",
+      "file": "src/cache/depots.js"
+    },
+    {
+      "cat": "deferred",
+      "text": "The webhook signature check was planned with the recipient notifications. Which milestone is it in now?",
+      "step": "whsig",
+      "milestone": "m3"
+    },
+    {
+      "cat": "update",
+      "text": "Which decision holds today on how recipients are told their parcel is out for delivery?",
+      "step": "wapp"
+    },
+    {
+      "cat": "abstain",
+      "text": "Which map provider was chosen to draw the courier's delivery route on the tracking page?"
+    },
+    {
+      "cat": "continue",
+      "text": "Resume the work: make the first change you would make.",
+      "next": "rate",
+      "dir": "src/ratelimit/"
+    }
+  ]
+}

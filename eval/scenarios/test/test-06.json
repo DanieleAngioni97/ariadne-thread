@@ -1,0 +1,794 @@
+{
+  "id": "test-06",
+  "project": "scootlink-gateway",
+  "start": "2026-03-02T09:00:00Z",
+  "events": [
+    {
+      "type": "commit",
+      "message": "chore: initialize scootlink gateway",
+      "files": {
+        "package.json": "{\n  \"name\": \"scootlink-gateway\",\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"build\": \"tsc\", \"test\": \"vitest run\", \"lint\": \"eslint src\" },\n  \"dependencies\": { \"mqtt\": \"5.10.0\", \"cbor-x\": \"1.6.0\", \"zod\": \"3.24.1\", \"pg\": \"8.13.1\", \"pg-copy-streams\": \"6.0.6\" },\n  \"devDependencies\": { \"typescript\": \"5.7.3\", \"vitest\": \"3.0.5\", \"eslint\": \"9.19.0\" }\n}\n",
+        "README.md": "# scootlink-gateway\n\nTelemetry gateway for the scooter sharing fleet: receives MQTT frames from scooters, validates and stores them.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add TypeScript and lint config",
+      "files": {
+        "tsconfig.json": "{\n  \"compilerOptions\": {\n    \"target\": \"ES2022\",\n    \"module\": \"NodeNext\",\n    \"strict\": true,\n    \"outDir\": \"dist\"\n  },\n  \"include\": [\"src\"]\n}\n",
+        ".eslintrc.json": "{\n  \"root\": true,\n  \"parser\": \"@typescript-eslint/parser\",\n  \"extends\": [\"eslint:recommended\"]\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add editorconfig",
+      "files": {
+        ".editorconfig": "root = true\n\n[*]\nindent_style = space\nindent_size = 2\nend_of_line = lf\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "ci: run lint and tests on push",
+      "files": {
+        ".github/workflows/ci.yml": "name: ci\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with: { node-version: 22 }\n      - run: npm ci && npm run lint && npm test\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: docker compose for local broker and Postgres",
+      "files": {
+        "docker-compose.yml": "services:\n  broker:\n    image: eclipse-mosquitto:2\n    ports: [\"1883:1883\"]\n  db:\n    image: postgres:16\n    environment:\n      POSTGRES_PASSWORD: dev\n    ports: [\"5432:5432\"]\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m1",
+      "title": "M1 Ingest pipeline",
+      "what": "Receive scooter telemetry over MQTT, validate it and store it for the fleet."
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-02: MQTT listener, battery and GPS validation, registry cache, frame storage in PostgreSQL",
+      "steps": [
+        {
+          "key": "mqtt",
+          "title": "MQTT listener for scooter frames"
+        },
+        {
+          "key": "val-bat",
+          "title": "Validation of battery frames"
+        },
+        {
+          "key": "val-gps",
+          "title": "Validation of GPS frames"
+        },
+        {
+          "key": "reg-cache",
+          "title": "Cache for scooter registry"
+        },
+        {
+          "key": "store-pg",
+          "title": "Store frames in PostgreSQL"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "mqtt"
+    },
+    {
+      "type": "commit",
+      "step": "mqtt",
+      "message": "feat(mqtt): connect to fleet broker",
+      "files": {
+        "src/mqtt/client.ts": "import mqtt from 'mqtt';\n\nexport function connectBroker(url = process.env.BROKER_URL ?? 'mqtt://localhost:1883') {\n  return mqtt.connect(url, { clientId: 'scootlink-gateway', clean: false });\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "mqtt",
+      "message": "feat(mqtt): subscribe to scooters/+/telemetry",
+      "files": {
+        "src/mqtt/subscribe.ts": "import type { MqttClient } from 'mqtt';\n\nexport const TELEMETRY_TOPIC = 'scooters/+/telemetry';\n\nexport function subscribeTelemetry(client: MqttClient, onFrame: (scooterId: string, payload: Buffer) => void) {\n  client.subscribe(TELEMETRY_TOPIC, { qos: 1 });\n  client.on('message', (topic, payload) => onFrame(topic.split('/')[1], payload));\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "mqtt",
+      "message": "feat(mqtt): reconnect with jittered backoff",
+      "files": {
+        "src/mqtt/reconnect.ts": "export function reconnectDelay(attempt: number): number {\n  const base = Math.min(30_000, 1000 * 2 ** attempt);\n  return base / 2 + (Math.random() * base) / 2;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "mqtt",
+      "done": true,
+      "message": "feat(mqtt): decode CBOR telemetry payloads",
+      "why": "Firmware 3.x sends CBOR instead of JSON to save cellular data.",
+      "files": {
+        "src/mqtt/decode.ts": "import { decode } from 'cbor-x';\n\nexport interface RawFrame { ts: number; v?: number; soc?: number; lat?: number; lon?: number; hdop?: number; acc?: number[] }\n\nexport function decodeFrame(payload: Buffer): RawFrame {\n  return decode(payload) as RawFrame;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: describe telemetry frame format",
+      "files": {
+        "docs/frames.md": "# Telemetry frames (firmware 3.x)\n\nCBOR map sent every 5 s on scooters/<id>/telemetry:\n\n- ts: device time, seconds since epoch\n- v: pack voltage, V\n- soc: state of charge, %\n- lat, lon, hdop: GPS fix\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "val-bat",
+      "message": "feat(validate): battery frame schema",
+      "files": {
+        "src/validate/battery.ts": "import { z } from 'zod';\n\nexport const BatteryFrame = z.object({\n  v: z.number(),\n  soc: z.number().int().min(0).max(100),\n});\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "clock",
+      "title": "Fix clock skew in frame timestamps",
+      "what": "Scooters with a flat RTC backup cell report 1970 timestamps, so their frames sort before everything else and break ingest ordering."
+    },
+    {
+      "type": "commit",
+      "step": "clock",
+      "message": "fix(clock): detect device timestamps before 2020",
+      "files": {
+        "src/clock/detect.ts": "const EARLIEST_VALID = Date.UTC(2020, 0, 1) / 1000;\n\nexport function isSkewed(deviceTs: number): boolean {\n  return deviceTs < EARLIEST_VALID;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "clock",
+      "done": true,
+      "message": "fix(clock): fall back to broker receive time for skewed frames",
+      "why": "Scooters whose RTC backup cell is flat reset to 1970 after a deep discharge.",
+      "files": {
+        "src/clock/fallback.ts": "import { isSkewed } from './detect.js';\n\nexport function frameTime(deviceTs: number, receivedAt: Date): number {\n  return isSkewed(deviceTs) ? Math.floor(receivedAt.getTime() / 1000) : deviceTs;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "val-bat",
+      "done": true,
+      "message": "feat(validate): reject pack voltage outside 30-60 V",
+      "why": "The BMS reports 0xFFFF while asleep, which decodes as 65.5 V.",
+      "files": {
+        "src/validate/battery-range.ts": "export const MIN_PACK_V = 30;\nexport const MAX_PACK_V = 60;\n\nexport function plausibleVoltage(v: number): boolean {\n  return v >= MIN_PACK_V && v <= MAX_PACK_V;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "val-gps",
+      "message": "feat(validate): GPS frame schema",
+      "files": {
+        "src/validate/gps.ts": "import { z } from 'zod';\n\nexport const GpsFrame = z.object({\n  lat: z.number().min(-90).max(90),\n  lon: z.number().min(-180).max(180),\n  hdop: z.number().nonnegative(),\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "val-gps",
+      "message": "test(validate): GPS latitude bounds",
+      "files": {
+        "test/validate/gps.test.ts": "import { expect, test } from 'vitest';\nimport { GpsFrame } from '../../src/validate/gps.js';\n\ntest('rejects latitude out of range', () => {\n  expect(GpsFrame.safeParse({ lat: 91, lon: 9.1, hdop: 1 }).success).toBe(false);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "val-gps",
+      "done": true,
+      "message": "feat(validate): drop GPS fixes with HDOP above 5",
+      "why": "Between tall buildings the modules report jumps of hundreds of metres when HDOP is high.",
+      "files": {
+        "src/validate/gps-hdop.ts": "export const MAX_HDOP = 5;\n\nexport function accurateFix(hdop: number): boolean {\n  return hdop <= MAX_HDOP;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump mqtt to 5.10.1",
+      "files": {
+        "package.json": "{\n  \"name\": \"scootlink-gateway\",\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"build\": \"tsc\", \"test\": \"vitest run\", \"lint\": \"eslint src\" },\n  \"dependencies\": { \"mqtt\": \"5.10.1\", \"cbor-x\": \"1.6.0\", \"zod\": \"3.24.1\", \"pg\": \"8.13.1\", \"pg-copy-streams\": \"6.0.6\" },\n  \"devDependencies\": { \"typescript\": \"5.7.3\", \"vitest\": \"3.0.5\", \"eslint\": \"9.19.0\" }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: record registry cache decision",
+      "files": {
+        "docs/decisions.md": "# Decisions\n\n## Registry cache\n\nThe partner fleet API allows only 60 requests per minute, while every incoming frame needs a registry lookup.\nWe keep registry entries in memory for 10 minutes; new scooters are added at most once a day.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "reg-cache",
+      "message": "feat(registry): fetch scooter records from partner API",
+      "files": {
+        "src/registry/client.ts": "export interface ScooterRecord { id: string; model: string; city: string }\n\nexport async function fetchScooter(id: string): Promise<ScooterRecord> {\n  const res = await fetch(`${process.env.FLEET_API_URL}/scooters/${id}`);\n  if (!res.ok) throw new Error(`registry ${res.status}`);\n  return res.json() as Promise<ScooterRecord>;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "reg-cache",
+      "done": true,
+      "message": "feat(registry): cache registry entries for 10 minutes",
+      "proofFiles": [
+        "docs/decisions.md#Registry cache"
+      ],
+      "files": {
+        "src/registry/cache.ts": "import { fetchScooter, type ScooterRecord } from './client.js';\n\nconst TTL_MS = 10 * 60_000;\nconst entries = new Map<string, { at: number; rec: ScooterRecord }>();\n\nexport async function getScooter(id: string): Promise<ScooterRecord> {\n  const hit = entries.get(id);\n  if (hit && Date.now() - hit.at < TTL_MS) return hit.rec;\n  const rec = await fetchScooter(id);\n  entries.set(id, { at: Date.now(), rec });\n  return rec;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "store-pg",
+      "message": "feat(store): frames table in PostgreSQL",
+      "files": {
+        "src/store/pg/schema.sql": "CREATE TABLE frames (\n  scooter_id text NOT NULL,\n  ts timestamptz NOT NULL,\n  voltage real,\n  soc smallint,\n  lat double precision,\n  lon double precision\n);\nCREATE INDEX frames_scooter_ts ON frames (scooter_id, ts DESC);\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "store-pg",
+      "message": "feat(store): batch insert frames every second",
+      "files": {
+        "src/store/pg/insert.ts": "import type { Pool } from 'pg';\n\nexport async function insertBatch(pool: Pool, rows: unknown[][]) {\n  const values = rows.map((_, i) => `(${[1, 2, 3, 4, 5, 6].map((c) => '$' + (i * 6 + c)).join(',')})`);\n  await pool.query(`INSERT INTO frames VALUES ${values.join(',')}`, rows.flat());\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: measure write volume of frame storage",
+      "files": {
+        "docs/storage.md": "# Frame storage\n\n## Write volume\n\n4,000 scooters send a frame every 5 seconds: 800 rows/s, about 70 million rows a day.\nThe plain PostgreSQL table reached 40 GB in a week and autovacuum fell behind.\nTime-partitioned chunks with compression fit this load.\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-12: move frame storage to TimescaleDB hypertables",
+      "steps": [
+        {
+          "key": "store-ts",
+          "title": "Store frames in TimescaleDB"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "store-pg",
+      "by": "store-ts"
+    },
+    {
+      "type": "start",
+      "step": "store-ts"
+    },
+    {
+      "type": "commit",
+      "step": "store-ts",
+      "message": "feat(store): frames hypertable with 1-day chunks",
+      "proofFiles": [
+        "docs/storage.md#Write volume"
+      ],
+      "files": {
+        "src/store/timescale/schema.sql": "CREATE EXTENSION IF NOT EXISTS timescaledb;\n\nCREATE TABLE frames (\n  scooter_id text NOT NULL,\n  ts timestamptz NOT NULL,\n  voltage real, soc smallint,\n  lat double precision, lon double precision, hdop real\n);\nSELECT create_hypertable('frames', by_range('ts', INTERVAL '1 day'));\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: switch compose database image to TimescaleDB",
+      "files": {
+        "docker-compose.yml": "services:\n  broker:\n    image: eclipse-mosquitto:2\n    ports: [\"1883:1883\"]\n  db:\n    image: timescale/timescaledb:2.17.2-pg16\n    environment:\n      POSTGRES_PASSWORD: dev\n    ports: [\"5432:5432\"]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "store-ts",
+      "message": "feat(store): write frames through COPY",
+      "files": {
+        "src/store/timescale/copy.ts": "import type { PoolClient } from 'pg';\nimport { from as copyFrom } from 'pg-copy-streams';\n\nexport async function copyFrames(client: PoolClient, csv: string) {\n  const stream = client.query(copyFrom('COPY frames FROM STDIN WITH (FORMAT csv)'));\n  stream.end(csv);\n  await new Promise((ok, fail) => stream.on('finish', ok).on('error', fail));\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: update README for ingest pipeline",
+      "files": {
+        "README.md": "# scootlink-gateway\n\nTelemetry gateway for the scooter sharing fleet.\n\n- MQTT listener on scooters/+/telemetry (CBOR frames)\n- battery and GPS validation\n- scooter registry lookup with cache\n- storage in a TimescaleDB hypertable\n\nLocal setup: `docker compose up -d && npm run build`.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "store-ts",
+      "done": true,
+      "message": "feat(store): compress chunks older than 7 days",
+      "why": "Compressed week-old chunks use about a tenth of the disk.",
+      "files": {
+        "src/store/timescale/compression.sql": "ALTER TABLE frames SET (\n  timescaledb.compress,\n  timescaledb.compress_segmentby = 'scooter_id'\n);\nSELECT add_compression_policy('frames', INTERVAL '7 days');\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "milestone",
+      "key": "m2",
+      "title": "M2 Fleet alerts",
+      "what": "Raise low battery, tamper and geofence alerts for the operations team."
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-23: alerts for low battery, tampering and geofence exits",
+      "steps": [
+        {
+          "key": "alert-bat",
+          "title": "Low battery alert"
+        },
+        {
+          "key": "tamper",
+          "title": "Tamper alert from accelerometer"
+        },
+        {
+          "key": "geo-bbox",
+          "title": "Geofence check with bounding boxes"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "alert-bat"
+    },
+    {
+      "type": "commit",
+      "step": "alert-bat",
+      "message": "feat(alerts): low battery rule at 15 percent",
+      "files": {
+        "src/alerts/battery.ts": "export const LOW_SOC = 15;\n\nexport function lowBattery(soc: number): boolean {\n  return soc <= LOW_SOC;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "alert-bat",
+      "message": "test(alerts): low battery threshold",
+      "files": {
+        "test/alerts/battery.test.ts": "import { expect, test } from 'vitest';\nimport { lowBattery } from '../../src/alerts/battery.js';\n\ntest('fires at 15 percent', () => {\n  expect(lowBattery(15)).toBe(true);\n  expect(lowBattery(16)).toBe(false);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "alert-bat",
+      "done": true,
+      "message": "feat(alerts): hysteresis on low battery alert",
+      "why": "Voltage sag under load made the alert flap on every hill.",
+      "files": {
+        "src/alerts/battery-hysteresis.ts": "import { LOW_SOC } from './battery.js';\n\nconst CLEAR_SOC = 20;\nconst active = new Set<string>();\n\nexport function updateLowBattery(scooterId: string, soc: number): boolean {\n  if (soc <= LOW_SOC) active.add(scooterId);\n  else if (soc >= CLEAR_SOC) active.delete(scooterId);\n  return active.has(scooterId);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: rewrite frame format for firmware 4",
+      "files": {
+        "docs/frames.md": "# Telemetry frames (firmware 4.x)\n\nReplaces the 3.x description. CBOR map sent every 5 s, every 1 s while riding:\n\n- ts: device time, milliseconds since epoch\n- v, soc: pack voltage (V) and state of charge (%)\n- lat, lon, hdop: GPS fix\n- acc: accelerometer [x, y, z] in g\n- lock: true when the scooter is locked\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tamper",
+      "message": "feat(tamper): accelerometer magnitude from frames",
+      "files": {
+        "src/tamper/accel.ts": "export function magnitude([x, y, z]: number[]): number {\n  return Math.sqrt(x * x + y * y + z * z);\n}\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "tls",
+      "title": "Renew broker TLS certificate",
+      "what": "The broker certificate expired overnight and scooters stopped connecting, so no telemetry reached the gateway."
+    },
+    {
+      "type": "commit",
+      "step": "tls",
+      "message": "fix(tls): reload broker certificate without restart",
+      "files": {
+        "src/tls/reload.ts": "import { readFileSync, watch } from 'node:fs';\nimport type { MqttClient } from 'mqtt';\n\nexport function watchCertificate(path: string, client: MqttClient) {\n  watch(path, () => {\n    client.options.ca = readFileSync(path);\n    client.reconnect();\n  });\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tls",
+      "done": true,
+      "message": "fix(tls): warn 14 days before certificate expiry",
+      "why": "The certificate renewal hook had failed silently for two cycles before anyone noticed.",
+      "files": {
+        "src/tls/expiry-check.ts": "import { X509Certificate } from 'node:crypto';\nimport { readFileSync } from 'node:fs';\n\nexport const WARN_DAYS = 14;\n\nexport function daysToExpiry(path: string): number {\n  const cert = new X509Certificate(readFileSync(path));\n  return (Date.parse(cert.validTo) - Date.now()) / 86_400_000;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tamper",
+      "message": "feat(tamper): motion threshold of 0.3 g",
+      "files": {
+        "src/tamper/threshold.ts": "export const MOTION_G = 0.3;\n\nexport function moving(magnitudeG: number): boolean {\n  return Math.abs(magnitudeG - 1) > MOTION_G;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tamper",
+      "done": true,
+      "message": "feat(tamper): raise alert on movement while locked",
+      "why": "Locked scooters being dragged away went unnoticed until the lock state was combined with motion.",
+      "files": {
+        "src/tamper/rule.ts": "import { magnitude } from './accel.js';\nimport { moving } from './threshold.js';\n\nexport function tampered(frame: { lock: boolean; acc: number[] }): boolean {\n  return frame.lock && moving(magnitude(frame.acc));\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "geo-bbox",
+      "message": "feat(geofence): bounding box check per zone",
+      "files": {
+        "src/geofence/bbox.ts": "export interface BBox { minLat: number; minLon: number; maxLat: number; maxLon: number }\n\nexport function insideBox(b: BBox, lat: number, lon: number): boolean {\n  return lat >= b.minLat && lat <= b.maxLat && lon >= b.minLon && lon <= b.maxLon;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "geo-bbox",
+      "message": "test(geofence): bounding box fixtures for the city centre",
+      "files": {
+        "test/geofence/bbox.test.ts": "import { expect, test } from 'vitest';\nimport { insideBox } from '../../src/geofence/bbox.js';\n\nconst centre = { minLat: 39.2, minLon: 9.09, maxLat: 39.24, maxLon: 9.14 };\n\ntest('Piazza Yenne is inside the centre zone', () => {\n  expect(insideBox(centre, 39.2167, 9.1144)).toBe(true);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: note false exits from bounding boxes",
+      "files": {
+        "docs/geofence.md": "# Geofence\n\n## Bounding box limits\n\nCity zones are concave (old town, harbour front). Bounding boxes flagged 12% of rides\nas exits from the operating area, or missed exits into the pedestrian streets.\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-04-02: switch geofence to H3 cells, add caches for zones, alerts and firmware, deliver alerts by webhook",
+      "steps": [
+        {
+          "key": "geo-h3",
+          "title": "Geofence check with H3 cells"
+        },
+        {
+          "key": "geo-cache",
+          "title": "Cache for geofence polygons"
+        },
+        {
+          "key": "dedup",
+          "title": "Cache for alert deduplication"
+        },
+        {
+          "key": "webhook",
+          "title": "Alert delivery via webhooks"
+        },
+        {
+          "key": "fw-cache",
+          "title": "Cache for firmware manifests"
+        }
+      ]
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): add h3-js and bump pg to 8.13.3",
+      "files": {
+        "package.json": "{\n  \"name\": \"scootlink-gateway\",\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"build\": \"tsc\", \"test\": \"vitest run\", \"lint\": \"eslint src\" },\n  \"dependencies\": { \"mqtt\": \"5.10.1\", \"cbor-x\": \"1.6.0\", \"zod\": \"3.24.1\", \"pg\": \"8.13.3\", \"pg-copy-streams\": \"6.0.6\", \"h3-js\": \"4.1.0\" },\n  \"devDependencies\": { \"typescript\": \"5.7.3\", \"vitest\": \"3.0.5\", \"eslint\": \"9.19.0\" }\n}\n"
+      }
+    },
+    {
+      "type": "replace",
+      "step": "geo-bbox",
+      "by": "geo-h3"
+    },
+    {
+      "type": "start",
+      "step": "geo-h3"
+    },
+    {
+      "type": "commit",
+      "step": "geo-h3",
+      "message": "feat(geofence): index zones as H3 cells at resolution 10",
+      "proofFiles": [
+        "docs/geofence.md#Bounding box limits"
+      ],
+      "files": {
+        "src/geofence/h3-index.ts": "import { polygonToCells } from 'h3-js';\n\nexport const ZONE_RES = 10;\n\nexport function zoneCells(polygon: number[][]): Set<string> {\n  return new Set(polygonToCells(polygon, ZONE_RES));\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "geo-h3",
+      "done": true,
+      "message": "feat(geofence): exit check by cell lookup",
+      "why": "A cell lookup costs the same for every frame, whatever the shape of the zone.",
+      "files": {
+        "src/geofence/h3-check.ts": "import { latLngToCell } from 'h3-js';\nimport { ZONE_RES } from './h3-index.js';\n\nexport function insideZone(cells: Set<string>, lat: number, lon: number): boolean {\n  return cells.has(latLngToCell(lat, lon, ZONE_RES));\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "geo-cache",
+      "message": "feat(geocache): load zone polygons from city portal",
+      "files": {
+        "src/geocache/loader.ts": "export const ZONES_URL = `${process.env.CITY_PORTAL_URL}/mobility/zones.geojson`;\n\nexport async function downloadZones(): Promise<{ etag: string; zones: unknown }> {\n  const res = await fetch(ZONES_URL);\n  return { etag: res.headers.get('etag') ?? '', zones: await res.json() };\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "geo-cache",
+      "message": "feat(geocache): persist polygons to disk on shutdown",
+      "files": {
+        "src/geocache/persist.ts": "import { writeFileSync } from 'node:fs';\n\nexport function persistZones(path: string, data: { etag: string; zones: unknown }) {\n  writeFileSync(path, JSON.stringify(data));\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "geo-cache",
+      "done": true,
+      "message": "feat(geocache): keep polygons until the city portal ETag changes",
+      "why": "Zones change a few times a month but the city portal download is 40 MB.",
+      "files": {
+        "src/geocache/etag.ts": "import { ZONES_URL, downloadZones } from './loader.js';\n\nlet cached: { etag: string; zones: unknown } | undefined;\n\nexport async function zones(): Promise<unknown> {\n  const head = await fetch(ZONES_URL, { method: 'HEAD' });\n  if (cached && head.headers.get('etag') === cached.etag) return cached.zones;\n  cached = await downloadZones();\n  return cached.zones;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "dedup",
+      "message": "feat(dedup): key alerts by scooter and rule",
+      "files": {
+        "src/dedup/key.ts": "export function alertKey(scooterId: string, rule: string): string {\n  return `${scooterId}:${rule}`;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "dedup",
+      "message": "test(dedup): repeat inside the window is dropped",
+      "files": {
+        "test/dedup/window.test.ts": "import { expect, test } from 'vitest';\nimport { shouldSend } from '../../src/dedup/window.js';\n\ntest('suppresses a repeat within 30 minutes', () => {\n  expect(shouldSend('s1:tamper', 0)).toBe(true);\n  expect(shouldSend('s1:tamper', 29 * 60_000)).toBe(false);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "dedup",
+      "done": true,
+      "message": "feat(dedup): suppress repeated alerts for 30 minutes",
+      "why": "The ops team received the same tamper alert up to forty times per incident.",
+      "files": {
+        "src/dedup/window.ts": "const WINDOW_MS = 30 * 60_000;\nconst lastSent = new Map<string, number>();\n\nexport function shouldSend(key: string, now = Date.now()): boolean {\n  const prev = lastSent.get(key);\n  if (prev !== undefined && now - prev < WINDOW_MS) return false;\n  lastSent.set(key, now);\n  return true;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "webhook",
+      "message": "feat(webhook): POST alerts to ops endpoints",
+      "files": {
+        "src/webhook/send.ts": "export async function sendAlert(url: string, body: string, headers: Record<string, string> = {}) {\n  const res = await fetch(url, { method: 'POST', body, headers: { 'content-type': 'application/json', ...headers } });\n  if (!res.ok) throw new Error(`webhook ${res.status}`);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "webhook",
+      "message": "feat(webhook): sign payloads with HMAC-SHA256",
+      "files": {
+        "src/webhook/sign.ts": "import { createHmac } from 'node:crypto';\n\nexport function signature(body: string, secret: string): string {\n  return 'sha256=' + createHmac('sha256', secret).update(body).digest('hex');\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump typescript to 5.8.2",
+      "files": {
+        "package.json": "{\n  \"name\": \"scootlink-gateway\",\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"build\": \"tsc\", \"test\": \"vitest run\", \"lint\": \"eslint src\" },\n  \"dependencies\": { \"mqtt\": \"5.10.1\", \"cbor-x\": \"1.6.0\", \"zod\": \"3.24.1\", \"pg\": \"8.13.3\", \"pg-copy-streams\": \"6.0.6\", \"h3-js\": \"4.1.0\" },\n  \"devDependencies\": { \"typescript\": \"5.8.2\", \"vitest\": \"3.0.5\", \"eslint\": \"9.19.0\" }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: document webhook signature header",
+      "files": {
+        "docs/webhooks.md": "# Alert webhooks\n\nEach alert is POSTed as JSON. The `x-scootlink-signature` header carries `sha256=<hex>`,\nan HMAC of the raw body with the shared secret of the receiving endpoint.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "webhook",
+      "done": true,
+      "message": "feat(webhook): retry with exponential backoff",
+      "why": "The ops dashboard restarts during nightly deploys and alerts sent in that window were lost.",
+      "files": {
+        "src/webhook/retry.ts": "import { sendAlert } from './send.js';\n\nexport async function sendWithRetry(url: string, body: string, headers: Record<string, string>, attempts = 6) {\n  for (let i = 0; ; i++) {\n    try { return await sendAlert(url, body, headers); }\n    catch (err) { if (i + 1 >= attempts) throw err; }\n    await new Promise((r) => setTimeout(r, 1000 * 2 ** i));\n  }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: alert runbook for the ops team",
+      "files": {
+        "docs/alerts.md": "# Alert runbook\n\n- low_battery: send a swap van when 3 or more scooters in one zone are low\n- tamper: call rider support, then the police if motion lasts over 5 minutes\n- geofence_exit: firmware throttles the scooter to 6 km/h; collect it within 2 hours\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "fw-cache",
+      "message": "feat(fwcache): fetch firmware manifests per model",
+      "why": "Tamper thresholds depend on the accelerometer range declared in each firmware manifest.",
+      "files": {
+        "src/fwcache/fetch.ts": "export interface FirmwareManifest { model: string; version: string; accelRangeG: number }\n\nexport async function fetchManifest(model: string): Promise<FirmwareManifest> {\n  const res = await fetch(`${process.env.FIRMWARE_API_URL}/manifests/${model}/latest`);\n  return res.json() as Promise<FirmwareManifest>;\n}\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m4",
+      "title": "M4 Firmware rollout",
+      "what": "Stage over-the-air firmware updates across the fleet."
+    },
+    {
+      "type": "defer",
+      "step": "fw-cache",
+      "to": "m4"
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "milestone",
+      "key": "m3",
+      "title": "M3 Operator API",
+      "what": "Let operators query scooter status and send remote commands over HTTP."
+    },
+    {
+      "type": "plan",
+      "milestone": "m3",
+      "ref": "chat 2026-04-20: operator API with API keys, status endpoint, remote lock and command validation",
+      "steps": [
+        {
+          "key": "op-auth",
+          "title": "Operator auth with API keys"
+        },
+        {
+          "key": "status-api",
+          "title": "Scooter status endpoint"
+        },
+        {
+          "key": "lock-cmd",
+          "title": "Remote lock command"
+        },
+        {
+          "key": "val-cmd",
+          "title": "Validation of operator commands"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "op-auth"
+    },
+    {
+      "type": "commit",
+      "step": "op-auth",
+      "message": "feat(auth): generate and hash operator API keys",
+      "files": {
+        "src/auth/keys.ts": "import { createHash, randomBytes } from 'node:crypto';\n\nexport const hashKey = (key: string) => createHash('sha256').update(key).digest('hex');\n\nexport function newApiKey(): { key: string; hash: string } {\n  const key = 'sk_' + randomBytes(24).toString('base64url');\n  return { key, hash: hashKey(key) };\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): add fastify 5.2.1",
+      "files": {
+        "package.json": "{\n  \"name\": \"scootlink-gateway\",\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"build\": \"tsc\", \"test\": \"vitest run\", \"lint\": \"eslint src\" },\n  \"dependencies\": { \"mqtt\": \"5.10.1\", \"cbor-x\": \"1.6.0\", \"zod\": \"3.24.1\", \"pg\": \"8.13.3\", \"pg-copy-streams\": \"6.0.6\", \"h3-js\": \"4.1.0\", \"fastify\": \"5.2.1\" },\n  \"devDependencies\": { \"typescript\": \"5.8.2\", \"vitest\": \"3.0.5\", \"eslint\": \"9.19.0\" }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "op-auth",
+      "message": "feat(auth): check X-Api-Key header",
+      "files": {
+        "src/auth/middleware.ts": "import type { FastifyReply, FastifyRequest } from 'fastify';\nimport { hashKey } from './keys.js';\n\nexport function apiKeyGuard(known: Set<string>) {\n  return async (req: FastifyRequest, reply: FastifyReply) => {\n    const key = req.headers['x-api-key'];\n    if (typeof key !== 'string' || !known.has(hashKey(key))) return reply.code(401).send();\n  };\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "op-auth",
+      "message": "test(auth): key hashing is stable",
+      "files": {
+        "test/auth/keys.test.ts": "import { expect, test } from 'vitest';\nimport { hashKey, newApiKey } from '../../src/auth/keys.js';\n\ntest('stored hash matches the issued key', () => {\n  const { key, hash } = newApiKey();\n  expect(hashKey(key)).toBe(hash);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "op-auth",
+      "done": true,
+      "message": "feat(auth): scope API keys per city",
+      "why": "Partner contracts are signed per city, so an operator in one city must not see another city's fleet.",
+      "files": {
+        "src/auth/scopes.ts": "export interface OperatorKey { hash: string; cities: string[] }\n\nexport function canSee(op: OperatorKey, city: string): boolean {\n  return op.cities.includes(city);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "status-api",
+      "message": "feat(status): GET /scooters/:id/status route",
+      "files": {
+        "src/status/route.ts": "import type { FastifyInstance } from 'fastify';\n\nexport async function statusRoutes(app: FastifyInstance) {\n  app.get<{ Params: { id: string } }>('/scooters/:id/status', async (_req, reply) => {\n    return reply.code(501).send();\n  });\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "status-api",
+      "message": "feat(status): read last frame from the hypertable",
+      "files": {
+        "src/status/last-frame.ts": "import type { Pool } from 'pg';\n\nexport async function lastFrame(pool: Pool, scooterId: string) {\n  const { rows } = await pool.query(\n    'SELECT ts, voltage, soc, lat, lon FROM frames WHERE scooter_id = $1 ORDER BY ts DESC LIMIT 1',\n    [scooterId],\n  );\n  return rows[0];\n}\n",
+        "src/status/route.ts": "import type { FastifyInstance } from 'fastify';\nimport type { Pool } from 'pg';\nimport { lastFrame } from './last-frame.js';\n\nexport async function statusRoutes(app: FastifyInstance, { pool }: { pool: Pool }) {\n  app.get<{ Params: { id: string } }>('/scooters/:id/status', async (req, reply) => {\n    const frame = await lastFrame(pool, req.params.id);\n    return frame ?? reply.code(404).send();\n  });\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "ci: cache npm downloads",
+      "files": {
+        ".github/workflows/ci.yml": "name: ci\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with: { node-version: 22, cache: npm }\n      - run: npm ci && npm run lint && npm test\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "status-api",
+      "message": "test(status): unknown scooter returns 404",
+      "files": {
+        "src/status/route.test.ts": "import Fastify from 'fastify';\nimport { expect, test } from 'vitest';\nimport { statusRoutes } from './route.js';\n\ntest('unknown scooter returns 404', async () => {\n  const pool = { query: async () => ({ rows: [] }) } as never;\n  const app = Fastify().register(statusRoutes, { pool });\n  expect((await app.inject('/scooters/x/status')).statusCode).toBe(404);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "status-api",
+      "message": "feat(status): shape response with battery and position",
+      "files": {
+        "src/status/serialize.ts": "export function toStatus(row: { ts: Date; voltage: number; soc: number; lat: number; lon: number }) {\n  return {\n    lastSeen: row.ts.toISOString(),\n    battery: { voltage: row.voltage, percent: row.soc },\n    position: { lat: row.lat, lon: row.lon },\n  };\n}\n"
+      }
+    }
+  ],
+  "questions": [
+    {
+      "cat": "where",
+      "text": "Which part of the operator API is being worked on right now, and what comes right after it?",
+      "current": "status-api",
+      "next": "lock-cmd"
+    },
+    {
+      "cat": "why",
+      "text": "Why are scooter registry entries cached?",
+      "step": "reg-cache",
+      "reason": "The partner fleet API allows only 60 requests per minute, while every incoming frame needs a registry lookup.",
+      "distractors": [
+        "Zones change a few times a month but the city portal download is 40 MB.",
+        "The ops team received the same tamper alert up to forty times per incident.",
+        "Tamper thresholds depend on the accelerometer range declared in each firmware manifest."
+      ]
+    },
+    {
+      "cat": "proof",
+      "text": "Which file holds the result of the alert deduplication cache?",
+      "step": "dedup",
+      "file": "src/dedup/window.ts"
+    },
+    {
+      "cat": "deferred",
+      "text": "Where did the cache for firmware manifests go?",
+      "step": "fw-cache",
+      "milestone": "m4"
+    },
+    {
+      "cat": "update",
+      "text": "Which decision holds today on how geofence exits are checked?",
+      "step": "geo-h3"
+    },
+    {
+      "cat": "abstain",
+      "text": "Why was the Kafka bridge for scooter telemetry removed from the gateway?"
+    },
+    {
+      "cat": "continue",
+      "text": "Resume the work: make the first change you would make.",
+      "next": "status-api",
+      "dir": "src/status/"
+    }
+  ]
+}

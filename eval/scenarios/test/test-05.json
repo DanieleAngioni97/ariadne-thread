@@ -1,0 +1,677 @@
+{
+  "id": "test-05",
+  "project": "wikishift",
+  "start": "2026-03-02T09:00:00Z",
+  "events": [
+    {
+      "type": "commit",
+      "message": "chore: scaffold wikishift CLI package",
+      "files": {
+        "pyproject.toml": "[project]\nname = \"wikishift\"\nversion = \"0.1.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"lxml>=4.9\", \"click>=8.1\"]\n\n[project.scripts]\nwikishift = \"wikishift.cli:main\"\n",
+        "src/wikishift/__init__.py": "__version__ = '0.1.0'\n",
+        "src/wikishift/cli.py": "import click\n\n@click.command()\n@click.argument('export_zip')\n@click.option('--out', default='out')\ndef main(export_zip, out):\n    \"\"\"Migrate a Confluence space export to Markdown.\"\"\"\n    click.echo(f'Migrating {export_zip} into {out}')\n",
+        ".gitignore": "__pycache__/\n*.egg-info/\nout/\n.venv/\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: add README with usage",
+      "files": {
+        "README.md": "# wikishift\n\nMigrates a team's Confluence space to Markdown files.\n\n## Usage\n\n    wikishift export.zip --out wiki/\n\nInput is a Confluence space export in XML format.\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m1",
+      "title": "M1 Read the space export",
+      "what": "Turn a Confluence XML space export into an in-memory tree of pages with their current bodies."
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-02: approved reading the export in four steps, from archive to page bodies",
+      "steps": [
+        {
+          "key": "unzip",
+          "title": "Unpack the export archive"
+        },
+        {
+          "key": "parse",
+          "title": "Parse entities.xml into pages"
+        },
+        {
+          "key": "tree",
+          "title": "Build the page hierarchy"
+        },
+        {
+          "key": "bodies",
+          "title": "Extract current page bodies"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "unzip"
+    },
+    {
+      "type": "commit",
+      "step": "unzip",
+      "message": "feat(archive): unpack export zip into a temp folder",
+      "files": {
+        "src/archive/unpack.py": "import tempfile\nimport zipfile\n\ndef unpack(export_zip):\n    target = tempfile.mkdtemp(prefix='wikishift-')\n    with zipfile.ZipFile(export_zip) as zf:\n        zf.extractall(target)\n    return target\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "unzip",
+      "message": "feat(archive): locate entities.xml and attachments folder",
+      "done": true,
+      "files": {
+        "src/archive/locate.py": "from pathlib import Path\n\ndef locate(root):\n    root = Path(root)\n    entities = root / 'entities.xml'\n    if not entities.exists():\n        raise FileNotFoundError('entities.xml missing: not an XML space export')\n    return entities, root / 'attachments'\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "parse",
+      "message": "feat(entities): stream Page objects out of entities.xml",
+      "why": "entities.xml is read with iterparse because exports of large spaces do not fit in memory.",
+      "files": {
+        "src/entities/parser.py": "from lxml import etree\n\ndef iter_objects(path, cls='Page'):\n    for _, el in etree.iterparse(str(path), tag='object'):\n        if el.get('class') == cls:\n            yield el\n        el.clear()\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "parse",
+      "message": "feat(entities): map page elements to a Page model",
+      "done": true,
+      "files": {
+        "src/entities/model.py": "from dataclasses import dataclass\n\n@dataclass\nclass Page:\n    id: str\n    title: str\n    parent_id: str | None\n    version: int\n    status: str\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tree",
+      "message": "feat(tree): link pages to their parents",
+      "files": {
+        "src/tree/hierarchy.py": "def build_tree(pages):\n    by_id = {p.id: p for p in pages}\n    children = {}\n    for p in pages:\n        children.setdefault(p.parent_id, []).append(p)\n    roots = children.get(None, [])\n    return roots, children, by_id\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "fixenc",
+      "title": "Handle Windows-1252 page titles",
+      "what": "The sample export from the support team crashes the parser because some page titles are not valid UTF-8."
+    },
+    {
+      "type": "commit",
+      "step": "fixenc",
+      "message": "fix(encoding): decode Windows-1252 titles instead of crashing",
+      "done": true,
+      "files": {
+        "src/encoding/titles.py": "def decode_title(raw: bytes) -> str:\n    try:\n        return raw.decode('utf-8')\n    except UnicodeDecodeError:\n        return raw.decode('cp1252', errors='replace')\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tree",
+      "message": "feat(tree): attach orphan pages under the space home",
+      "done": true,
+      "files": {
+        "src/tree/orphans.py": "def adopt_orphans(children, by_id, home_id):\n    for parent_id in list(children):\n        if parent_id is not None and parent_id not in by_id:\n            children.setdefault(home_id, []).extend(children.pop(parent_id))\n    return children\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump lxml to 5.2",
+      "files": {
+        "pyproject.toml": "[project]\nname = \"wikishift\"\nversion = \"0.1.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"lxml>=5.2\", \"click>=8.1\"]\n\n[project.scripts]\nwikishift = \"wikishift.cli:main\"\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "bodies",
+      "message": "feat(versions): keep only the current version of each page",
+      "why": "Page history is not migrated, so historical versions are dropped at read time.",
+      "files": {
+        "src/versions/current.py": "def current_only(pages):\n    return [p for p in pages if p.status == 'current']\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "bodies",
+      "message": "feat(versions): read storage-format body for each page",
+      "done": true,
+      "files": {
+        "src/versions/body.py": "def body_of(page_el, contents):\n    for prop in page_el.iter('collection'):\n        if prop.get('name') == 'bodyContents':\n            ref = prop.find('element/id').text\n            return contents[ref]\n    return ''\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "milestone",
+      "key": "m2",
+      "title": "M2 Convert pages to Markdown",
+      "what": "Turn Confluence storage-format XHTML, including its macros, into GitHub-flavoured Markdown."
+    },
+    {
+      "type": "commit",
+      "message": "docs: describe output layout",
+      "files": {
+        "docs/output-layout.md": "# Output layout\n\nAll pages are written to one flat `out/` folder.\nEach file is named after the Confluence page id, e.g. `out/98305.md`.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: write conversion rules",
+      "files": {
+        "docs/conversion.md": "# Conversion rules\n\n## Supported macros\n\ncode, info/note/warning panels and toc are converted to Markdown.\n\n## Unknown macros\n\nAny macro we do not recognise is kept as an HTML comment holding its name\nand parameters, so nothing is silently lost and reviewers can grep the\noutput for `confluence-macro` before publishing.\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-09: approved the conversion plan, basic blocks first, then the three common macros",
+      "steps": [
+        {
+          "key": "blocks",
+          "title": "Convert headings and paragraphs"
+        },
+        {
+          "key": "tables",
+          "title": "Convert tables"
+        },
+        {
+          "key": "codem",
+          "title": "Convert code macros"
+        },
+        {
+          "key": "panelm",
+          "title": "Convert info panel macros"
+        },
+        {
+          "key": "tocm",
+          "title": "Convert table of contents macro"
+        },
+        {
+          "key": "unknown",
+          "title": "Preserve unknown macros"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "blocks"
+    },
+    {
+      "type": "commit",
+      "step": "blocks",
+      "message": "feat(blocks): convert h1-h6 and paragraphs",
+      "files": {
+        "src/blocks/headings.py": "def heading(el):\n    level = int(el.tag[1])\n    return '#' * level + ' ' + el.text_content().strip() + '\\n\\n'\n\ndef paragraph(el):\n    return el.text_content().strip() + '\\n\\n'\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "blocks",
+      "message": "feat(blocks): convert bold, italic and inline code",
+      "done": true,
+      "files": {
+        "src/blocks/inline.py": "MARKS = {'strong': '**', 'b': '**', 'em': '_', 'i': '_', 'code': '`'}\n\ndef inline(el):\n    mark = MARKS.get(el.tag, '')\n    return f'{mark}{el.text_content()}{mark}'\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tables",
+      "message": "feat(tables): render simple tables as GFM pipes",
+      "files": {
+        "src/tables/grid.py": "def render(rows):\n    header, *body = rows\n    lines = ['| ' + ' | '.join(header) + ' |']\n    lines.append('|' + '---|' * len(header))\n    lines += ['| ' + ' | '.join(r) + ' |' for r in body]\n    return '\\n'.join(lines) + '\\n\\n'\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tables",
+      "message": "feat(tables): flatten merged cells",
+      "done": true,
+      "why": "Merged cells are flattened by repeating their content because GFM tables cannot span cells.",
+      "files": {
+        "src/tables/merged.py": "def expand_spans(row_cells):\n    out = []\n    for text, colspan in row_cells:\n        out.extend([text] * colspan)\n    return out\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "ci: run pytest on push",
+      "files": {
+        ".github/workflows/test.yml": "name: test\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-python@v5\n      - run: pip install -e . pytest && pytest\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "codem",
+      "message": "feat(macros): turn code macros into fenced blocks",
+      "done": true,
+      "why": "The language parameter becomes the fence info string so syntax highlighting survives the migration.",
+      "files": {
+        "src/macros/code/fence.py": "def code_macro(params, body):\n    lang = params.get('language', '')\n    return f'```{lang}\\n{body.rstrip()}\\n```\\n\\n'\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "panelm",
+      "message": "feat(macros): render info panels as blockquotes",
+      "files": {
+        "src/macros/panel/blockquote.py": "def panel_macro(name, body):\n    label = name.capitalize()\n    lines = [f'> **{label}:**'] + ['> ' + l for l in body.splitlines()]\n    return '\\n'.join(lines) + '\\n\\n'\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-12: approved rendering panels with GitHub alert syntax instead of plain blockquotes",
+      "steps": [
+        {
+          "key": "alerts",
+          "title": "Render panels as GitHub alerts"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "panelm",
+      "by": "alerts"
+    },
+    {
+      "type": "start",
+      "step": "alerts"
+    },
+    {
+      "type": "commit",
+      "step": "alerts",
+      "message": "feat(macros): render info, note and warning panels as GitHub alerts",
+      "done": true,
+      "why": "The target wiki renders > [!NOTE] alert blocks natively, so panels keep their colour and icon.",
+      "files": {
+        "src/macros/alerts/render.py": "KINDS = {'info': 'NOTE', 'tip': 'TIP', 'note': 'IMPORTANT', 'warning': 'WARNING'}\n\ndef alert_macro(name, body):\n    kind = KINDS.get(name, 'NOTE')\n    lines = [f'> [!{kind}]'] + ['> ' + l for l in body.splitlines()]\n    return '\\n'.join(lines) + '\\n\\n'\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "tocm"
+    },
+    {
+      "type": "commit",
+      "step": "tocm",
+      "message": "feat(macros): build a table of contents from page headings",
+      "files": {
+        "src/macros/toc/toc.py": "from .levels import within\n\ndef toc_macro(params, headings):\n    lines = []\n    for level, text, anchor in within(headings, params):\n        lines.append('  ' * (level - 1) + f'- [{text}](#{anchor})')\n    return '\\n'.join(lines) + '\\n\\n'\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "zws",
+      "title": "Strip zero-width spaces from headings",
+      "what": "Table of contents links break because exported headings contain invisible zero-width spaces."
+    },
+    {
+      "type": "commit",
+      "step": "zws",
+      "message": "fix(sanitize): strip zero-width characters from text",
+      "done": true,
+      "files": {
+        "src/sanitize/zero_width.py": "import re\n\nZERO_WIDTH = re.compile('[\\u200b\\u200c\\u200d\\ufeff]')\n\ndef strip_zero_width(text):\n    return ZERO_WIDTH.sub('', text)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tocm",
+      "message": "feat(macros): honour minLevel and maxLevel of toc macro",
+      "done": true,
+      "files": {
+        "src/macros/toc/levels.py": "def within(headings, params):\n    lo = int(params.get('minLevel', 1))\n    hi = int(params.get('maxLevel', 6))\n    return [h for h in headings if lo <= h[0] <= hi]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "unknown",
+      "message": "feat(macros): keep unknown macros as HTML comments",
+      "done": true,
+      "proofFiles": [
+        "docs/conversion.md#Unknown macros"
+      ],
+      "files": {
+        "src/macros/unknown/comment.py": "def unknown_macro(name, params):\n    attrs = ' '.join(f'{k}={v!r}' for k, v in params.items())\n    return f'<!-- confluence-macro: {name} {attrs} -->\\n\\n'\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: list supported macros in README",
+      "files": {
+        "README.md": "# wikishift\n\nMigrates a team's Confluence space to Markdown files.\n\n## Usage\n\n    wikishift export.zip --out wiki/\n\nInput is a Confluence space export in XML format.\nSupported macros: code, info/tip/note/warning panels, toc.\nOther macros are kept as HTML comments.\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "milestone",
+      "key": "m3",
+      "title": "M3 Rewrite links and attachments",
+      "what": "Write pages into a browsable folder layout with working links between pages and to attachments."
+    },
+    {
+      "type": "plan",
+      "milestone": "m3",
+      "ref": "chat 2026-03-23: approved the link rewriting plan and copying attachments beside their pages",
+      "steps": [
+        {
+          "key": "layout",
+          "title": "Write nested output folders"
+        },
+        {
+          "key": "pagelinks",
+          "title": "Rewrite links between pages"
+        },
+        {
+          "key": "attlinks",
+          "title": "Rewrite links to attachments"
+        },
+        {
+          "key": "anchorlinks",
+          "title": "Rewrite links to heading anchors"
+        },
+        {
+          "key": "copyatt",
+          "title": "Copy attachments next to each page"
+        },
+        {
+          "key": "mentions",
+          "title": "Rewrite user mentions"
+        }
+      ]
+    },
+    {
+      "type": "commit",
+      "message": "docs: switch output layout to nested folders",
+      "files": {
+        "docs/output-layout.md": "# Output layout\n\nPages are written to nested folders that mirror the page tree.\nEach file is named after a slug of its title, e.g. `out/engineering/onboarding.md`.\nThis replaces the flat page-id layout.\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "layout"
+    },
+    {
+      "type": "commit",
+      "step": "layout",
+      "message": "feat(layout): compute nested paths from the page tree",
+      "files": {
+        "src/layout/paths.py": "from .slugs import slugify\n\ndef path_for(page, by_id):\n    parts = []\n    while page is not None:\n        parts.append(slugify(page.title))\n        page = by_id.get(page.parent_id)\n    return '/'.join(reversed(parts)) + '.md'\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "layout",
+      "message": "feat(layout): de-duplicate sibling slugs",
+      "done": true,
+      "why": "Sibling pages can share a title, so slugs get a numeric suffix to stay unique.",
+      "files": {
+        "src/layout/slugs.py": "import re\n\ndef slugify(title):\n    return re.sub(r'[^a-z0-9]+', '-', title.lower()).strip('-')\n\ndef unique(slug, taken):\n    n, candidate = 2, slug\n    while candidate in taken:\n        candidate, n = f'{slug}-{n}', n + 1\n    taken.add(candidate)\n    return candidate\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pagelinks",
+      "message": "feat(links): resolve ac:link page references to output paths",
+      "files": {
+        "src/links/pages/resolve.py": "def resolve(link_el, paths_by_title):\n    ref = link_el.find('{*}page')\n    title = ref.get('{*}content-title') if ref is not None else None\n    return paths_by_title.get(title)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pagelinks",
+      "message": "feat(links): emit page links as relative paths",
+      "done": true,
+      "why": "Links are relative so the output works in any wiki host and in a plain git checkout.",
+      "files": {
+        "src/links/pages/relative.py": "import os.path\n\ndef relative_link(from_path, to_path):\n    base = os.path.dirname(from_path) or '.'\n    return os.path.relpath(to_path, base)\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m4",
+      "title": "M4 People and permissions",
+      "what": "Map Confluence users and page restrictions onto accounts of the target wiki."
+    },
+    {
+      "type": "defer",
+      "step": "mentions",
+      "to": "m4"
+    },
+    {
+      "type": "commit",
+      "step": "attlinks",
+      "message": "feat(links): rewrite ri:attachment references",
+      "files": {
+        "src/links/attachments/rewrite.py": "from .encode import encode_name\n\ndef attachment_link(el, folder):\n    name = el.find('{*}attachment').get('{*}filename')\n    return f'{folder}/{encode_name(name)}'\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "ci: pin Python 3.12",
+      "files": {
+        ".github/workflows/test.yml": "name: test\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-python@v5\n        with:\n          python-version: '3.12'\n      - run: pip install -e . pytest && pytest\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "attlinks",
+      "message": "feat(links): percent-encode attachment filenames",
+      "done": true,
+      "why": "Attachment names often contain spaces and parentheses, so filenames are percent-encoded to keep Markdown links valid.",
+      "files": {
+        "src/links/attachments/encode.py": "from urllib.parse import quote\n\ndef encode_name(name):\n    return quote(name, safe='')\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "anchorlinks",
+      "message": "feat(links): map heading anchors to GitHub slugs",
+      "done": true,
+      "why": "Anchor ids follow GitHub's heading slug rules so links match the anchors the target wiki generates.",
+      "files": {
+        "src/links/anchors/slug.py": "import re\n\ndef github_anchor(heading):\n    text = heading.strip().lower()\n    text = re.sub(r'[^\\w\\- ]', '', text)\n    return text.replace(' ', '-')\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "copyatt",
+      "message": "feat(attachments): copy attachments into a folder beside each page",
+      "files": {
+        "src/attachments/copy.py": "import shutil\nfrom pathlib import Path\n\ndef copy_for_page(src_dir, page_path, names):\n    target = Path(page_path).with_suffix('') / '_attachments'\n    target.mkdir(parents=True, exist_ok=True)\n    for name in names:\n        shutil.copy2(Path(src_dir) / name, target / name)\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m3",
+      "ref": "chat 2026-03-27: approved storing every attachment once in a shared assets folder instead of per page",
+      "steps": [
+        {
+          "key": "assets",
+          "title": "Store attachments in a shared assets folder"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "copyatt",
+      "by": "assets"
+    },
+    {
+      "type": "start",
+      "step": "assets"
+    },
+    {
+      "type": "commit",
+      "step": "assets",
+      "message": "feat(assets): write attachments to out/assets",
+      "files": {
+        "src/assets/store.py": "import shutil\nfrom pathlib import Path\nfrom .dedupe import hashed_name\n\ndef store(src, out_dir):\n    dest = Path(out_dir) / 'assets' / hashed_name(src)\n    dest.parent.mkdir(parents=True, exist_ok=True)\n    if not dest.exists():\n        shutil.copy2(src, dest)\n    return dest\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "assets",
+      "message": "feat(assets): name stored files by content hash",
+      "done": true,
+      "why": "Attachments are named by content hash so the same file attached to many pages is stored only once.",
+      "files": {
+        "src/assets/dedupe.py": "import hashlib\nfrom pathlib import Path\n\ndef hashed_name(path):\n    digest = hashlib.sha256(Path(path).read_bytes()).hexdigest()[:16]\n    return digest + Path(path).suffix.lower()\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: start a changelog",
+      "files": {
+        "CHANGELOG.md": "# Changelog\n\n## 0.3.0\n- Nested output folders with title slugs\n- Relative links between pages, attachments and anchors\n- Attachments stored once under out/assets\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "milestone",
+      "key": "m5",
+      "title": "M5 Incremental re-sync",
+      "what": "Re-run the migration on a newer export and rewrite only the pages that changed."
+    },
+    {
+      "type": "plan",
+      "milestone": "m5",
+      "ref": "chat 2026-04-06: approved incremental re-sync, manifest first, then change detection, partial rewrite and pruning",
+      "steps": [
+        {
+          "key": "manifest",
+          "title": "Record a migration manifest"
+        },
+        {
+          "key": "diff",
+          "title": "Detect changed pages between exports"
+        },
+        {
+          "key": "rewrite",
+          "title": "Rewrite only changed pages"
+        },
+        {
+          "key": "prune",
+          "title": "Remove pages deleted upstream"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "manifest"
+    },
+    {
+      "type": "commit",
+      "step": "manifest",
+      "message": "feat(manifest): write manifest.json after each run",
+      "files": {
+        "src/manifest/write.py": "import json\nfrom pathlib import Path\n\ndef write_manifest(out_dir, entries):\n    path = Path(out_dir) / '.wikishift' / 'manifest.json'\n    path.parent.mkdir(parents=True, exist_ok=True)\n    path.write_text(json.dumps(entries, indent=2, sort_keys=True))\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "manifest",
+      "message": "feat(manifest): record version and content hash per page",
+      "done": true,
+      "why": "The manifest stores each page's version number and content hash so a re-run can skip unchanged pages.",
+      "files": {
+        "src/manifest/schema.py": "from dataclasses import dataclass, asdict\n\n@dataclass\nclass Entry:\n    page_id: str\n    path: str\n    version: int\n    sha256: str\n\ndef to_json(entry):\n    return asdict(entry)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "diff",
+      "message": "feat(diff): compare new export against the manifest",
+      "files": {
+        "src/diff/compare.py": "def compare(old_entries, new_pages):\n    old = {e['page_id']: e for e in old_entries}\n    added = [p for p in new_pages if p.id not in old]\n    changed = [p for p in new_pages if p.id in old and p.version != old[p.id]['version']]\n    removed = set(old) - {p.id for p in new_pages}\n    return added, changed, removed\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "diff",
+      "message": "feat(diff): treat equal hashes as unchanged despite version bump",
+      "files": {
+        "src/diff/versions.py": "def really_changed(page, entry, body_hash):\n    if page.version == entry['version']:\n        return False\n    return body_hash != entry['sha256']\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "parentless",
+      "title": "Default parentless pages to the space root",
+      "what": "The April export contains pages whose parent was deleted, and the comparison run crashes on them."
+    },
+    {
+      "type": "commit",
+      "step": "parentless",
+      "message": "fix: place pages with a deleted parent at the space root",
+      "done": true,
+      "files": {
+        "src/fixes/parentless.py": "def reparent_missing(pages, home_id):\n    ids = {p.id for p in pages}\n    for p in pages:\n        if p.parent_id and p.parent_id not in ids:\n            p.parent_id = home_id\n    return pages\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "diff",
+      "message": "feat(diff): detect renamed pages by id and new title",
+      "files": {
+        "src/diff/renames.py": "def renames(old_entries, new_paths):\n    moved = {}\n    for e in old_entries:\n        new = new_paths.get(e['page_id'])\n        if new and new != e['path']:\n            moved[e['path']] = new\n    return moved\n"
+      }
+    }
+  ],
+  "questions": [
+    {
+      "cat": "where",
+      "text": "Which part of the incremental re-sync is in progress right now, and what comes after it?",
+      "current": "diff",
+      "next": "rewrite"
+    },
+    {
+      "cat": "why",
+      "text": "Why are attachment filenames percent-encoded when links to attachments are rewritten?",
+      "step": "attlinks",
+      "reason": "Attachment names often contain spaces and parentheses, so filenames are percent-encoded to keep Markdown links valid.",
+      "distractors": [
+        "Links are relative so the output works in any wiki host and in a plain git checkout.",
+        "Anchor ids follow GitHub's heading slug rules so links match the anchors the target wiki generates.",
+        "Attachments are named by content hash so the same file attached to many pages is stored only once."
+      ]
+    },
+    {
+      "cat": "proof",
+      "text": "Which file holds the result of converting the table of contents macro?",
+      "step": "tocm",
+      "file": "src/macros/toc/toc.py"
+    },
+    {
+      "cat": "deferred",
+      "text": "Rewriting user mentions was planned with the link work; where did it go?",
+      "step": "mentions",
+      "milestone": "m4"
+    },
+    {
+      "cat": "update",
+      "text": "Which decision holds today on how Confluence info panels are rendered in Markdown?",
+      "step": "alerts"
+    },
+    {
+      "cat": "abstain",
+      "text": "Why did the team switch from the XML space export to the Confluence Cloud REST API for reading pages?"
+    },
+    {
+      "cat": "continue",
+      "text": "Resume the work: make the first change you would make.",
+      "next": "diff",
+      "dir": "src/diff/"
+    }
+  ]
+}

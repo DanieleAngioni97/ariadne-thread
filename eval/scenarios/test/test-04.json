@@ -1,0 +1,963 @@
+{
+  "id": "test-04",
+  "project": "tender-sieve",
+  "start": "2026-03-02T09:00:00Z",
+  "events": [
+    {
+      "type": "commit",
+      "message": "chore: scaffold tender-sieve project",
+      "files": {
+        "pyproject.toml": "[project]\nname = \"tender-sieve\"\nversion = \"0.1.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"httpx>=0.26\", \"lxml>=5.2\"]\n\n[project.optional-dependencies]\ndev = [\"pytest>=8\", \"ruff>=0.3\"]\n",
+        "README.md": "# tender-sieve\n\nIngests public procurement notices from the daily feed and removes duplicates.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "ci: run ruff and pytest on push",
+      "files": {
+        ".github/workflows/ci.yml": "name: ci\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-python@v5\n      - run: pip install -e .[dev] && ruff check . && pytest\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: ignore local data and notebook checkpoints",
+      "files": {
+        ".gitignore": "data/raw/\ndata/parquet/\ndata/checkpoint.json\n.ipynb_checkpoints/\n.venv/\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m1",
+      "title": "M1 Ingestion",
+      "what": "Fetch the daily notice feed, parse and normalize the notices, and keep them in raw storage."
+    },
+    {
+      "type": "milestone",
+      "key": "m2",
+      "title": "M2 Deduplication",
+      "what": "Find notices that describe the same tender and merge them into one record."
+    },
+    {
+      "type": "milestone",
+      "key": "m3",
+      "title": "M3 Publishing",
+      "what": "Make the deduplicated notices available to analysts as files and through an API."
+    },
+    {
+      "type": "milestone",
+      "key": "m4",
+      "title": "M4 Spending analytics",
+      "what": "Report awarded spending by buyer, sector and year."
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-02: ingestion plan with fetch, parse, normalizing buyers, CPV codes and amounts, and raw notices kept in SQLite",
+      "steps": [
+        {
+          "key": "fetch",
+          "title": "Fetch the daily notice feed"
+        },
+        {
+          "key": "parse",
+          "title": "Parse notice XML"
+        },
+        {
+          "key": "buyer",
+          "title": "Normalize buyer names"
+        },
+        {
+          "key": "cpv",
+          "title": "Normalize CPV codes"
+        },
+        {
+          "key": "amount",
+          "title": "Normalize award amounts"
+        },
+        {
+          "key": "store",
+          "title": "Store raw notices in SQLite"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "fetch"
+    },
+    {
+      "type": "commit",
+      "step": "fetch",
+      "message": "feat(fetch): add client for the daily notice feed",
+      "files": {
+        "src/fetch/client.py": "import httpx\n\nFEED_URL = 'https://feed.example-procurement.eu/notices'\n\ndef fetch_day(day):\n    resp = httpx.get(FEED_URL, params={'date': day.isoformat()})\n    resp.raise_for_status()\n    return resp.json()['notices']\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "fetch",
+      "message": "feat(fetch): follow pagination links in feed responses",
+      "files": {
+        "src/fetch/client.py": "import httpx\n\nFEED_URL = 'https://feed.example-procurement.eu/notices'\n\ndef fetch_day(day):\n    url, params, notices = FEED_URL, {'date': day.isoformat()}, []\n    while url:\n        resp = httpx.get(url, params=params)\n        resp.raise_for_status()\n        body = resp.json()\n        notices += body['notices']\n        url, params = body.get('next'), None\n    return notices\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "fetch",
+      "message": "feat(fetch): identify the client with a project user agent",
+      "files": {
+        "src/fetch/client.py": "import httpx\n\nFEED_URL = 'https://feed.example-procurement.eu/notices'\nHEADERS = {'User-Agent': 'tender-sieve/0.1 (+https://github.com/example/tender-sieve)'}\n\ndef fetch_day(day):\n    url, params, notices = FEED_URL, {'date': day.isoformat()}, []\n    while url:\n        resp = httpx.get(url, params=params, headers=HEADERS)\n        resp.raise_for_status()\n        body = resp.json()\n        notices += body['notices']\n        url, params = body.get('next'), None\n    return notices\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "fetch",
+      "message": "feat(fetch): back off when the feed answers 429",
+      "why": "The feed allows 60 requests per minute and answers 429 above that, so the client backs off instead of failing the whole day.",
+      "files": {
+        "src/fetch/retry.py": "import time\n\ndef with_backoff(call, attempts=5):\n    for i in range(attempts):\n        resp = call()\n        if resp.status_code != 429:\n            return resp\n        time.sleep(2 ** i)\n    resp.raise_for_status()\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "fetch",
+      "message": "test(fetch): replay recorded feed pages",
+      "files": {
+        "tests/fetch/test_client.py": "from fetch.client import fetch_day\n\ndef test_follows_next_link(recorded_feed):\n    notices = fetch_day(recorded_feed.day)\n    assert len(notices) == 2 * recorded_feed.page_size\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "fetch",
+      "done": true,
+      "message": "feat(fetch): keep the last fetched day as a checkpoint",
+      "why": "Checkpoints let a failed nightly run resume from the last complete day instead of refetching the whole month.",
+      "files": {
+        "src/fetch/checkpoint.py": "import json\nfrom pathlib import Path\n\nCHECKPOINT = Path('data/checkpoint.json')\n\ndef last_day():\n    if not CHECKPOINT.exists():\n        return None\n    return json.loads(CHECKPOINT.read_text())['last_day']\n\ndef save(day):\n    CHECKPOINT.write_text(json.dumps({'last_day': day.isoformat()}))\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "parse",
+      "message": "feat(parse): parse notice XML into a Notice dataclass",
+      "files": {
+        "src/parse/notice.py": "from dataclasses import dataclass\nfrom lxml import etree\n\n@dataclass\nclass Notice:\n    notice_id: str\n    title: str\n    published: str\n\ndef parse(xml: bytes) -> Notice:\n    root = etree.fromstring(xml)\n    return Notice(root.findtext('id'), root.findtext('title'), root.findtext('published'))\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "parse",
+      "message": "feat(parse): read buyer and CPV fields",
+      "files": {
+        "src/parse/notice.py": "from dataclasses import dataclass\nfrom lxml import etree\n\n@dataclass\nclass Notice:\n    notice_id: str\n    title: str\n    published: str\n    buyer: str\n    cpv: str\n\ndef parse(xml: bytes) -> Notice:\n    r = etree.fromstring(xml)\n    return Notice(r.findtext('id'), r.findtext('title'), r.findtext('published'), r.findtext('buyer/name'), r.findtext('cpv/main'))\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "gzip",
+      "title": "Decode gzip feed responses",
+      "what": "The feed started sending gzip bodies without a Content-Encoding header, so every fetch returned unreadable bytes and no new notices reached the parser."
+    },
+    {
+      "type": "commit",
+      "step": "gzip",
+      "message": "fix(http): detect gzip bodies by their magic bytes",
+      "files": {
+        "src/http/decompress.py": "import gzip\n\nGZIP_MAGIC = b'\\x1f\\x8b'\n\ndef body_bytes(resp):\n    raw = resp.content\n    return gzip.decompress(raw) if raw[:2] == GZIP_MAGIC else raw\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "gzip",
+      "done": true,
+      "message": "fix(fetch): read feed pages through the gzip-aware decoder",
+      "files": {
+        "src/fetch/client.py": "import json\nimport httpx\nfrom http_utils.decompress import body_bytes\n\nFEED_URL = 'https://feed.example-procurement.eu/notices'\nHEADERS = {'User-Agent': 'tender-sieve/0.1 (+https://github.com/example/tender-sieve)'}\n\ndef fetch_day(day):\n    url, params, notices = FEED_URL, {'date': day.isoformat()}, []\n    while url:\n        resp = httpx.get(url, params=params, headers=HEADERS)\n        resp.raise_for_status()\n        body = json.loads(body_bytes(resp))\n        notices += body['notices']\n        url, params = body.get('next'), None\n    return notices\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "parse",
+      "message": "feat(parse): extract lots from notices",
+      "files": {
+        "src/parse/lots.py": "def parse_lots(root):\n    return [\n        {'number': lot.get('number'), 'title': lot.findtext('title')}\n        for lot in root.iterfind('lots/lot')\n    ]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "parse",
+      "message": "fix(parse): tolerate lots without a title",
+      "files": {
+        "src/parse/lots.py": "def parse_lots(root):\n    return [\n        {'number': lot.get('number'), 'title': lot.findtext('title') or ''}\n        for lot in root.iterfind('lots/lot')\n    ]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "parse",
+      "message": "test(parse): fixtures for contract and award notices",
+      "files": {
+        "tests/parse/test_notice.py": "from pathlib import Path\nfrom parse.notice import parse\n\nFIXTURES = Path(__file__).parent / 'fixtures'\n\ndef test_contract_notice():\n    n = parse((FIXTURES / 'contract_notice.xml').read_bytes())\n    assert n.cpv == '45233140-2'\n",
+        "tests/parse/fixtures/contract_notice.xml": "<notice><id>2026-031144</id><title>Road resurfacing A12</title><published>2026-03-02</published><buyer><name>Comune di Cagliari</name></buyer><cpv><main>45233140-2</main></cpv></notice>\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "parse",
+      "done": true,
+      "message": "feat(parse): skip notices with unknown form types",
+      "why": "Old eForms pilot notices use form types the parser cannot map, and one bad notice should not stop the whole batch.",
+      "files": {
+        "src/parse/forms.py": "import logging\n\nKNOWN_FORMS = {'CN', 'CAN', 'PIN', 'CORR'}\nlog = logging.getLogger(__name__)\n\ndef is_supported(root):\n    form = root.get('form')\n    if form not in KNOWN_FORMS:\n        log.warning('skipping notice %s with form %s', root.findtext('id'), form)\n        return False\n    return True\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump lxml to 5.3",
+      "files": {
+        "pyproject.toml": "[project]\nname = \"tender-sieve\"\nversion = \"0.1.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"httpx>=0.26\", \"lxml>=5.3\"]\n\n[project.optional-dependencies]\ndev = [\"pytest>=8\", \"ruff>=0.3\"]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "buyer",
+      "message": "feat(normalize): strip legal suffixes from buyer names",
+      "files": {
+        "src/normalize/buyer.py": "import re\n\nSUFFIXES = re.compile(r'\\b(s\\.?p\\.?a|s\\.?r\\.?l|gmbh|ltd|sa)\\.?$', re.I)\n\ndef normalize_buyer(name: str) -> str:\n    return SUFFIXES.sub('', name).strip(' ,')\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "buyer",
+      "message": "feat(normalize): fold accents and case in buyer names",
+      "files": {
+        "src/normalize/buyer.py": "import re\nimport unicodedata\n\nSUFFIXES = re.compile(r'\\b(s\\.?p\\.?a|s\\.?r\\.?l|gmbh|ltd|sa)\\.?$', re.I)\n\ndef normalize_buyer(name: str) -> str:\n    name = SUFFIXES.sub('', name).strip(' ,')\n    name = unicodedata.normalize('NFKD', name).encode('ascii', 'ignore').decode()\n    return ' '.join(name.lower().split())\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "buyer",
+      "message": "test(normalize): buyer name edge cases",
+      "files": {
+        "tests/normalize/test_buyer.py": "from normalize.buyer import normalize_buyer\n\ndef test_suffix_and_accents():\n    assert normalize_buyer('Città di Torino S.p.A.') == 'citta di torino'\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "buyer",
+      "done": true,
+      "message": "feat(normalize): map buyer aliases from a curated table",
+      "why": "The same ministry appears under a dozen spellings, and stripping suffixes alone cannot join agencies that were renamed.",
+      "files": {
+        "data/buyer_aliases.csv": "alias,canonical\nministero infrastrutture e trasporti,ministero delle infrastrutture e della mobilita sostenibili\nmit,ministero delle infrastrutture e della mobilita sostenibili\n",
+        "src/normalize/buyer.py": "import csv\nimport re\nimport unicodedata\n\nSUFFIXES = re.compile(r'\\b(s\\.?p\\.?a|s\\.?r\\.?l|gmbh|ltd|sa)\\.?$', re.I)\nALIASES = {r['alias']: r['canonical'] for r in csv.DictReader(open('data/buyer_aliases.csv'))}\n\ndef normalize_buyer(name: str) -> str:\n    name = SUFFIXES.sub('', name).strip(' ,')\n    name = unicodedata.normalize('NFKD', name).encode('ascii', 'ignore').decode()\n    name = ' '.join(name.lower().split())\n    return ALIASES.get(name, name)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cpv",
+      "message": "feat(normalize): validate CPV code format",
+      "files": {
+        "src/normalize/cpv.py": "import re\n\nCPV = re.compile(r'^(\\d{8})-(\\d)$')\n\ndef valid_cpv(code: str) -> bool:\n    return bool(CPV.match(code.strip()))\n"
+      }
+    },
+    {
+      "type": "defer",
+      "step": "amount",
+      "to": "m4"
+    },
+    {
+      "type": "commit",
+      "step": "cpv",
+      "message": "test(normalize): CPV codes with and without check digit",
+      "files": {
+        "tests/normalize/test_cpv.py": "from normalize.cpv import valid_cpv\n\ndef test_format():\n    assert valid_cpv('45233140-2')\n    assert not valid_cpv('45233140')\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cpv",
+      "done": true,
+      "message": "feat(normalize): roll CPV codes up to their division",
+      "why": "Buyers pick different leaf codes for the same purchase, while the two-digit division stays stable.",
+      "files": {
+        "src/normalize/cpv_division.py": "def cpv_division(code: str) -> str:\n    return code.strip()[:2]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "store",
+      "message": "docs(storage): propose SQLite for raw notices",
+      "files": {
+        "docs/storage.md": "# Storage\n\n## Raw storage\nRaw notices go into one SQLite file, data/raw.db, one row per notice with the original XML.\nSQLite needs no server and the nightly job is the only writer.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "store",
+      "message": "feat(store): write raw notices to SQLite",
+      "files": {
+        "src/store_sqlite/db.py": "import sqlite3\n\ndef open_db(path='data/raw.db'):\n    con = sqlite3.connect(path)\n    con.execute('CREATE TABLE IF NOT EXISTS notices (id TEXT PRIMARY KEY, published TEXT, xml BLOB)')\n    return con\n\ndef save(con, notice_id, published, xml):\n    con.execute('INSERT OR REPLACE INTO notices VALUES (?, ?, ?)', (notice_id, published, xml))\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "store",
+      "message": "feat(store): index SQLite notices by publication date",
+      "files": {
+        "src/store_sqlite/db.py": "import sqlite3\n\ndef open_db(path='data/raw.db'):\n    con = sqlite3.connect(path)\n    con.execute('CREATE TABLE IF NOT EXISTS notices (id TEXT PRIMARY KEY, published TEXT, xml BLOB)')\n    con.execute('CREATE INDEX IF NOT EXISTS by_published ON notices (published)')\n    return con\n\ndef save(con, notice_id, published, xml):\n    con.execute('INSERT OR REPLACE INTO notices VALUES (?, ?, ?)', (notice_id, published, xml))\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-09: drop SQLite and keep raw notices as Parquet files partitioned by publication date",
+      "steps": [
+        {
+          "key": "parquet",
+          "title": "Store raw notices as Parquet partitions"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "store",
+      "by": "parquet"
+    },
+    {
+      "type": "start",
+      "step": "parquet"
+    },
+    {
+      "type": "commit",
+      "step": "parquet",
+      "message": "feat(storage): write notices to Parquet partitioned by publication date",
+      "why": "One month of notices already passed 4 GB in SQLite, and dedup runs scan whole date ranges, which columnar partitions read much faster.",
+      "files": {
+        "src/storage/parquet.py": "import pyarrow as pa\nimport pyarrow.parquet as pq\n\nROOT = 'data/parquet'\n\ndef write(notices):\n    table = pa.Table.from_pylist(notices)\n    pq.write_to_dataset(table, ROOT, partition_cols=['published'])\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "parquet",
+      "message": "docs(storage): replace the SQLite plan with the Parquet layout",
+      "files": {
+        "docs/storage.md": "# Storage\n\n## Raw storage\nRaw notices are Parquet files under data/parquet/, partitioned by publication date.\nThis supersedes the SQLite proposal: dedup reads whole date ranges and SQLite grew past 4 GB in a month.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "parquet",
+      "message": "feat(storage): compact small daily files every week",
+      "files": {
+        "src/storage/compact.py": "import pyarrow.dataset as ds\nimport pyarrow.parquet as pq\n\ndef compact(partition_dir):\n    table = ds.dataset(partition_dir).to_table()\n    pq.write_table(table, f'{partition_dir}/part-0.parquet')\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "parquet",
+      "done": true,
+      "message": "feat(storage): read partitions back for a date range",
+      "files": {
+        "src/storage/reader.py": "import pyarrow.dataset as ds\n\ndef read_range(start, end, root='data/parquet'):\n    dataset = ds.dataset(root, partitioning='hive')\n    flt = (ds.field('published') >= start) & (ds.field('published') <= end)\n    return dataset.to_table(filter=flt)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: list the notice sources",
+      "files": {
+        "docs/sources.md": "# Sources\n\n- EU daily notice feed (all member states, above threshold)\n- National open-data portals, mirrored into the same feed format\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "refactor: move paths and URLs into a settings module",
+      "files": {
+        "src/config/settings.py": "import os\n\nFEED_URL = os.environ.get('FEED_URL', 'https://feed.example-procurement.eu/notices')\nPARQUET_ROOT = os.environ.get('PARQUET_ROOT', 'data/parquet')\nCHECKPOINT = os.environ.get('CHECKPOINT', 'data/checkpoint.json')\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: describe the nightly ingest run",
+      "files": {
+        "README.md": "# tender-sieve\n\nIngests public procurement notices from the daily feed and removes duplicates.\n\n## Nightly ingest\n\n    python -m tender_sieve ingest --since checkpoint\n\nFetches new days, parses and normalizes notices, and writes Parquet partitions.\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): add pyarrow 17 and bump httpx",
+      "files": {
+        "pyproject.toml": "[project]\nname = \"tender-sieve\"\nversion = \"0.2.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"httpx>=0.27\", \"lxml>=5.3\", \"pyarrow>=17\"]\n\n[project.optional-dependencies]\ndev = [\"pytest>=8\", \"ruff>=0.4\"]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "test: share notice fixtures across test packages",
+      "files": {
+        "tests/conftest.py": "import pytest\n\n@pytest.fixture\ndef notice_factory():\n    def make(**kw):\n        base = {'notice_id': 'n1', 'title': 'Road works', 'buyer': 'comune di cagliari', 'cpv': '45233140-2', 'published': '2026-03-02'}\n        return {**base, **kw}\n    return make\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: add deduplication design notes",
+      "files": {
+        "docs/dedup-design.md": "# Deduplication design\n\n## Scope\nA duplicate is a notice for a tender that was already published, by the same source or another one.\n\n## Title similarity threshold\nTitle pairs are accepted at trigram similarity 0.82. On the hand-labelled March sample of 600 pairs, 0.82 kept false merges under 1% while still catching titles retyped with abbreviations; 0.75 merged distinct lots of framework agreements.\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-16: dedup plan covering matching by reference, title and language copies, linking corrigenda, grouping matches, reporting rates, and keeping the newest notice per group",
+      "steps": [
+        {
+          "key": "ref",
+          "title": "Match notices by reference number"
+        },
+        {
+          "key": "title",
+          "title": "Match notices by title similarity"
+        },
+        {
+          "key": "lang",
+          "title": "Match notices across languages"
+        },
+        {
+          "key": "amend",
+          "title": "Match amended notices to originals"
+        },
+        {
+          "key": "cluster",
+          "title": "Group matched pairs into duplicate sets"
+        },
+        {
+          "key": "report",
+          "title": "Report duplicate rates per source"
+        },
+        {
+          "key": "newest",
+          "title": "Merge duplicates into the newest notice"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "ref"
+    },
+    {
+      "type": "commit",
+      "step": "ref",
+      "message": "feat(match): index notices by buyer reference number",
+      "files": {
+        "src/match/reference.py": "from collections import defaultdict\n\ndef pairs_by_reference(notices):\n    index = defaultdict(list)\n    for n in notices:\n        index[n['reference']].append(n['notice_id'])\n    return [ids for ids in index.values() if len(ids) > 1]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "ref",
+      "message": "feat(match): strip punctuation from reference numbers",
+      "files": {
+        "src/match/reference.py": "import re\nfrom collections import defaultdict\n\ndef clean(ref):\n    return re.sub(r'[^0-9a-z]', '', ref.lower())\n\ndef pairs_by_reference(notices):\n    index = defaultdict(list)\n    for n in notices:\n        index[clean(n['reference'])].append(n['notice_id'])\n    return [ids for ids in index.values() if len(ids) > 1]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "ref",
+      "message": "test(match): reference numbers with punctuation variants",
+      "files": {
+        "tests/match/test_reference.py": "from match.reference import clean\n\ndef test_clean():\n    assert clean('CIG 8A1-22/b') == 'cig8a122b'\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "ref",
+      "done": true,
+      "message": "feat(match): require the same buyer for reference matches",
+      "why": "Buyers reuse internal reference numbers across years, so a reference alone joins unrelated tenders.",
+      "files": {
+        "src/match/reference.py": "import re\nfrom collections import defaultdict\n\ndef clean(ref):\n    return re.sub(r'[^0-9a-z]', '', ref.lower())\n\ndef pairs_by_reference(notices):\n    index = defaultdict(list)\n    for n in notices:\n        index[(n['buyer'], clean(n['reference']))].append(n['notice_id'])\n    return [ids for ids in index.values() if len(ids) > 1]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "title",
+      "message": "feat(match): trigram similarity on notice titles",
+      "files": {
+        "src/match/title.py": "def trigrams(text):\n    t = f'  {text.lower()} '\n    return {t[i:i + 3] for i in range(len(t) - 2)}\n\ndef similarity(a, b):\n    ta, tb = trigrams(a), trigrams(b)\n    return len(ta & tb) / len(ta | tb)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "title",
+      "message": "feat(match): compare titles only within the same CPV division",
+      "files": {
+        "src/match/blocking.py": "from collections import defaultdict\nfrom normalize.cpv_division import cpv_division\n\ndef blocks(notices):\n    out = defaultdict(list)\n    for n in notices:\n        out[cpv_division(n['cpv'])].append(n)\n    return out.values()\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "dates",
+      "title": "Repair notices with missing publication dates",
+      "what": "A feed batch arrived with empty publication dates and crashed the title matching run on the Parquet date filter."
+    },
+    {
+      "type": "commit",
+      "step": "dates",
+      "message": "fix(repair): fall back to dispatch date when publication date is missing",
+      "files": {
+        "src/repair/dates.py": "def repair_published(notice):\n    if not notice.get('published'):\n        notice['published'] = notice.get('dispatched') or notice['received']\n        notice['published_repaired'] = True\n    return notice\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "dates",
+      "done": true,
+      "message": "test(repair): notices without any publication date",
+      "files": {
+        "tests/repair/test_dates.py": "from repair.dates import repair_published\n\ndef test_uses_dispatch_date():\n    n = repair_published({'published': '', 'dispatched': '2026-03-17'})\n    assert n['published'] == '2026-03-17' and n['published_repaired']\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "title",
+      "message": "perf(match): cache trigram sets per notice",
+      "files": {
+        "src/match/title.py": "from functools import lru_cache\n\n@lru_cache(maxsize=200_000)\ndef trigrams(text):\n    t = f'  {text.lower()} '\n    return frozenset(t[i:i + 3] for i in range(len(t) - 2))\n\ndef similarity(a, b):\n    ta, tb = trigrams(a), trigrams(b)\n    return len(ta & tb) / len(ta | tb)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "title",
+      "message": "feat(match): ignore boilerplate words in titles",
+      "files": {
+        "src/match/stopwords.py": "BOILERPLATE = {'procedura', 'aperta', 'affidamento', 'servizio', 'fornitura', 'lavori', 'tender', 'contract'}\n\ndef strip_boilerplate(title):\n    return ' '.join(w for w in title.lower().split() if w not in BOILERPLATE)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "title",
+      "done": true,
+      "message": "feat(match): accept title pairs at 0.82 similarity",
+      "proofFiles": [
+        "docs/dedup-design.md#Title similarity threshold"
+      ],
+      "files": {
+        "src/match/thresholds.py": "TITLE_SIMILARITY = 0.82\n",
+        "src/match/title_pairs.py": "from match.stopwords import strip_boilerplate\nfrom match.thresholds import TITLE_SIMILARITY\nfrom match.title import similarity\n\ndef title_pairs(block):\n    for i, a in enumerate(block):\n        for b in block[i + 1:]:\n            if similarity(strip_boilerplate(a['title']), strip_boilerplate(b['title'])) >= TITLE_SIMILARITY:\n                yield a['notice_id'], b['notice_id']\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "ci: cache pip downloads",
+      "files": {
+        ".github/workflows/ci.yml": "name: ci\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-python@v5\n        with:\n          cache: pip\n      - run: pip install -e .[dev] && ruff check . && pytest\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "lang",
+      "message": "feat(match): detect the language of each notice",
+      "files": {
+        "src/match/language.py": "def notice_language(notice):\n    return notice.get('lang') or None\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "lang",
+      "message": "feat(match): fall back to buyer country when the language is missing",
+      "files": {
+        "src/match/language.py": "COUNTRY_DEFAULT = {'IT': 'it', 'FR': 'fr', 'DE': 'de', 'ES': 'es'}\n\ndef notice_language(notice):\n    if notice.get('lang'):\n        return notice['lang']\n    return COUNTRY_DEFAULT.get(notice.get('country'))\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "lang",
+      "message": "feat(match): pair language copies by buyer, CPV and deadline",
+      "files": {
+        "src/match/crosslang.py": "from collections import defaultdict\nfrom match.language import notice_language\n\ndef language_copies(notices):\n    index = defaultdict(list)\n    for n in notices:\n        index[(n['buyer'], n['cpv'], n['deadline'])].append(n)\n    for group in index.values():\n        if len({notice_language(n) for n in group}) > 1:\n            yield [n['notice_id'] for n in group]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "lang",
+      "done": true,
+      "message": "test(match): Belgian French and Dutch copies of one tender",
+      "why": "Multilingual countries publish one copy of a tender per official language, and those copies share buyer and deadline but no title.",
+      "files": {
+        "tests/match/test_crosslang.py": "from match.crosslang import language_copies\n\ndef test_fr_nl_copies(notice_factory):\n    fr = notice_factory(notice_id='a', lang='fr', deadline='2026-04-30')\n    nl = notice_factory(notice_id='b', lang='nl', deadline='2026-04-30')\n    assert list(language_copies([fr, nl])) == [['a', 'b']]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "amend",
+      "message": "feat(match): link corrigenda to their original notices",
+      "files": {
+        "src/match/amendments.py": "def link_corrigenda(notices):\n    by_id = {n['notice_id']: n for n in notices}\n    for n in notices:\n        if n['form'] == 'CORR' and n.get('amends') in by_id:\n            yield n['amends'], n['notice_id']\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "amend",
+      "message": "test(match): corrigendum fixtures",
+      "files": {
+        "tests/match/test_amendments.py": "from match.amendments import link_corrigenda\n\ndef test_links(notice_factory):\n    orig = notice_factory(notice_id='o', form='CN')\n    corr = notice_factory(notice_id='c', form='CORR', amends='o')\n    assert list(link_corrigenda([orig, corr])) == [('o', 'c')]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "amend",
+      "done": true,
+      "message": "feat(match): apply corrigendum fields onto the original notice",
+      "why": "A corrigendum changes fields of an existing tender, so counting it as a new notice would inflate the duplicate count.",
+      "files": {
+        "src/match/amendments.py": "def link_corrigenda(notices):\n    by_id = {n['notice_id']: n for n in notices}\n    for n in notices:\n        if n['form'] == 'CORR' and n.get('amends') in by_id:\n            yield n['amends'], n['notice_id']\n\ndef apply_corrigendum(original, corr):\n    changed = {k: v for k, v in corr.get('changes', {}).items() if v is not None}\n    return {**original, **changed}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "refactor(match): share the pair type across matchers",
+      "files": {
+        "src/match/common.py": "from typing import NamedTuple\n\nclass Pair(NamedTuple):\n    left: str\n    right: str\n    reason: str\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cluster",
+      "message": "feat(match): union-find over matched pairs",
+      "files": {
+        "src/match/clusters.py": "def clusters(pairs):\n    parent = {}\n    def find(x):\n        parent.setdefault(x, x)\n        while parent[x] != x:\n            x = parent[x]\n        return x\n    for a, b in pairs:\n        parent[find(a)] = find(b)\n    groups = {}\n    for x in parent:\n        groups.setdefault(find(x), []).append(x)\n    return list(groups.values())\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cluster",
+      "message": "feat(match): hold oversized duplicate sets for review",
+      "why": "Pairwise matches chain across the lots of framework agreements, so sets over 20 notices are held for review instead of merged.",
+      "files": {
+        "src/match/review.py": "MAX_GROUP = 20\n\ndef split_for_review(groups):\n    ok = [g for g in groups if len(g) <= MAX_GROUP]\n    held = [g for g in groups if len(g) > MAX_GROUP]\n    return ok, held\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cluster",
+      "done": true,
+      "message": "test(match): transitive pairs end up in one set",
+      "files": {
+        "tests/match/test_clusters.py": "from match.clusters import clusters\n\ndef test_transitive():\n    groups = clusters([('a', 'b'), ('b', 'c'), ('x', 'y')])\n    assert sorted(map(sorted, groups)) == [['a', 'b', 'c'], ['x', 'y']]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "report",
+      "message": "feat(report): compute duplicate rate per source",
+      "files": {
+        "src/report/dup_rates.py": "from collections import Counter\n\ndef dup_rates(notices, duplicate_ids):\n    total = Counter(n['source'] for n in notices)\n    dups = Counter(n['source'] for n in notices if n['notice_id'] in duplicate_ids)\n    return {s: dups[s] / total[s] for s in total}\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "sandbox",
+      "title": "Filter test notices from the sandbox feed",
+      "what": "The first duplicate report showed a 40% rate on one source, and every one of those notices was a test publication leaked from the feed's sandbox."
+    },
+    {
+      "type": "commit",
+      "step": "sandbox",
+      "done": true,
+      "message": "fix(filters): drop notices flagged as test publications",
+      "files": {
+        "src/filters/sandbox.py": "def is_test_publication(notice):\n    return notice.get('test') is True or notice['notice_id'].startswith('TEST-')\n\ndef drop_test_publications(notices):\n    return [n for n in notices if not is_test_publication(n)]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "report",
+      "message": "feat(report): write duplicate rates as a markdown table",
+      "files": {
+        "src/report/markdown.py": "def to_markdown(rates):\n    lines = ['| source | duplicate rate |', '|---|---|']\n    lines += [f'| {s} | {r:.1%} |' for s, r in sorted(rates.items())]\n    return '\\n'.join(lines)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "report",
+      "done": true,
+      "message": "feat(report): add weekly duplicate rate trend",
+      "files": {
+        "src/report/trend.py": "from collections import defaultdict\nfrom report.dup_rates import dup_rates\n\ndef weekly_trend(notices, duplicate_ids):\n    weeks = defaultdict(list)\n    for n in notices:\n        weeks[n['published'][:4] + '-W' + n['week']].append(n)\n    return {w: dup_rates(ns, duplicate_ids) for w, ns in sorted(weeks.items())}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "newest",
+      "message": "feat(merge): keep the newest notice of each duplicate set",
+      "files": {
+        "src/merge/newest.py": "def keep_newest(group):\n    return max(group, key=lambda n: n['published'])\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "newest",
+      "message": "feat(merge): break ties on dispatch time",
+      "files": {
+        "src/merge/newest.py": "def keep_newest(group):\n    return max(group, key=lambda n: (n['published'], n.get('dispatched', '')))\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-25: build a canonical record field by field instead of keeping the newest notice",
+      "steps": [
+        {
+          "key": "canon",
+          "title": "Merge duplicates into a canonical record"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "newest",
+      "by": "canon"
+    },
+    {
+      "type": "start",
+      "step": "canon"
+    },
+    {
+      "type": "commit",
+      "step": "canon",
+      "message": "feat(merge): build a canonical record from a duplicate set",
+      "why": "The newest notice in a set often drops the lots and estimated value that only the original carried.",
+      "files": {
+        "src/merge/canonical.py": "FIELDS = ['title', 'buyer', 'cpv', 'deadline', 'estimated_value', 'lots']\n\ndef canonical(group):\n    ordered = sorted(group, key=lambda n: n['published'], reverse=True)\n    record = {}\n    for field in FIELDS:\n        record[field] = next((n[field] for n in ordered if n.get(field)), None)\n    return record\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "canon",
+      "message": "feat(merge): keep source notice ids on the canonical record",
+      "files": {
+        "src/merge/provenance.py": "def with_provenance(record, group):\n    record['source_ids'] = sorted(n['notice_id'] for n in group)\n    record['sources'] = sorted({n['source'] for n in group})\n    return record\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "canon",
+      "done": true,
+      "message": "test(merge): canonical record keeps the original lots",
+      "files": {
+        "tests/merge/test_canonical.py": "from merge.canonical import canonical\n\ndef test_keeps_lots(notice_factory):\n    old = notice_factory(published='2026-03-01', lots=[{'number': '1'}])\n    new = notice_factory(published='2026-03-09', lots=[])\n    assert canonical([old, new])['lots'] == [{'number': '1'}]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: changelog for the deduplication milestone",
+      "files": {
+        "CHANGELOG.md": "# Changelog\n\n## 0.2.0\n- Match duplicates by reference, title, language copies and corrigenda\n- Canonical records with source ids\n- Duplicate rate report per source\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump ruff to 0.6",
+      "files": {
+        "pyproject.toml": "[project]\nname = \"tender-sieve\"\nversion = \"0.2.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"httpx>=0.27\", \"lxml>=5.3\", \"pyarrow>=17\"]\n\n[project.optional-dependencies]\ndev = [\"pytest>=8\", \"ruff>=0.6\"]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: add contributing guide",
+      "files": {
+        "CONTRIBUTING.md": "# Contributing\n\n- One folder per area under src/\n- Run `ruff check . && pytest` before pushing\n- Never commit files from data/\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m3",
+      "ref": "chat 2026-04-06: publishing plan with a CSV export, a JSON Lines export of duplicate sets, a read-only API, and a daily change feed",
+      "steps": [
+        {
+          "key": "csv",
+          "title": "Export deduplicated notices as CSV"
+        },
+        {
+          "key": "jsonl",
+          "title": "Export duplicate groups as JSON Lines"
+        },
+        {
+          "key": "api",
+          "title": "Serve notices over a read-only API"
+        },
+        {
+          "key": "feed",
+          "title": "Publish a daily change feed"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "csv"
+    },
+    {
+      "type": "commit",
+      "step": "csv",
+      "message": "feat(export): write canonical notices to CSV",
+      "files": {
+        "src/export_csv/writer.py": "import csv\n\nCOLUMNS = ['title', 'buyer', 'cpv', 'deadline', 'estimated_value']\n\ndef write_csv(records, path):\n    with open(path, 'w', newline='') as f:\n        w = csv.DictWriter(f, fieldnames=COLUMNS, extrasaction='ignore')\n        w.writeheader()\n        w.writerows(records)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "csv",
+      "message": "feat(export): flatten lots into one row each",
+      "why": "Analysts load the CSV into spreadsheets, which cannot hold nested lots.",
+      "files": {
+        "src/export_csv/lots.py": "def flatten_lots(record):\n    lots = record.get('lots') or [{}]\n    for lot in lots:\n        yield {**record, 'lot_number': lot.get('number'), 'lot_title': lot.get('title')}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "csv",
+      "message": "test(export): one CSV row per lot",
+      "files": {
+        "tests/export_csv/test_lots.py": "from export_csv.lots import flatten_lots\n\ndef test_two_lots():\n    rows = list(flatten_lots({'title': 't', 'lots': [{'number': '1'}, {'number': '2'}]}))\n    assert [r['lot_number'] for r in rows] == ['1', '2']\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "csv",
+      "done": true,
+      "message": "feat(export): semicolon delimiter and UTF-8 BOM",
+      "why": "Excel in the EU locales the analysts use opens comma-separated files as a single column.",
+      "files": {
+        "src/export_csv/writer.py": "import csv\n\nCOLUMNS = ['title', 'buyer', 'cpv', 'deadline', 'estimated_value', 'lot_number', 'lot_title']\n\ndef write_csv(records, path):\n    with open(path, 'w', newline='', encoding='utf-8-sig') as f:\n        w = csv.DictWriter(f, fieldnames=COLUMNS, delimiter=';', extrasaction='ignore')\n        w.writeheader()\n        w.writerows(records)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "jsonl",
+      "message": "feat(export): write duplicate sets as JSON Lines",
+      "files": {
+        "src/export_jsonl/groups.py": "import json\n\ndef write_groups(groups, path):\n    with open(path, 'w') as f:\n        for g in groups:\n            f.write(json.dumps({'source_ids': g['source_ids']}) + '\\n')\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "jsonl",
+      "message": "feat(export): include the match reason for each pair",
+      "files": {
+        "src/export_jsonl/groups.py": "import json\n\ndef write_groups(groups, path):\n    with open(path, 'w') as f:\n        for g in groups:\n            pairs = [{'left': p.left, 'right': p.right, 'reason': p.reason} for p in g['pairs']]\n            f.write(json.dumps({'source_ids': g['source_ids'], 'pairs': pairs}) + '\\n')\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "jsonl",
+      "message": "feat(export): gzip the duplicate sets file",
+      "files": {
+        "src/export_jsonl/groups.py": "import gzip\nimport json\n\ndef write_groups(groups, path):\n    with gzip.open(path, 'wt') as f:\n        for g in groups:\n            pairs = [{'left': p.left, 'right': p.right, 'reason': p.reason} for p in g['pairs']]\n            f.write(json.dumps({'source_ids': g['source_ids'], 'pairs': pairs}) + '\\n')\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "jsonl",
+      "done": true,
+      "message": "test(export): round-trip the duplicate sets file",
+      "files": {
+        "tests/export_jsonl/test_groups.py": "import gzip, json\nfrom match.common import Pair\nfrom export_jsonl.groups import write_groups\n\ndef test_round_trip(tmp_path):\n    p = tmp_path / 'groups.jsonl.gz'\n    write_groups([{'source_ids': ['a', 'b'], 'pairs': [Pair('a', 'b', 'reference')]}], p)\n    assert json.loads(gzip.open(p, 'rt').readline())['pairs'][0]['reason'] == 'reference'\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: describe the export formats",
+      "files": {
+        "docs/exports.md": "# Exports\n\n## CSV\nOne row per lot, semicolon-separated, UTF-8 with BOM.\n\n## Duplicate sets\nGzipped JSON Lines, one set per line with the match reason of each pair.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add Dockerfile for the nightly job",
+      "files": {
+        "Dockerfile": "FROM python:3.12-slim\nWORKDIR /app\nCOPY . .\nRUN pip install --no-cache-dir .\nCMD [\"python\", \"-m\", \"tender_sieve\", \"ingest\", \"--since\", \"checkpoint\"]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "api",
+      "message": "feat(api): read-only app with a notices listing",
+      "files": {
+        "src/api/app.py": "from fastapi import FastAPI\nfrom storage.reader import read_range\n\napp = FastAPI(title='tender-sieve')\n\n@app.get('/notices')\ndef list_notices(start: str, end: str):\n    return read_range(start, end).to_pylist()\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "api",
+      "message": "feat(api): health endpoint for the load balancer",
+      "files": {
+        "src/api/health.py": "from fastapi import APIRouter\n\nrouter = APIRouter()\n\n@router.get('/health')\ndef health():\n    return {'status': 'ok'}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "api",
+      "message": "feat(api): filter notices by buyer and CPV division",
+      "files": {
+        "src/api/filters.py": "def apply_filters(rows, buyer=None, division=None):\n    if buyer:\n        rows = [r for r in rows if r['buyer'] == buyer]\n    if division:\n        rows = [r for r in rows if r['cpv'][:2] == division]\n    return rows\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "api",
+      "message": "feat(api): cursor pagination on the notices listing",
+      "files": {
+        "src/api/pagination.py": "import base64\n\ndef encode_cursor(offset: int) -> str:\n    return base64.urlsafe_b64encode(str(offset).encode()).decode()\n\ndef page(rows, cursor=None, size=100):\n    start = int(base64.urlsafe_b64decode(cursor)) if cursor else 0\n    nxt = encode_cursor(start + size) if start + size < len(rows) else None\n    return {'items': rows[start:start + size], 'next': nxt}\n"
+      }
+    }
+  ],
+  "questions": [
+    {
+      "cat": "where",
+      "text": "Which part of the publishing work is in progress right now, and what comes after it?",
+      "current": "api",
+      "next": "feed"
+    },
+    {
+      "cat": "why",
+      "text": "Why are title pairs accepted at a similarity of 0.82?",
+      "step": "title",
+      "reason": "On the hand-labelled March sample of 600 pairs, 0.82 kept false merges under 1% while still catching titles retyped with abbreviations; 0.75 merged distinct lots of framework agreements.",
+      "distractors": [
+        "Buyers reuse internal reference numbers across years, so a reference alone joins unrelated tenders.",
+        "Multilingual countries publish one copy of a tender per official language, and those copies share buyer and deadline but no title.",
+        "A corrigendum changes fields of an existing tender, so counting it as a new notice would inflate the duplicate count."
+      ]
+    },
+    {
+      "cat": "proof",
+      "text": "Which file holds the result of pairing copies of the same tender published in different languages?",
+      "step": "lang",
+      "file": "src/match/crosslang.py"
+    },
+    {
+      "cat": "deferred",
+      "text": "What happened to normalizing award amounts, and in which milestone is it planned now?",
+      "step": "amount",
+      "milestone": "m4"
+    },
+    {
+      "cat": "update",
+      "text": "Which decision holds today on how raw notices are stored?",
+      "step": "parquet"
+    },
+    {
+      "cat": "abstain",
+      "text": "Which OCR engine was chosen to read scanned PDF tender documents?"
+    },
+    {
+      "cat": "continue",
+      "text": "Resume the work: make the first change you would make.",
+      "next": "api",
+      "dir": "src/api/"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+{"id":"test-01","set":"test","start":"2026-03-02T09:00:00Z","events":60,"domain":"a parcel tracking service for a regional courier","model":"claude-opus-5-5","rounds":1,"cost":0.3377256}
+{"id":"test-07","set":"test","start":"2026-03-02T09:00:00Z","events":110,"domain":"an exam booking portal for a university language centre","model":"claude-opus-5-5","rounds":1,"cost":0.6183455999999999}
+{"id":"test-08","set":"test","start":"2026-03-02T09:00:00Z","events":65,"domain":"a plugin system for a static analysis tool for SQL migrations","model":"claude-opus-5-5","rounds":1,"cost":0.2992244}
+{"id":"test-02","set":"test","start":"2026-03-02T09:00:00Z","events":80,"domain":"a library for parsing and validating electronic invoices in the UBL format","model":"claude-opus-5-5","rounds":1,"cost":0.5884444000000001}
+{"id":"test-03","set":"test","start":"2026-03-02T09:00:00Z","events":100,"domain":"a scheduling backend for a chain of physiotherapy clinics","model":"claude-opus-5-5","rounds":1,"cost":0.5433644000000001}
+{"id":"test-09","set":"test","start":"2026-03-02T09:00:00Z","events":85,"domain":"a warehouse slotting optimizer for a food distributor","model":"claude-opus-5-5","rounds":2,"cost":0.9758688}
+{"id":"test-04","set":"test","start":"2026-03-02T09:00:00Z","events":120,"domain":"a data pipeline that ingests and deduplicates public procurement notices","model":"claude-opus-5-5","rounds":1,"cost":0.7257124}
+{"id":"test-10","set":"test","start":"2026-03-02T09:00:00Z","events":105,"domain":"a consent management service for a hospital research registry","model":"claude-opus-5-5","rounds":1,"cost":0.7003403999999999}
+{"id":"test-05","set":"test","start":"2026-03-02T09:00:00Z","events":70,"domain":"a command-line tool that migrates a team's wiki from Confluence to Markdown","model":"claude-opus-5-5","rounds":1,"cost":0.3629244000000001}
+{"id":"test-11","set":"test","start":"2026-03-02T09:00:00Z","events":75,"domain":"a price comparison crawler for second-hand bicycles","model":"claude-opus-5-5","rounds":1,"cost":0.5115724}
+{"id":"test-06","set":"test","start":"2026-03-02T09:00:00Z","events":90,"domain":"a telemetry gateway for electric scooters in a sharing fleet","model":"claude-opus-5-5","rounds":1,"cost":0.7888924}
+{"id":"test-12","set":"test","start":"2026-03-02T09:00:00Z","events":95,"domain":"an energy billing engine for a small electricity cooperative","model":"claude-opus-5-5","rounds":1,"cost":0.7869124000000001}

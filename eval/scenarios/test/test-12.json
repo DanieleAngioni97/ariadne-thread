@@ -1,0 +1,846 @@
+{
+  "id": "test-12",
+  "project": "coop-billing",
+  "start": "2026-03-02T09:00:00Z",
+  "events": [
+    {
+      "type": "commit",
+      "message": "chore: scaffold coop-billing package",
+      "files": {
+        "pyproject.toml": "[project]\nname = \"coop-billing\"\nversion = \"0.1.0\"\nrequires-python = \">=3.11\"\ndependencies = []\n\n[project.optional-dependencies]\ndev = [\"pytest>=8.0\"]\n",
+        "README.md": "# coop-billing\n\nBilling engine for the Energia Comune electricity cooperative.\nTurns meter readings into member invoices.\n",
+        ".gitignore": "__pycache__/\n*.sqlite\n.venv/\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "ci: run tests on push",
+      "files": {
+        ".github/workflows/ci.yml": "name: ci\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-python@v5\n        with: {python-version: '3.11'}\n      - run: pip install -e .[dev] && pytest\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: billing rules from the cooperative bylaws",
+      "files": {
+        "docs/billing-rules.md": "# Billing rules\n\n## Billing period\nMembers are billed monthly, on the calendar month.\n\n## Reading gaps\nWhen a monthly reading is missing, bill the member's consumption for the same month of the previous year (bylaws art. 12).\nMembers with less than a year of history get the average of their connection class.\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m1",
+      "title": "M1 Meter readings and tariffs",
+      "what": "Import the meter readings and price each member's consumption with the cooperative's tariffs."
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-02: import readings, load tariffs and price consumption per hour band",
+      "steps": [
+        {
+          "key": "rd-imp",
+          "title": "Import meter readings from CSV"
+        },
+        {
+          "key": "rd-val",
+          "title": "Validate meter reading imports"
+        },
+        {
+          "key": "rd-est",
+          "title": "Estimate missing readings"
+        },
+        {
+          "key": "tf-yaml",
+          "title": "Store tariffs as YAML files"
+        },
+        {
+          "key": "tf-val",
+          "title": "Validate tariff schedule files"
+        },
+        {
+          "key": "en-rnd",
+          "title": "Rounding for energy charges"
+        },
+        {
+          "key": "price",
+          "title": "Price consumption per hour band"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "rd-imp"
+    },
+    {
+      "type": "commit",
+      "step": "rd-imp",
+      "message": "feat(readings): parse meter reading CSV export",
+      "files": {
+        "src/readings/csv_import.py": "import csv\nfrom decimal import Decimal\n\ndef parse_readings(path):\n    with open(path, newline=\"\") as f:\n        for row in csv.DictReader(f):\n            yield row[\"meter_id\"], row[\"slot_start\"], Decimal(row[\"index_kwh\"])\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "rd-imp",
+      "message": "feat(readings): store readings per meter and slot",
+      "files": {
+        "src/readings/store.py": "import sqlite3\n\nSCHEMA = \"CREATE TABLE IF NOT EXISTS readings (meter_id TEXT, slot_start TEXT, index_kwh TEXT, PRIMARY KEY (meter_id, slot_start))\"\n\ndef save(conn: sqlite3.Connection, rows):\n    conn.execute(SCHEMA)\n    conn.executemany(\"INSERT OR REPLACE INTO readings VALUES (?, ?, ?)\", [(m, s, str(i)) for m, s, i in rows])\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "rd-imp",
+      "message": "feat(readings): accept the semicolon-separated export of the new meters",
+      "files": {
+        "src/readings/dialects.py": "import csv\n\nclass NewMeterExport(csv.excel):\n    delimiter = \";\"\n\ndef sniff(sample: str):\n    return NewMeterExport if sample.count(\";\") > sample.count(\",\") else csv.excel\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "rd-imp",
+      "message": "test(readings): cover CSV import",
+      "done": true,
+      "files": {
+        "tests/readings/test_csv_import.py": "from readings.csv_import import parse_readings\n\ndef test_parse(tmp_path):\n    p = tmp_path / \"r.csv\"\n    p.write_text(\"meter_id,slot_start,index_kwh\\nM1,2026-03-01T00:00,12.5\\n\")\n    assert list(parse_readings(p))[0][0] == \"M1\"\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "rd-val",
+      "message": "feat(readings): reject readings lower than the previous index",
+      "why": "A meter index never goes backwards except after a meter swap, so a drop means a misread in the field app.",
+      "files": {
+        "src/readings/validate.py": "class IndexDrop(ValueError):\n    pass\n\ndef check_monotonic(previous, current, meter_id):\n    if current < previous:\n        raise IndexDrop(f\"{meter_id}: index fell from {previous} to {current}\")\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "rd-val",
+      "message": "feat(readings): flag meter swaps instead of rejecting them",
+      "files": {
+        "src/readings/swaps.py": "def is_swap(meter_id, slot_start, swaps):\n    \"\"\"swaps: set of (meter_id, date) recorded by the field team.\"\"\"\n    return (meter_id, slot_start[:10]) in swaps\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "rd-val",
+      "message": "test(readings): validation of index drops",
+      "done": true,
+      "files": {
+        "tests/readings/test_validate.py": "import pytest\nfrom readings.validate import IndexDrop, check_monotonic\n\ndef test_drop_rejected():\n    with pytest.raises(IndexDrop):\n        check_monotonic(100, 90, \"M1\")\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add ruff and pre-commit config",
+      "files": {
+        ".pre-commit-config.yaml": "repos:\n  - repo: https://github.com/astral-sh/ruff-pre-commit\n    rev: v0.6.9\n    hooks:\n      - id: ruff\n      - id: ruff-format\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "rd-est",
+      "message": "feat(readings): estimate missing months",
+      "proofFiles": [
+        "docs/billing-rules.md#Reading gaps"
+      ],
+      "files": {
+        "src/readings/estimate.py": "def estimate_month(history, month, class_average):\n    last_year = history.get((month[0] - 1, month[1]))\n    if last_year is not None:\n        return last_year\n    return class_average\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "rd-est",
+      "message": "feat(readings): mark estimated readings in the store",
+      "files": {
+        "src/readings/estimated.py": "ESTIMATED = \"E\"\nMEASURED = \"M\"\n\ndef source_flag(value_is_estimate: bool) -> str:\n    return ESTIMATED if value_is_estimate else MEASURED\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "rd-est",
+      "message": "test(readings): estimation for meters without history",
+      "done": true,
+      "files": {
+        "tests/readings/test_estimate.py": "from readings.estimate import estimate_month\n\ndef test_falls_back_to_class_average():\n    assert estimate_month({}, (2026, 2), 310) == 310\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tf-yaml",
+      "message": "feat(tariffs): load tariff bands from YAML",
+      "files": {
+        "src/tariffs/yaml_loader.py": "import yaml\n\ndef load_bands(path):\n    with open(path) as f:\n        data = yaml.safe_load(f)\n    return [(b[\"from\"], b[\"to\"], b[\"eur_kwh\"]) for b in data[\"bands\"]]\n",
+        "docs/tariffs.md": "# Tariffs\n\nTariffs live in `tariffs/<year>.yaml`, one file per year.\nEach band has `from`, `to` (hour) and `eur_kwh`.\nChange a price by opening a pull request.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tf-yaml",
+      "message": "test(tariffs): YAML loader with two bands",
+      "files": {
+        "tests/tariffs/test_yaml_loader.py": "from tariffs.yaml_loader import load_bands\n\ndef test_two_bands(tmp_path):\n    p = tmp_path / \"2026.yaml\"\n    p.write_text(\"bands:\\n  - {from: 0, to: 8, eur_kwh: 0.18}\\n  - {from: 8, to: 24, eur_kwh: 0.24}\\n\")\n    assert len(load_bands(p)) == 2\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-10: keep tariffs in SQLite so the board can edit them from the admin form",
+      "steps": [
+        {
+          "key": "tf-db",
+          "title": "Store tariffs in SQLite"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "tf-yaml",
+      "by": "tf-db"
+    },
+    {
+      "type": "start",
+      "step": "tf-db"
+    },
+    {
+      "type": "commit",
+      "step": "tf-db",
+      "message": "feat(tariffs): tariff_bands table and repository",
+      "why": "The board changes prices from the admin form, and YAML files in the repository cannot be edited from there.",
+      "files": {
+        "src/tariffs/schema.sql": "CREATE TABLE tariff_bands (\n  valid_from DATE NOT NULL,\n  hour_from INTEGER NOT NULL,\n  hour_to INTEGER NOT NULL,\n  eur_kwh TEXT NOT NULL\n);\n",
+        "src/tariffs/repository.py": "from decimal import Decimal\n\ndef bands_on(conn, day):\n    rows = conn.execute(\n        \"SELECT hour_from, hour_to, eur_kwh FROM tariff_bands WHERE valid_from = (SELECT MAX(valid_from) FROM tariff_bands WHERE valid_from <= ?)\", (day,)\n    )\n    return [(f, t, Decimal(p)) for f, t, p in rows]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tf-db",
+      "message": "feat(tariffs): migrate existing YAML tariffs into the table",
+      "files": {
+        "src/tariffs/migrate_yaml.py": "from tariffs.yaml_loader import load_bands\n\ndef migrate(conn, path, valid_from):\n    for f, t, p in load_bands(path):\n        conn.execute(\"INSERT INTO tariff_bands VALUES (?, ?, ?, ?)\", (valid_from, f, t, str(p)))\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tf-db",
+      "message": "docs(tariffs): describe SQLite tariff storage",
+      "done": true,
+      "files": {
+        "docs/tariffs.md": "# Tariffs\n\nTariffs live in the `tariff_bands` table (see `src/tariffs/schema.sql`).\nThe board edits them from the admin form; each change gets a new `valid_from`.\nThe old YAML files are only read once by `migrate_yaml.py`.\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "tf-val"
+    },
+    {
+      "type": "commit",
+      "step": "tf-val",
+      "message": "feat(tariffs): validate hour bands in tariff uploads",
+      "why": "Overlapping hour bands would price the same half-hour twice, so the upload is refused before it reaches the table.",
+      "files": {
+        "src/tariffs/validate_upload.py": "def check_bands(bands):\n    bands = sorted(bands)\n    if bands[0][0] != 0 or bands[-1][1] != 24:\n        raise ValueError(\"bands must cover 0-24\")\n    for (_, end, _), (start, _, _) in zip(bands, bands[1:]):\n        if start != end:\n            raise ValueError(f\"gap or overlap at hour {end}\")\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tf-val",
+      "message": "test(tariffs): overlapping bands are refused",
+      "done": true,
+      "files": {
+        "tests/tariffs/test_validate_upload.py": "import pytest\nfrom tariffs.validate_upload import check_bands\n\ndef test_overlap_refused():\n    with pytest.raises(ValueError):\n        check_bands([(0, 9, 0.18), (8, 24, 0.24)])\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: glossary of cooperative terms",
+      "files": {
+        "docs/glossary.md": "# Glossary\n\n- **POD**: point of delivery, one per connection.\n- **Band**: hour range with its own price per kWh.\n- **Slot**: a half-hour of metered consumption.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "en-rnd",
+      "message": "feat(pricing): keep energy charges at four decimals",
+      "why": "Rounding every half-hour charge to the cent lost members up to two euros a year, so band charges keep four decimals.",
+      "files": {
+        "src/pricing/rounding.py": "from decimal import Decimal, ROUND_HALF_EVEN\n\nFOUR = Decimal(\"0.0001\")\n\ndef round_charge(value: Decimal) -> Decimal:\n    return value.quantize(FOUR, rounding=ROUND_HALF_EVEN)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "en-rnd",
+      "message": "feat(pricing): band subtotals rounded once",
+      "files": {
+        "src/pricing/subtotals.py": "from pricing.rounding import round_charge\n\ndef band_subtotal(charges):\n    return round_charge(sum(charges))\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "en-rnd",
+      "message": "test(pricing): rounding of energy charges",
+      "done": true,
+      "files": {
+        "tests/pricing/test_rounding.py": "from decimal import Decimal\nfrom pricing.rounding import round_charge\n\ndef test_keeps_four_decimals():\n    assert round_charge(Decimal(\"0.123456\")) == Decimal(\"0.1235\")\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "price",
+      "message": "feat(pricing): price each slot with its hour band",
+      "files": {
+        "src/pricing/bands.py": "from pricing.rounding import round_charge\n\ndef price_slot(kwh, hour, bands):\n    for start, end, eur_kwh in bands:\n        if start <= hour < end:\n            return round_charge(kwh * eur_kwh)\n    raise LookupError(f\"no band for hour {hour}\")\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "fix-dst",
+      "title": "Fix DST shift in reading timestamps",
+      "what": "The 29 March clock change gave 46 half-hour slots for the day and the pricing run crashed on the import."
+    },
+    {
+      "type": "commit",
+      "step": "fix-dst",
+      "message": "fix(readings): store slot timestamps in UTC",
+      "done": true,
+      "files": {
+        "src/readings/timezone.py": "from datetime import datetime\nfrom zoneinfo import ZoneInfo\n\nROME = ZoneInfo(\"Europe/Rome\")\n\ndef to_utc(local_iso: str) -> str:\n    return datetime.fromisoformat(local_iso).replace(tzinfo=ROME).astimezone(ZoneInfo(\"UTC\")).isoformat()\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "price",
+      "message": "feat(pricing): fixed monthly fee per contracted kW",
+      "files": {
+        "src/pricing/fixed_fee.py": "from decimal import Decimal\n\nFEE_PER_KW = Decimal(\"1.85\")\n\ndef monthly_fee(contracted_kw: Decimal) -> Decimal:\n    return contracted_kw * FEE_PER_KW\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "price",
+      "message": "feat(pricing): monthly consumption summary per member",
+      "files": {
+        "src/pricing/summary.py": "from collections import defaultdict\n\ndef monthly_summary(priced_slots):\n    totals = defaultdict(lambda: [0, 0])\n    for member, kwh, charge in priced_slots:\n        totals[member][0] += kwh\n        totals[member][1] += charge\n    return dict(totals)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "price",
+      "message": "test(pricing): band pricing for an evening slot",
+      "done": true,
+      "files": {
+        "tests/pricing/test_bands.py": "from decimal import Decimal\nfrom pricing.bands import price_slot\n\nBANDS = [(0, 8, Decimal(\"0.18\")), (8, 24, Decimal(\"0.24\"))]\n\ndef test_evening_slot():\n    assert price_slot(Decimal(\"0.5\"), 20, BANDS) == Decimal(\"0.1200\")\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump pytest to 8.3 and declare pyyaml",
+      "files": {
+        "pyproject.toml": "[project]\nname = \"coop-billing\"\nversion = \"0.1.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"pyyaml>=6.0\"]\n\n[project.optional-dependencies]\ndev = [\"pytest>=8.3\"]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "style: apply ruff format to readings store",
+      "files": {
+        "src/readings/store.py": "import sqlite3\n\nSCHEMA = (\n    \"CREATE TABLE IF NOT EXISTS readings \"\n    \"(meter_id TEXT, slot_start TEXT, index_kwh TEXT, PRIMARY KEY (meter_id, slot_start))\"\n)\n\n\ndef save(conn: sqlite3.Connection, rows):\n    conn.execute(SCHEMA)\n    conn.executemany(\"INSERT OR REPLACE INTO readings VALUES (?, ?, ?)\", [(m, s, str(i)) for m, s, i in rows])\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m2",
+      "title": "M2 Invoices",
+      "what": "Turn each member's monthly summary into a numbered PDF invoice."
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-23: invoice model, totals, VAT, credit notes, PDF with wkhtmltopdf and numbering",
+      "steps": [
+        {
+          "key": "inv-model",
+          "title": "Invoice data model"
+        },
+        {
+          "key": "inv-tot",
+          "title": "Rounding for invoice totals"
+        },
+        {
+          "key": "vat",
+          "title": "Rounding for VAT lines"
+        },
+        {
+          "key": "cred",
+          "title": "Credit notes for corrected readings"
+        },
+        {
+          "key": "pdf-wk",
+          "title": "Render invoices with wkhtmltopdf"
+        },
+        {
+          "key": "inv-num",
+          "title": "Gapless invoice numbering"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "inv-model"
+    },
+    {
+      "type": "commit",
+      "step": "inv-model",
+      "message": "feat(invoices): invoice and line dataclasses",
+      "files": {
+        "src/invoices/model.py": "from dataclasses import dataclass, field\nfrom decimal import Decimal\n\n@dataclass\nclass Line:\n    label: str\n    amount: Decimal\n    vat_rate: Decimal\n\n@dataclass\nclass Invoice:\n    member_id: str\n    period: str\n    lines: list[Line] = field(default_factory=list)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "inv-model",
+      "message": "feat(invoices): store invoices in SQLite",
+      "files": {
+        "src/invoices/repository.py": "import json\nfrom dataclasses import asdict\n\ndef save(conn, invoice):\n    body = json.dumps(asdict(invoice), default=str)\n    conn.execute(\"INSERT INTO invoices (member_id, period, body) VALUES (?, ?, ?)\", (invoice.member_id, invoice.period, body))\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "inv-model",
+      "message": "feat(invoices): build invoice from monthly summary",
+      "done": true,
+      "files": {
+        "src/invoices/builder.py": "from decimal import Decimal\nfrom invoices.model import Invoice, Line\n\ndef build(member_id, period, summary, fee):\n    kwh, charge = summary\n    inv = Invoice(member_id, period)\n    inv.lines.append(Line(f\"Energy {kwh} kWh\", charge, Decimal(\"0.10\")))\n    inv.lines.append(Line(\"Fixed fee\", fee, Decimal(\"0.10\")))\n    return inv\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "inv-tot",
+      "message": "feat(invoices): round the invoice total once to the cent",
+      "why": "The cooperative's accountant wants the total rounded once, half-up, from the unrounded lines.",
+      "files": {
+        "src/invoices/totals.py": "from decimal import Decimal, ROUND_HALF_UP\n\nCENT = Decimal(\"0.01\")\n\ndef invoice_total(lines):\n    return sum((l.amount for l in lines), Decimal(0)).quantize(CENT, rounding=ROUND_HALF_UP)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "inv-tot",
+      "message": "feat(invoices): rounding line when printed lines and total differ",
+      "files": {
+        "src/invoices/rounding_line.py": "from decimal import Decimal\nfrom invoices.model import Line\n\ndef rounding_line(total, printed_lines):\n    diff = total - sum(l.amount for l in printed_lines)\n    return Line(\"Rounding\", diff, Decimal(0)) if diff else None\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "inv-tot",
+      "message": "test(invoices): totals with many small lines",
+      "done": true,
+      "files": {
+        "tests/invoices/test_totals.py": "from decimal import Decimal\nfrom invoices.model import Line\nfrom invoices.totals import invoice_total\n\ndef test_many_small_lines():\n    lines = [Line(\"x\", Decimal(\"0.0049\"), Decimal(0))] * 3\n    assert invoice_total(lines) == Decimal(\"0.01\")\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vat",
+      "message": "feat(vat): taxable base per VAT rate",
+      "files": {
+        "src/vat/lines.py": "from collections import defaultdict\n\ndef taxable_by_rate(lines):\n    base = defaultdict(int)\n    for line in lines:\n        base[line.vat_rate] += line.amount\n    return dict(base)\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "fix-enc",
+      "title": "Fix accented names in member import",
+      "what": "Names like Pùddu came out garbled on the first test invoices because the member register exports Latin-1."
+    },
+    {
+      "type": "commit",
+      "step": "fix-enc",
+      "message": "fix(members): read the member register export as Latin-1",
+      "done": true,
+      "files": {
+        "src/members/import_csv.py": "import csv\n\ndef read_members(path):\n    with open(path, encoding=\"latin-1\", newline=\"\") as f:\n        return list(csv.DictReader(f, delimiter=\";\"))\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vat",
+      "message": "feat(vat): reduced 10% rate for resident domestic members",
+      "files": {
+        "src/vat/rates.py": "from decimal import Decimal\n\nDOMESTIC_RESIDENT = Decimal(\"0.10\")\nSTANDARD = Decimal(\"0.22\")\n\ndef rate_for(member):\n    return DOMESTIC_RESIDENT if member[\"use\"] == \"domestic\" and member[\"resident\"] == \"Y\" else STANDARD\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vat",
+      "message": "feat(vat): round VAT per rate, not per line",
+      "why": "The tax office checks VAT on the summary per rate, so VAT is rounded once per rate on the taxable base.",
+      "files": {
+        "src/vat/rounding.py": "from decimal import Decimal, ROUND_HALF_UP\n\nCENT = Decimal(\"0.01\")\n\ndef vat_per_rate(taxable_by_rate):\n    return {rate: (base * rate).quantize(CENT, rounding=ROUND_HALF_UP) for rate, base in taxable_by_rate.items()}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vat",
+      "message": "test(vat): mixed 10% and 22% rates",
+      "done": true,
+      "files": {
+        "tests/vat/test_rounding.py": "from decimal import Decimal\nfrom vat.rounding import vat_per_rate\n\ndef test_mixed_rates():\n    out = vat_per_rate({Decimal(\"0.10\"): Decimal(\"40.05\"), Decimal(\"0.22\"): Decimal(\"3.33\")})\n    assert out == {Decimal(\"0.10\"): Decimal(\"4.01\"), Decimal(\"0.22\"): Decimal(\"0.73\")}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cred",
+      "message": "feat(credits): credit note referencing the original invoice",
+      "files": {
+        "src/credits/note.py": "from dataclasses import dataclass\nfrom invoices.model import Invoice\n\n@dataclass\nclass CreditNote(Invoice):\n    corrects: str = \"\"\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cred",
+      "message": "feat(credits): reversal lines for corrected consumption",
+      "done": true,
+      "files": {
+        "src/credits/lines.py": "from invoices.model import Line\n\ndef correction_lines(original_lines, corrected_lines):\n    out = [Line(f\"Reversal: {l.label}\", -l.amount, l.vat_rate) for l in original_lines]\n    return out + list(corrected_lines)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: changelog for the invoice work",
+      "files": {
+        "CHANGELOG.md": "# Changelog\n\n## Unreleased\n- Invoice model, totals and VAT per rate\n- Credit notes for corrected readings\n- Member import reads Latin-1\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pdf-wk",
+      "message": "feat(pdf): HTML invoice template rendered with wkhtmltopdf",
+      "files": {
+        "src/pdf/template.html": "<html><body>\n<h1>Energia Comune</h1>\n<p>Member {{ member_id }} - {{ period }}</p>\n<table>{% for l in lines %}<tr><td>{{ l.label }}</td><td>{{ l.amount }}</td></tr>{% endfor %}</table>\n</body></html>\n",
+        "src/pdf/render_wk.py": "import subprocess\n\ndef render(html_path, pdf_path):\n    subprocess.run([\"wkhtmltopdf\", \"--quiet\", html_path, pdf_path], check=True)\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-31: switch invoice PDFs from wkhtmltopdf to Typst",
+      "steps": [
+        {
+          "key": "pdf-typst",
+          "title": "Render invoices with Typst"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "pdf-wk",
+      "by": "pdf-typst"
+    },
+    {
+      "type": "start",
+      "step": "pdf-typst"
+    },
+    {
+      "type": "commit",
+      "step": "pdf-typst",
+      "message": "feat(pdf): Typst invoice template",
+      "why": "wkhtmltopdf is archived and was dropped from Debian, while Typst ships as a single binary.",
+      "files": {
+        "src/pdf/invoice.typ": "#let data = json(\"invoice.json\")\n#set page(paper: \"a4\")\n#set text(size: 10pt)\n= Energia Comune\n#table(columns: (1fr, auto), ..data.lines.map(l => (l.label, str(l.amount))).flatten())\n#align(right)[*Total: #data.total EUR*]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pdf-typst",
+      "message": "feat(pdf): cooperative logo and member number in the header",
+      "files": {
+        "src/pdf/header.typ": "#let header(member) = [\n  #image(\"logo.png\", width: 3cm)\n  #h(1fr) Member no. #member\n]\n",
+        "src/pdf/invoice.typ": "#import \"header.typ\": header\n#let data = json(\"invoice.json\")\n#set page(paper: \"a4\", header: header(data.member_id))\n#set text(size: 10pt)\n= Energia Comune\n#table(columns: (1fr, auto), ..data.lines.map(l => (l.label, str(l.amount))).flatten())\n#align(right)[*Total: #data.total EUR*]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pdf-typst",
+      "message": "feat(pdf): compile invoices with the typst CLI",
+      "files": {
+        "src/pdf/render_typst.py": "import json\nimport subprocess\n\ndef render(invoice_dict, workdir, pdf_path):\n    (workdir / \"invoice.json\").write_text(json.dumps(invoice_dict, default=str))\n    subprocess.run([\"typst\", \"compile\", str(workdir / \"invoice.typ\"), str(pdf_path)], check=True)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pdf-typst",
+      "message": "test(pdf): render a sample invoice",
+      "done": true,
+      "files": {
+        "tests/pdf/test_render.py": "import shutil\nfrom pathlib import Path\nimport pytest\nfrom pdf.render_typst import render\n\n@pytest.mark.skipif(not shutil.which(\"typst\"), reason=\"typst not installed\")\ndef test_renders(tmp_path):\n    shutil.copytree(Path(\"src/pdf\"), tmp_path, dirs_exist_ok=True)\n    render({\"member_id\": \"042\", \"lines\": [], \"total\": \"0.00\"}, tmp_path, tmp_path / \"out.pdf\")\n    assert (tmp_path / \"out.pdf\").exists()\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "ci: install a pinned typst for the PDF tests",
+      "files": {
+        ".github/workflows/ci.yml": "name: ci\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-python@v5\n        with: {python-version: '3.11'}\n      - uses: typst-community/setup-typst@v3\n        with: {typst-version: '0.12.0'}\n      - run: pip install -e .[dev] && pytest\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: monthly invoice run checklist",
+      "files": {
+        "docs/invoice-run.md": "# Monthly invoice run\n\n1. Import the readings export for the month.\n2. Check the validation report and the estimated meters.\n3. Run `coop-billing invoice --period YYYY-MM`.\n4. Send the PDFs from `out/` to the member mailing.\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "inv-num"
+    },
+    {
+      "type": "commit",
+      "step": "inv-num",
+      "message": "feat(numbering): gapless invoice numbers per year",
+      "why": "Italian invoicing rules require invoice numbers without gaps within each calendar year.",
+      "files": {
+        "src/numbering/sequence.py": "def next_number(conn, year):\n    row = conn.execute(\"SELECT COALESCE(MAX(seq), 0) + 1 FROM invoice_numbers WHERE year = ?\", (year,)).fetchone()\n    return row[0]\n\ndef format_number(year, seq):\n    return f\"{year}/{seq:05d}\"\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "inv-num",
+      "message": "feat(numbering): reserve a number only when the invoice is issued",
+      "files": {
+        "src/numbering/issue.py": "from numbering.sequence import format_number, next_number\n\ndef issue(conn, invoice, year):\n    with conn:\n        seq = next_number(conn, year)\n        conn.execute(\"INSERT INTO invoice_numbers (year, seq, member_id) VALUES (?, ?, ?)\", (year, seq, invoice.member_id))\n    return format_number(year, seq)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "inv-num",
+      "message": "test(numbering): number format",
+      "done": true,
+      "files": {
+        "tests/numbering/test_sequence.py": "from numbering.sequence import format_number\n\ndef test_format():\n    assert format_number(2026, 7) == \"2026/00007\"\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "commit",
+      "message": "docs: README section on the invoice run",
+      "files": {
+        "README.md": "# coop-billing\n\nBilling engine for the Energia Comune electricity cooperative.\nTurns meter readings into member invoices.\n\n## Invoice run\nSee `docs/invoice-run.md`. PDFs need `typst` on the PATH.\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m3",
+      "title": "M3 Payments",
+      "what": "Collect invoices by SEPA direct debit and match the payments found in bank statements."
+    },
+    {
+      "type": "plan",
+      "milestone": "m3",
+      "ref": "chat 2026-04-14: bank details check, SEPA debit batches, statement reconciliation and reminders",
+      "steps": [
+        {
+          "key": "sepa-mand",
+          "title": "Validate member bank details"
+        },
+        {
+          "key": "sepa-xml",
+          "title": "Generate SEPA direct debit batches"
+        },
+        {
+          "key": "pay-rec",
+          "title": "Reconcile bank statement payments"
+        },
+        {
+          "key": "dunning",
+          "title": "Payment reminders for overdue invoices"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "sepa-mand"
+    },
+    {
+      "type": "commit",
+      "step": "sepa-mand",
+      "message": "feat(mandates): IBAN checksum validation",
+      "why": "A wrong IBAN makes the bank return the debit and charge the cooperative a fee for each return.",
+      "files": {
+        "src/mandates/iban.py": "def iban_ok(iban: str) -> bool:\n    s = iban.replace(\" \", \"\").upper()\n    if len(s) < 15 or not s[:2].isalpha():\n        return False\n    digits = \"\".join(str(int(c, 36)) for c in s[4:] + s[:4])\n    return int(digits) % 97 == 1\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sepa-mand",
+      "message": "feat(mandates): require a signed mandate before the first debit",
+      "files": {
+        "src/mandates/mandate.py": "from datetime import date\n\ndef can_debit(mandate, on: date) -> bool:\n    signed = mandate.get(\"signed_on\")\n    return signed is not None and signed <= on and mandate.get(\"revoked_on\") is None\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sepa-mand",
+      "message": "feat(mandates): expire mandates unused for 36 months",
+      "files": {
+        "src/mandates/expiry.py": "from datetime import date, timedelta\n\ndef expired(last_debit: date | None, signed_on: date, today: date) -> bool:\n    ref = last_debit or signed_on\n    return today - ref > timedelta(days=36 * 30)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sepa-mand",
+      "message": "feat(mandates): export the mandate list for the bank",
+      "files": {
+        "src/mandates/export.py": "import csv\n\ndef export_mandates(mandates, path):\n    with open(path, \"w\", newline=\"\") as f:\n        w = csv.writer(f, delimiter=\";\")\n        for m in mandates:\n            w.writerow([m[\"mandate_id\"], m[\"iban\"], m[\"signed_on\"]])\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sepa-mand",
+      "message": "test(mandates): IBAN checksum on a valid and a mistyped IBAN",
+      "done": true,
+      "files": {
+        "tests/mandates/test_iban.py": "from mandates.iban import iban_ok\n\ndef test_valid_italian_iban():\n    assert iban_ok(\"IT60 X054 2811 1010 0000 0123 456\")\n\ndef test_typo_rejected():\n    assert not iban_ok(\"IT60 X054 2811 1010 0000 0123 457\")\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m4",
+      "title": "M4 Collections",
+      "what": "Chase overdue invoices and handle members who stop paying."
+    },
+    {
+      "type": "defer",
+      "step": "dunning",
+      "to": "m4"
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): add lxml for XML generation",
+      "files": {
+        "pyproject.toml": "[project]\nname = \"coop-billing\"\nversion = \"0.1.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"pyyaml>=6.0\", \"lxml>=5.3\"]\n\n[project.optional-dependencies]\ndev = [\"pytest>=8.3\"]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sepa-xml",
+      "message": "feat(sepa): pain.008 document and group header",
+      "files": {
+        "src/sepa/pain008.py": "from lxml import etree\n\nNS = \"urn:iso:std:iso:20022:tech:xsd:pain.008.001.02\"\n\ndef document(msg_id, created_at, n_tx, total):\n    root = etree.Element(\"Document\", nsmap={None: NS})\n    hdr = etree.SubElement(etree.SubElement(root, \"CstmrDrctDbtInitn\"), \"GrpHdr\")\n    for tag, val in ((\"MsgId\", msg_id), (\"CreDtTm\", created_at), (\"NbOfTxs\", str(n_tx)), (\"CtrlSum\", str(total))):\n        etree.SubElement(hdr, tag).text = val\n    return root\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sepa-xml",
+      "message": "feat(sepa): creditor identifier from cooperative settings",
+      "files": {
+        "src/sepa/creditor.py": "import os\n\ndef creditor():\n    return {\n        \"name\": os.environ.get(\"COOP_NAME\", \"Energia Comune Soc. Coop.\"),\n        \"cid\": os.environ[\"COOP_SEPA_CID\"],\n        \"iban\": os.environ[\"COOP_IBAN\"],\n    }\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sepa-xml",
+      "message": "feat(sepa): one transaction per issued invoice",
+      "files": {
+        "src/sepa/transactions.py": "def transactions(issued_invoices, mandates):\n    for inv in issued_invoices:\n        m = mandates[inv[\"member_id\"]]\n        yield {\"end_to_end\": inv[\"number\"], \"amount\": inv[\"total\"], \"iban\": m[\"iban\"], \"mandate_id\": m[\"mandate_id\"], \"signed_on\": m[\"signed_on\"]}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: notes on SEPA direct debit with our bank",
+      "files": {
+        "docs/sepa.md": "# SEPA direct debit\n\nThe cooperative uses SEPA Core debits (pain.008.001.02) uploaded through the bank's CBI portal.\nBatches go up at least five business days before the collection date.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sepa-xml",
+      "message": "feat(sepa): collection date five business days ahead",
+      "files": {
+        "src/sepa/dates.py": "from datetime import date, timedelta\n\ndef collection_date(today: date, business_days: int = 5) -> date:\n    d = today\n    while business_days:\n        d += timedelta(days=1)\n        if d.weekday() < 5:\n            business_days -= 1\n    return d\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: ignore generated debit batches",
+      "files": {
+        ".gitignore": "__pycache__/\n*.sqlite\n.venv/\nout/*.xml\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sepa-xml",
+      "message": "fix(sepa): strip accents and unsupported characters from names",
+      "files": {
+        "src/sepa/text.py": "import unicodedata\n\nALLOWED = set(\"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/-?:().,'+ \")\n\ndef sepa_text(s: str, limit: int = 70) -> str:\n    s = unicodedata.normalize(\"NFKD\", s).encode(\"ascii\", \"ignore\").decode()\n    return \"\".join(c for c in s if c in ALLOWED)[:limit]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sepa-xml",
+      "message": "feat(sepa): FRST for the first debit of a mandate, RCUR after",
+      "why": "The cooperative's bank still requires FRST on the first debit of a mandate and refuses RCUR there.",
+      "files": {
+        "src/sepa/sequence.py": "def sequence_type(mandate_id, previous_debits) -> str:\n    return \"RCUR\" if mandate_id in previous_debits else \"FRST\"\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sepa-xml",
+      "message": "test(sepa): group header for a three-member batch",
+      "files": {
+        "src/sepa/test_pain008.py": "from sepa.pain008 import NS, document\n\ndef test_group_header():\n    root = document(\"EC-2026-04\", \"2026-04-20T09:00:00\", 3, \"184.20\")\n    assert root.findtext(\".//p:NbOfTxs\", namespaces={\"p\": NS}) == \"3\"\n"
+      }
+    }
+  ],
+  "questions": [
+    {
+      "cat": "where",
+      "text": "Which part of the payments work is in progress right now, and what comes after it?",
+      "current": "sepa-xml",
+      "next": "pay-rec"
+    },
+    {
+      "cat": "why",
+      "text": "Why are invoice totals rounded the way they are?",
+      "step": "inv-tot",
+      "reason": "The cooperative's accountant wants the total rounded once, half-up, from the unrounded lines.",
+      "distractors": [
+        "Rounding every half-hour charge to the cent lost members up to two euros a year, so band charges keep four decimals.",
+        "The tax office checks VAT on the summary per rate, so VAT is rounded once per rate on the taxable base.",
+        "Overlapping hour bands would price the same half-hour twice, so the upload is refused before it reaches the table."
+      ]
+    },
+    {
+      "cat": "proof",
+      "text": "Which file holds the result of the gapless invoice numbering work?",
+      "step": "inv-num",
+      "file": "src/numbering/sequence.py"
+    },
+    {
+      "cat": "deferred",
+      "text": "What happened to the payment reminders for overdue invoices?",
+      "step": "dunning",
+      "milestone": "m4"
+    },
+    {
+      "cat": "update",
+      "text": "Which decision holds today on how invoices are rendered to PDF?",
+      "step": "pdf-typst"
+    },
+    {
+      "cat": "abstain",
+      "text": "Which smart-meter vendor API was integrated to pull live readings into the billing engine?"
+    },
+    {
+      "cat": "continue",
+      "text": "Resume the work: make the first change you would make.",
+      "next": "sepa-xml",
+      "dir": "src/sepa/"
+    }
+  ]
+}

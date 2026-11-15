@@ -1,0 +1,690 @@
+{
+  "id": "test-02",
+  "project": "ubl-check",
+  "start": "2026-03-02T09:00:00Z",
+  "events": [
+    {
+      "type": "commit",
+      "message": "chore: scaffold ubl-check project",
+      "files": {
+        "pyproject.toml": "[project]\nname = \"ubl-check\"\nversion = \"0.0.1\"\nrequires-python = \">=3.11\"\ndependencies = [\"lxml>=5.1\"]\n",
+        "README.md": "# ubl-check\n\nParse and validate UBL 2.1 electronic invoces (EN 16931, Peppol BIS Billing 3.0).\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add MIT license and gitignore",
+      "files": {
+        "LICENSE": "MIT License\n\nCopyright (c) 2026 Example Co\n\nPermission is hereby granted, free of charge, to any person obtaining a copy\nof this software, to deal in the Software without restriction.\n",
+        ".gitignore": "__pycache__/\n*.egg-info/\n.venv/\n.pytest_cache/\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: add design notes",
+      "files": {
+        "docs/design.md": "# Design notes\n\n## Scope\n\nInput is UBL 2.1 Invoice documents as used by Peppol BIS Billing 3.0. CreditNote comes later.\n\n## Monetary amounts\n\nAll amounts are decimal.Decimal, never float. EN 16931 totals must match to the cent, and float sums drift on invoices with hundreds of lines.\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m1",
+      "title": "M1 Parsing core",
+      "what": "Turn UBL 2.1 invoice XML into plain Python data."
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-02: parse UBL 2.1 invoices into Python objects, header first, then parties and lines",
+      "steps": [
+        {
+          "key": "xml",
+          "title": "XML loading with UBL namespaces"
+        },
+        {
+          "key": "hdr",
+          "title": "Parse invoice header"
+        },
+        {
+          "key": "dates-du",
+          "title": "Dates via dateutil"
+        },
+        {
+          "key": "party",
+          "title": "Parse supplier and customer parties"
+        },
+        {
+          "key": "lines",
+          "title": "Parse invoice lines"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "xml"
+    },
+    {
+      "type": "commit",
+      "step": "xml",
+      "message": "feat(loading): load documents with the UBL namespace map",
+      "files": {
+        "src/loading/namespaces.py": "NS = {\n    'inv': 'urn:oasis:names:specification:ubl:schema:xsd:Invoice-2',\n    'cac': 'urn:oasis:names:specification:ubl:schema:xsd:CommonAggregateComponents-2',\n    'cbc': 'urn:oasis:names:specification:ubl:schema:xsd:CommonBasicComponents-2',\n}\n",
+        "src/loading/loader.py": "from lxml import etree\n\n\ndef load(path):\n    parser = etree.XMLParser(resolve_entities=False, no_network=True)\n    return etree.parse(str(path), parser).getroot()\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "xml",
+      "done": true,
+      "message": "feat(loading): reject documents whose root is not Invoice",
+      "files": {
+        "src/loading/loader.py": "from lxml import etree\n\nfrom .namespaces import NS\n\n\ndef load(path):\n    parser = etree.XMLParser(resolve_entities=False, no_network=True)\n    root = etree.parse(str(path), parser).getroot()\n    if root.tag != '{%s}Invoice' % NS['inv']:\n        raise ValueError(f'not a UBL Invoice: {root.tag}')\n    return root\n",
+        "tests/loading/test_loader.py": "import pytest\n\nfrom loading.loader import load\n\n\ndef test_rejects_credit_note(tmp_path):\n    f = tmp_path / 'cn.xml'\n    f.write_text('<CreditNote xmlns=\"urn:oasis:names:specification:ubl:schema:xsd:CreditNote-2\"/>')\n    with pytest.raises(ValueError):\n        load(f)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "hdr",
+      "message": "feat(header): parse invoice ID, issue date and currency",
+      "files": {
+        "src/header/parse.py": "from loading.namespaces import NS\n\n\ndef parse_header(root):\n    return {\n        'id': root.findtext('cbc:ID', namespaces=NS),\n        'issue_date': root.findtext('cbc:IssueDate', namespaces=NS),\n        'currency': root.findtext('cbc:DocumentCurrencyCode', namespaces=NS),\n    }\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "ci: run tests on push and pull request",
+      "files": {
+        ".github/workflows/ci.yml": "name: ci\non: [push, pull_request]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-python@v5\n        with: {python-version: '3.12'}\n      - run: pip install -e . pytest && pytest\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "hdr",
+      "message": "feat(header): parse payment terms and due date",
+      "files": {
+        "src/header/payment.py": "from loading.namespaces import NS\n\n\ndef parse_payment(root):\n    return {\n        'due_date': root.findtext('cbc:DueDate', namespaces=NS),\n        'terms': root.findtext('cac:PaymentTerms/cbc:Note', namespaces=NS),\n    }\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "hdr",
+      "done": true,
+      "message": "feat(header): parse buyer and order references",
+      "files": {
+        "src/header/parse.py": "from loading.namespaces import NS\n\n\ndef parse_header(root):\n    return {\n        'id': root.findtext('cbc:ID', namespaces=NS),\n        'issue_date': root.findtext('cbc:IssueDate', namespaces=NS),\n        'currency': root.findtext('cbc:DocumentCurrencyCode', namespaces=NS),\n        'buyer_reference': root.findtext('cbc:BuyerReference', namespaces=NS),\n        'order_reference': root.findtext('cac:OrderReference/cbc:ID', namespaces=NS),\n    }\n",
+        "tests/header/test_parse.py": "from header.parse import parse_header\nfrom loading.loader import load\n\n\ndef test_header_fields():\n    h = parse_header(load('tests/samples/base-example.xml'))\n    assert h['id'] == 'Snippet1'\n    assert h['currency'] == 'EUR'\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "dates-du",
+      "message": "feat(dates): parse dates with python-dateutil",
+      "files": {
+        "src/dates/fuzzy.py": "from dateutil import parser\n\n\ndef parse_date(text):\n    return parser.parse(text, dayfirst=True).date()\n",
+        "pyproject.toml": "[project]\nname = \"ubl-check\"\nversion = \"0.0.1\"\nrequires-python = \">=3.11\"\ndependencies = [\"lxml>=5.1\", \"python-dateutil>=2.9\"]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "dates-du",
+      "message": "test(dates): cover European date formats",
+      "files": {
+        "tests/dates/test_fuzzy.py": "from datetime import date\n\nfrom dates.fuzzy import parse_date\n\n\ndef test_accepts_european_format():\n    assert parse_date('13/11/2017') == date(2017, 11, 13)\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-05: drop dateutil and accept only ISO 8601 dates, as UBL requires",
+      "steps": [
+        {
+          "key": "dates-iso",
+          "title": "Dates via strict ISO 8601 parser"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "dates-du",
+      "by": "dates-iso"
+    },
+    {
+      "type": "start",
+      "step": "dates-iso"
+    },
+    {
+      "type": "commit",
+      "step": "dates-iso",
+      "message": "feat(dates): parse dates as strict ISO 8601",
+      "why": "UBL 2.1 dates are xsd:date, and dateutil silently accepted malformed dates such as 13/11/2017 that receivers reject.",
+      "files": {
+        "src/dates/iso.py": "from datetime import datetime\n\n\ndef parse_date(text):\n    # xsd:date only: YYYY-MM-DD\n    return datetime.strptime(text.strip(), '%Y-%m-%d').date()\n",
+        "pyproject.toml": "[project]\nname = \"ubl-check\"\nversion = \"0.0.1\"\nrequires-python = \">=3.11\"\ndependencies = [\"lxml>=5.1\"]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "dates-iso",
+      "done": true,
+      "message": "refactor(header): use the ISO date parser for issue dates",
+      "files": {
+        "src/header/parse.py": "from dates.iso import parse_date\nfrom loading.namespaces import NS\n\n\ndef parse_header(root):\n    return {\n        'id': root.findtext('cbc:ID', namespaces=NS),\n        'issue_date': parse_date(root.findtext('cbc:IssueDate', namespaces=NS)),\n        'currency': root.findtext('cbc:DocumentCurrencyCode', namespaces=NS),\n        'buyer_reference': root.findtext('cbc:BuyerReference', namespaces=NS),\n        'order_reference': root.findtext('cac:OrderReference/cbc:ID', namespaces=NS),\n    }\n",
+        "tests/dates/test_iso.py": "import pytest\n\nfrom dates.iso import parse_date\n\n\ndef test_rejects_european_format():\n    with pytest.raises(ValueError):\n        parse_date('13/11/2017')\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "party"
+    },
+    {
+      "type": "commit",
+      "step": "party",
+      "message": "feat(party): parse supplier name, VAT ID and endpoint",
+      "files": {
+        "src/party/supplier.py": "from loading.namespaces import NS\n\n\ndef parse_supplier(root):\n    p = root.find('cac:AccountingSupplierParty/cac:Party', NS)\n    return {\n        'name': p.findtext('cac:PartyName/cbc:Name', namespaces=NS),\n        'vat_id': p.findtext('cac:PartyTaxScheme/cbc:CompanyID', namespaces=NS),\n        'endpoint': p.findtext('cbc:EndpointID', namespaces=NS),\n    }\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "d-bom",
+      "title": "Strip BOM from ERP exports",
+      "what": "Invoices exported by the customer's Windows ERP start with a UTF-8 BOM and blank lines, so lxml refuses them and the party tests cannot run."
+    },
+    {
+      "type": "commit",
+      "step": "d-bom",
+      "done": true,
+      "message": "fix(loading): strip BOM and leading blank lines before parsing",
+      "files": {
+        "src/loading/bom.py": "BOM = b'\\xef\\xbb\\xbf'\n\n\ndef clean(data: bytes) -> bytes:\n    if data.startswith(BOM):\n        data = data[len(BOM):]\n    return data.lstrip()\n",
+        "tests/loading/test_bom.py": "from loading.bom import clean\n\n\ndef test_strips_bom_and_blank_lines():\n    assert clean(b'\\xef\\xbb\\xbf\\r\\n<?xml version=\"1.0\"?>') == b'<?xml version=\"1.0\"?>'\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "party",
+      "message": "feat(party): parse customer party and postal address",
+      "files": {
+        "src/party/customer.py": "from loading.namespaces import NS\n\n\ndef parse_customer(root):\n    p = root.find('cac:AccountingCustomerParty/cac:Party', NS)\n    return {\n        'name': p.findtext('cac:PartyName/cbc:Name', namespaces=NS),\n        'endpoint': p.findtext('cbc:EndpointID', namespaces=NS),\n        'city': p.findtext('cac:PostalAddress/cbc:CityName', namespaces=NS),\n        'country': p.findtext('cac:PostalAddress/cac:Country/cbc:IdentificationCode', namespaces=NS),\n    }\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "party",
+      "message": "feat(party): parse legal entity registration name",
+      "files": {
+        "src/party/legal.py": "from loading.namespaces import NS\n\n\ndef registration_name(party):\n    return party.findtext('cac:PartyLegalEntity/cbc:RegistrationName', namespaces=NS)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "party",
+      "done": true,
+      "message": "test(party): cover parties without an endpoint ID",
+      "files": {
+        "tests/party/test_parties.py": "from loading.loader import load\nfrom party.customer import parse_customer\n\n\ndef test_missing_endpoint_is_none():\n    c = parse_customer(load('tests/samples/no-endpoint.xml'))\n    assert c['endpoint'] is None\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "lines",
+      "message": "feat(lines): parse invoice lines with quantity and unit code",
+      "files": {
+        "src/lines/parse.py": "from loading.namespaces import NS\n\n\ndef parse_lines(root):\n    for line in root.findall('cac:InvoiceLine', NS):\n        qty = line.find('cbc:InvoicedQuantity', NS)\n        yield {\n            'id': line.findtext('cbc:ID', namespaces=NS),\n            'quantity': qty.text,\n            'unit': qty.get('unitCode'),\n        }\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "lines",
+      "message": "feat(lines): read line amounts as Decimal",
+      "proofFiles": [
+        "docs/design.md#Monetary amounts"
+      ],
+      "files": {
+        "src/lines/amounts.py": "from decimal import Decimal\n\nfrom loading.namespaces import NS\n\n\ndef line_amount(line):\n    return Decimal(line.findtext('cbc:LineExtensionAmount', namespaces=NS))\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: add usage example to README",
+      "files": {
+        "README.md": "# ubl-check\n\nParse and validate UBL 2.1 electronic invoces (EN 16931, Peppol BIS Billing 3.0).\n\n## Usage\n\n```python\nfrom loading.loader import load\nfrom header.parse import parse_header\n\nprint(parse_header(load('invoice.xml')))\n```\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "lines",
+      "done": true,
+      "message": "feat(lines): parse line allowances and charges",
+      "files": {
+        "src/lines/allowances.py": "from decimal import Decimal\n\nfrom loading.namespaces import NS\n\n\ndef allowances(line):\n    for ac in line.findall('cac:AllowanceCharge', NS):\n        sign = 1 if ac.findtext('cbc:ChargeIndicator', namespaces=NS) == 'true' else -1\n        yield sign * Decimal(ac.findtext('cbc:Amount', namespaces=NS))\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "commit",
+      "message": "chore: release 0.1.0",
+      "files": {
+        "CHANGELOG.md": "# Changelog\n\n## 0.1.0\n\n- Parse UBL 2.1 invoice header, parties and lines\n- Strict ISO 8601 dates\n",
+        "pyproject.toml": "[project]\nname = \"ubl-check\"\nversion = \"0.1.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"lxml>=5.1\"]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: configure ruff",
+      "files": {
+        "pyproject.toml": "[project]\nname = \"ubl-check\"\nversion = \"0.1.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"lxml>=5.1\"]\n\n[tool.ruff]\nline-length = 100\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m2",
+      "title": "M2 Validation rules",
+      "what": "Check parsed invoices against the UBL schema and the EN 16931 business rules."
+    },
+    {
+      "type": "commit",
+      "message": "docs: draft list of validation rules",
+      "files": {
+        "docs/rules-draft.md": "# Rules (draft)\n\n- BR-CO-15 invoice total with VAT\n- BR-CO-14 tax total\n- Run the official Schematron through Saxon for everything else\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-16: implement the EN 16931 core rules with readable error reports",
+      "steps": [
+        {
+          "key": "report",
+          "title": "Validation error report"
+        },
+        {
+          "key": "xsd",
+          "title": "XSD check with xmlschema"
+        },
+        {
+          "key": "vinv",
+          "title": "Validate invoice totals"
+        },
+        {
+          "key": "vtax",
+          "title": "Validate tax totals"
+        },
+        {
+          "key": "vline",
+          "title": "Validate line totals"
+        },
+        {
+          "key": "cachecl",
+          "title": "Cache for code lists"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "report"
+    },
+    {
+      "type": "commit",
+      "step": "report",
+      "message": "feat(report): ValidationError with rule ID and XPath",
+      "files": {
+        "src/report/errors.py": "from dataclasses import dataclass\n\n\n@dataclass(frozen=True)\nclass ValidationError:\n    rule: str\n    message: str\n    xpath: str\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "report",
+      "message": "feat(report): add fatal and warning severities",
+      "files": {
+        "src/report/severity.py": "from enum import Enum\n\n\nclass Severity(Enum):\n    FATAL = 'fatal'\n    WARNING = 'warning'\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "report",
+      "done": true,
+      "message": "feat(report): render reports as text and JSON",
+      "files": {
+        "src/report/render.py": "import json\n\n\ndef to_text(errors):\n    return '\\n'.join(f'[{e.rule}] {e.message} at {e.xpath}' for e in errors)\n\n\ndef to_json(errors):\n    return json.dumps([e.__dict__ for e in errors], indent=2)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "xsd",
+      "message": "feat(schema): validate against the UBL 2.1 XSD with xmlschema",
+      "files": {
+        "src/schema/xmlschema_check.py": "import xmlschema\n\nSCHEMA = 'schemas/maindoc/UBL-Invoice-2.1.xsd'\n\n\ndef check(path):\n    return [str(e) for e in xmlschema.XMLSchema(SCHEMA).iter_errors(str(path))]\n",
+        "pyproject.toml": "[project]\nname = \"ubl-check\"\nversion = \"0.1.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"lxml>=5.1\", \"xmlschema>=3.0\"]\n\n[tool.ruff]\nline-length = 100\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump pytest to 8.1",
+      "files": {
+        "requirements-dev.txt": "pytest==8.1.1\nruff==0.3.4\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-19: switch XSD validation to lxml, xmlschema is too slow per invoice",
+      "steps": [
+        {
+          "key": "xsdlx",
+          "title": "XSD check with lxml"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "xsd",
+      "by": "xsdlx"
+    },
+    {
+      "type": "start",
+      "step": "xsdlx"
+    },
+    {
+      "type": "commit",
+      "step": "xsdlx",
+      "message": "feat(schema): validate with lxml XMLSchema compiled once",
+      "why": "xmlschema took about 4 seconds per invoice on the Peppol samples, while lxml compiles the schema once and checks each invoice in milliseconds.",
+      "files": {
+        "src/schema/lxml_check.py": "from lxml import etree\n\n_SCHEMA = etree.XMLSchema(etree.parse('schemas/maindoc/UBL-Invoice-2.1.xsd'))\n\n\ndef check(root):\n    _SCHEMA.validate(root)\n    return [str(e) for e in _SCHEMA.error_log]\n",
+        "pyproject.toml": "[project]\nname = \"ubl-check\"\nversion = \"0.1.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"lxml>=5.1\"]\n\n[tool.ruff]\nline-length = 100\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump lxml to 5.2",
+      "files": {
+        "pyproject.toml": "[project]\nname = \"ubl-check\"\nversion = \"0.1.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"lxml>=5.2\"]\n\n[tool.ruff]\nline-length = 100\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "xsdlx",
+      "done": true,
+      "message": "test(schema): invalid invoice reports schema errors",
+      "files": {
+        "tests/schema/test_lxml_check.py": "from loading.loader import load\nfrom schema.lxml_check import check\n\n\ndef test_missing_issue_date_is_reported():\n    errors = check(load('tests/samples/no-issue-date.xml'))\n    assert any('IssueDate' in e for e in errors)\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "vinv"
+    },
+    {
+      "type": "commit",
+      "step": "vinv",
+      "message": "feat(rules): check BR-CO-15 invoice total with VAT",
+      "why": "Wrong invoice totals with VAT were the most frequent rejection reported by our Peppol access point, so this check comes first.",
+      "files": {
+        "src/rules/invoice_totals.py": "from report.errors import ValidationError\n\n\ndef check_br_co_15(totals):\n    expected = totals['tax_exclusive'] + totals['tax']\n    if totals['tax_inclusive'] != expected:\n        yield ValidationError('BR-CO-15', f'tax inclusive amount should be {expected}',\n                              '/Invoice/cac:LegalMonetaryTotal')\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vinv",
+      "message": "feat(rules): check BR-CO-16 amount due for payment",
+      "files": {
+        "src/rules/amount_due.py": "from report.errors import ValidationError\n\n\ndef check_br_co_16(totals):\n    expected = totals['tax_inclusive'] - totals.get('prepaid', 0) + totals.get('rounding', 0)\n    if totals['payable'] != expected:\n        yield ValidationError('BR-CO-16', f'payable amount should be {expected}',\n                              '/Invoice/cac:LegalMonetaryTotal/cbc:PayableAmount')\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vinv",
+      "done": true,
+      "message": "test(rules): invoice totals with prepaid amount",
+      "files": {
+        "tests/rules/test_invoice_totals.py": "from decimal import Decimal as D\n\nfrom rules.invoice_totals import check_br_co_15\n\n\ndef test_total_matches():\n    t = {'tax_exclusive': D('100.00'), 'tax': D('22.00'), 'tax_inclusive': D('122.00')}\n    assert list(check_br_co_15(t)) == []\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vtax",
+      "message": "feat(rules): check BR-CO-14 tax total per VAT category",
+      "why": "One invoice can mix VAT rates such as 22% and 10%, so subtotals are summed per VAT category before comparing them with the tax total.",
+      "files": {
+        "src/rules/tax_totals.py": "from collections import defaultdict\n\nfrom report.errors import ValidationError\n\n\ndef check_br_co_14(subtotals, tax_total):\n    by_category = defaultdict(int)\n    for s in subtotals:\n        by_category[(s['category'], s['percent'])] += s['tax']\n    if sum(by_category.values()) != tax_total:\n        yield ValidationError('BR-CO-14', 'tax total differs from subtotals', '/Invoice/cac:TaxTotal')\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "d-dec",
+      "title": "Round half up on amounts",
+      "what": "Tax subtotals ending in 0.005 were rounded down by Decimal's default half-even rounding, so valid invoices failed the new tax check."
+    },
+    {
+      "type": "commit",
+      "step": "d-dec",
+      "done": true,
+      "message": "fix(money): round amounts half up when quantizing to cents",
+      "files": {
+        "src/money/rounding.py": "from decimal import ROUND_HALF_UP, Decimal\n\nCENT = Decimal('0.01')\n\n\ndef to_cents(amount: Decimal) -> Decimal:\n    return amount.quantize(CENT, rounding=ROUND_HALF_UP)\n",
+        "tests/money/test_rounding.py": "from decimal import Decimal\n\nfrom money.rounding import to_cents\n\n\ndef test_half_cent_rounds_up():\n    assert to_cents(Decimal('2.665')) == Decimal('2.67')\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vtax",
+      "done": true,
+      "message": "test(rules): tax totals with mixed VAT categories",
+      "files": {
+        "tests/rules/test_tax_totals.py": "from decimal import Decimal as D\n\nfrom rules.tax_totals import check_br_co_14\n\n\ndef test_mixed_rates():\n    subs = [{'category': 'S', 'percent': 22, 'tax': D('22.00')},\n            {'category': 'S', 'percent': 10, 'tax': D('5.00')}]\n    assert list(check_br_co_14(subs, D('27.00'))) == []\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vline",
+      "message": "feat(rules): check BR-CO-10 sum of line net amounts",
+      "why": "BR-CO-10 sums line net amounts that are each already rounded to two decimals, so every line is rounded before summing.",
+      "files": {
+        "src/rules/line_totals.py": "from money.rounding import to_cents\nfrom report.errors import ValidationError\n\n\ndef check_br_co_10(line_amounts, line_total):\n    expected = sum(to_cents(a) for a in line_amounts)\n    if line_total != expected:\n        yield ValidationError('BR-CO-10', f'sum of lines should be {expected}',\n                              '/Invoice/cac:LegalMonetaryTotal/cbc:LineExtensionAmount')\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: replace the rules draft with the implemented rule table",
+      "files": {
+        "docs/rules.md": "# Implemented rules\n\n| Rule | Check | Module |\n|---|---|---|\n| BR-CO-10 | sum of line net amounts | rules/line_totals.py |\n| BR-CO-14 | tax total per VAT category | rules/tax_totals.py |\n| BR-CO-15 | invoice total with VAT | rules/invoice_totals.py |\n| BR-CO-16 | amount due for payment | rules/amount_due.py |\n",
+        "docs/rules-draft.md": "# Rules (draft)\n\nSuperseded by docs/rules.md.\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m3",
+      "title": "M3 Batch performance",
+      "what": "Validate folders with thousands of invoices quickly."
+    },
+    {
+      "type": "defer",
+      "step": "cachecl",
+      "to": "m3"
+    },
+    {
+      "type": "commit",
+      "step": "vline",
+      "done": true,
+      "message": "test(rules): line totals with half-cent lines",
+      "files": {
+        "tests/rules/test_line_totals.py": "from decimal import Decimal as D\n\nfrom rules.line_totals import check_br_co_10\n\n\ndef test_lines_rounded_before_sum():\n    assert list(check_br_co_10([D('1.005'), D('1.005')], D('2.02'))) == []\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "commit",
+      "message": "chore: release 0.2.0",
+      "files": {
+        "CHANGELOG.md": "# Changelog\n\n## 0.2.0\n\n- XSD validation with lxml\n- Rules BR-CO-10, BR-CO-14, BR-CO-15, BR-CO-16\n\n## 0.1.0\n\n- Parse UBL 2.1 invoice header, parties and lines\n- Strict ISO 8601 dates\n",
+        "pyproject.toml": "[project]\nname = \"ubl-check\"\nversion = \"0.2.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"lxml>=5.2\"]\n\n[tool.ruff]\nline-length = 100\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "ci: test on Python 3.11 to 3.13",
+      "files": {
+        ".github/workflows/ci.yml": "name: ci\non: [push, pull_request]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    strategy:\n      matrix: {python: ['3.11', '3.12', '3.13']}\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-python@v5\n        with: {python-version: '${{ matrix.python }}'}\n      - run: pip install -e . pytest && pytest\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m3",
+      "ref": "chat 2026-03-30: validate whole invoice folders fast, cache repeated data, then ship a CLI",
+      "steps": [
+        {
+          "key": "batch",
+          "title": "Batch validation of a folder"
+        },
+        {
+          "key": "cachepty",
+          "title": "Cache for parsed parties"
+        },
+        {
+          "key": "cachinv",
+          "title": "Cache invalidation on reload"
+        },
+        {
+          "key": "cli",
+          "title": "Command-line validator"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "batch"
+    },
+    {
+      "type": "commit",
+      "step": "batch",
+      "message": "feat(batch): validate every .xml file in a folder",
+      "files": {
+        "src/batch/runner.py": "from pathlib import Path\n\nfrom loading.loader import load\nfrom schema.lxml_check import check\n\n\ndef run(folder):\n    for path in sorted(Path(folder).glob('*.xml')):\n        yield path, check(load(path))\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "batch",
+      "message": "feat(batch): validate files in a process pool",
+      "why": "Validating the 12,000-invoice archive in a single process took nine minutes.",
+      "files": {
+        "src/batch/pool.py": "from concurrent.futures import ProcessPoolExecutor\n\nfrom loading.loader import load\nfrom schema.lxml_check import check\n\n\ndef _one(path):\n    return path, check(load(path))\n\n\ndef run_parallel(paths, workers=None):\n    with ProcessPoolExecutor(max_workers=workers) as ex:\n        yield from ex.map(_one, paths, chunksize=64)\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "d-empty",
+      "title": "Skip empty invoice files",
+      "what": "The archive holds zero-byte .xml files that crash the batch run with XMLSyntaxError."
+    },
+    {
+      "type": "commit",
+      "step": "d-empty",
+      "done": true,
+      "message": "fix(loading): report empty files instead of crashing",
+      "files": {
+        "src/loading/empty.py": "from pathlib import Path\n\n\nclass EmptyDocument(ValueError):\n    pass\n\n\ndef ensure_not_empty(path):\n    if Path(path).stat().st_size == 0:\n        raise EmptyDocument(f'{path} is empty')\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "batch",
+      "message": "feat(batch): add fail-fast and worker count options",
+      "files": {
+        "src/batch/options.py": "from dataclasses import dataclass\n\n\n@dataclass\nclass BatchOptions:\n    fail_fast: bool = False\n    workers: int | None = None\n    pattern: str = '*.xml'\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "batch",
+      "done": true,
+      "message": "feat(batch): summary of passed and failed files",
+      "files": {
+        "src/batch/summary.py": "def summarize(results):\n    failed = [str(p) for p, errors in results if errors]\n    return {'failed': failed, 'failed_count': len(failed)}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cachepty",
+      "message": "feat(partycache): keep parsed parties in memory",
+      "why": "The same few suppliers appear in most invoices of a batch, so parsing their parties again for every file was wasted work.",
+      "files": {
+        "src/partycache/store.py": "_parties = {}\n\n\ndef get_or_parse(key, parse, party):\n    if key not in _parties:\n        _parties[key] = parse(party)\n    return _parties[key]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: fix typo in README",
+      "files": {
+        "README.md": "# ubl-check\n\nParse and validate UBL 2.1 electronic invoices (EN 16931, Peppol BIS Billing 3.0).\n\n## Usage\n\n```python\nfrom loading.loader import load\nfrom header.parse import parse_header\n\nprint(parse_header(load('invoice.xml')))\n```\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cachepty",
+      "message": "feat(partycache): key parties by endpoint scheme and ID",
+      "files": {
+        "src/partycache/keys.py": "from loading.namespaces import NS\n\n\ndef party_key(party):\n    endpoint = party.find('cbc:EndpointID', NS)\n    if endpoint is None:\n        return None\n    return (endpoint.get('schemeID'), endpoint.text)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cachepty",
+      "message": "feat(partycache): bound the party cache with an LRU of 512 entries",
+      "files": {
+        "src/partycache/lru.py": "from collections import OrderedDict\n\n\nclass LRU(OrderedDict):\n    def __init__(self, size=512):\n        super().__init__()\n        self.size = size\n\n    def put(self, key, value):\n        self[key] = value\n        self.move_to_end(key)\n        if len(self) > self.size:\n            self.popitem(last=False)\n"
+      }
+    }
+  ],
+  "questions": [
+    {
+      "cat": "where",
+      "text": "Which part of the batch performance work is in progress right now, and what comes right after it?",
+      "current": "cachepty",
+      "next": "cachinv"
+    },
+    {
+      "cat": "why",
+      "text": "Why does the tax totals check work the way it does?",
+      "step": "vtax",
+      "reason": "One invoice can mix VAT rates such as 22% and 10%, so subtotals are summed per VAT category before comparing them with the tax total.",
+      "distractors": [
+        "Wrong invoice totals with VAT were the most frequent rejection reported by our Peppol access point, so this check comes first.",
+        "BR-CO-10 sums line net amounts that are each already rounded to two decimals, so every line is rounded before summing.",
+        "The same few suppliers appear in most invoices of a batch, so parsing their parties again for every file was wasted work."
+      ]
+    },
+    {
+      "cat": "proof",
+      "text": "Which file holds the result of validating line totals?",
+      "step": "vline",
+      "file": "src/rules/line_totals.py"
+    },
+    {
+      "cat": "deferred",
+      "text": "The code list cache was planned with the validation rules. Which milestone was it moved to?",
+      "step": "cachecl",
+      "milestone": "m3"
+    },
+    {
+      "cat": "update",
+      "text": "Which decision holds today on how invoices are checked against the UBL XSD schema?",
+      "step": "xsdlx"
+    },
+    {
+      "cat": "abstain",
+      "text": "Why was support for the CII (Cross Industry Invoice) syntax dropped?"
+    },
+    {
+      "cat": "continue",
+      "text": "Resume the work: make the first change you would make.",
+      "next": "cachepty",
+      "dir": "src/partycache/"
+    }
+  ]
+}

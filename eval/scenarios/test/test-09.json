@@ -1,0 +1,712 @@
+{
+  "id": "test-09",
+  "project": "slotwise",
+  "start": "2026-03-02T09:00:00Z",
+  "events": [
+    {
+      "type": "commit",
+      "message": "chore: scaffold slotwise package",
+      "files": {
+        "pyproject.toml": "[project]\nname = \"slotwise\"\nversion = \"0.1.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"pandas>=2.1\"]\n\n[tool.pytest.ini_options]\npythonpath = [\"src\"]\n",
+        "README.md": "# slotwise\n\nSlotting optimizer for teh Padova distribution centre: proposes where each SKU should live in the racks.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: project overview",
+      "files": {
+        "docs/overview.md": "# Overview\n\nslotwise reads the ERP item master, the WMS location list and order lines,\nscores every SKU/location pair and proposes a nightly list of slot moves.\n\nUsers: the night-shift lead and the inventory planner at Padova DC.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add ruff config",
+      "files": {
+        "ruff.toml": "line-length = 100\ntarget-version = \"py311\"\n\n[lint]\nselect = [\"E\", \"F\", \"I\"]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add .gitignore",
+      "files": {
+        ".gitignore": "__pycache__/\n.venv/\n*.egg-info/\n.pytest_cache/\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m1",
+      "title": "M1 Slot data model",
+      "what": "Load items, rack locations and pick history into one consistent model of the warehouse."
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-02: load the ERP item master, the WMS locations and pick velocity as base data",
+      "steps": [
+        {
+          "key": "sku",
+          "title": "Load SKU master from ERP export"
+        },
+        {
+          "key": "locapi",
+          "title": "Read locations from WMS API"
+        },
+        {
+          "key": "vel",
+          "title": "Compute pick velocity per SKU"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "sku"
+    },
+    {
+      "type": "commit",
+      "step": "sku",
+      "message": "feat(sku): parse ERP item master export",
+      "files": {
+        "src/sku/parse.py": "import csv\n\nfrom sku.units import to_cm\n\n\ndef read_items(path):\n    with open(path, newline=\"\", encoding=\"latin-1\") as f:\n        for row in csv.DictReader(f, delimiter=\";\"):\n            yield {\"sku\": row[\"ARTICOLO\"], \"desc\": row[\"DESCRIZIONE\"], \"dims\": to_cm(row)}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sku",
+      "message": "feat(sku): normalize case dimensions to centimetres",
+      "files": {
+        "src/sku/units.py": "FACTORS = {\"MM\": 0.1, \"CM\": 1.0, \"M\": 100.0}\n\n\ndef to_cm(row):\n    f = FACTORS[row[\"UM_DIM\"].upper()]\n    return tuple(float(row[k]) * f for k in (\"LUNG\", \"LARG\", \"ALT\"))\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "csvfix",
+      "title": "Fix decimal commas in ERP export",
+      "what": "The ERP exports numbers in the Italian locale ('12,5') and the item master parser crashes on the first row."
+    },
+    {
+      "type": "commit",
+      "step": "csvfix",
+      "done": true,
+      "message": "fix(csvio): accept decimal commas from ERP export",
+      "files": {
+        "src/csvio/numbers.py": "def parse_decimal(text):\n    \"\"\"ERP exports use the Italian locale: '1.250,5' means 1250.5.\"\"\"\n    text = text.strip().replace(\".\", \"\").replace(\",\", \".\")\n    return float(text) if text else 0.0\n",
+        "src/sku/units.py": "from csvio.numbers import parse_decimal\n\nFACTORS = {\"MM\": 0.1, \"CM\": 1.0, \"M\": 100.0}\n\n\ndef to_cm(row):\n    f = FACTORS[row[\"UM_DIM\"].upper()]\n    return tuple(parse_decimal(row[k]) * f for k in (\"LUNG\", \"LARG\", \"ALT\"))\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sku",
+      "message": "feat(sku): flag temperature class per item",
+      "files": {
+        "src/sku/temp_class.py": "CLASSES = {\"S\": \"ambient\", \"R\": \"chilled\", \"C\": \"frozen\"}\n\n\ndef temp_class(row):\n    return CLASSES.get(row.get(\"CONSERVAZIONE\", \"S\"), \"ambient\")\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "sku",
+      "done": true,
+      "message": "test(sku): cover item master parsing",
+      "files": {
+        "tests/sku/test_parse.py": "from sku.parse import read_items\n\n\ndef test_reads_dimensions(tmp_path):\n    p = tmp_path / \"items.csv\"\n    p.write_text(\"ARTICOLO;DESCRIZIONE;UM_DIM;LUNG;LARG;ALT\\n100;Mozzarella;MM;300;200;150\\n\", encoding=\"latin-1\")\n    item = next(read_items(p))\n    assert item[\"dims\"] == (30.0, 20.0, 15.0)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "locapi",
+      "message": "feat(locapi): WMS REST client for locations",
+      "files": {
+        "src/locapi/client.py": "import requests\n\nBASE = \"https://wms.padova.local/api/v2\"\n\n\ndef fetch_locations(token, cursor=None):\n    params = {\"cursor\": cursor} if cursor else {}\n    r = requests.get(f\"{BASE}/locations\", headers={\"Authorization\": f\"Bearer {token}\"}, params=params)\n    r.raise_for_status()\n    return r.json()\n",
+        "pyproject.toml": "[project]\nname = \"slotwise\"\nversion = \"0.1.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"pandas>=2.1\", \"requests>=2.31\"]\n\n[tool.pytest.ini_options]\npythonpath = [\"src\"]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "locapi",
+      "message": "feat(locapi): follow pagination cursor",
+      "files": {
+        "src/locapi/paging.py": "from locapi.client import fetch_locations\n\n\ndef all_locations(token):\n    cursor = None\n    while True:\n        page = fetch_locations(token, cursor)\n        yield from page[\"items\"]\n        cursor = page.get(\"next\")\n        if not cursor:\n            return\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-06: read rack locations from the nightly WMS dump instead of the API",
+      "steps": [
+        {
+          "key": "locdump",
+          "title": "Read locations from nightly WMS dump"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "locapi",
+      "by": "locdump"
+    },
+    {
+      "type": "start",
+      "step": "locdump"
+    },
+    {
+      "type": "commit",
+      "step": "locdump",
+      "message": "feat(locdump): read nightly WMS location dump",
+      "why": "The WMS API allows 60 requests per minute, so pulling all 12,000 locations took over three hours, while the nightly dump is already on the SFTP share at 01:30.",
+      "files": {
+        "src/locdump/read.py": "import csv\n\n\ndef read_dump(path):\n    with open(path, newline=\"\") as f:\n        for row in csv.DictReader(f, delimiter=\";\"):\n            yield {\"code\": row[\"location_code\"], \"zone\": row[\"zone\"], \"max_kg\": float(row[\"max_kg\"])}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: describe the nightly WMS dump format",
+      "files": {
+        "docs/wms-dump.md": "# WMS nightly dump\n\nThe WMS writes `locations_YYYYMMDD.csv` to the SFTP share at 01:30.\nColumns: location_code;zone;max_kg;height_cm;width_cm;depth_cm\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "locdump",
+      "message": "feat(locdump): decode aisle-bay-level location codes",
+      "files": {
+        "src/locdump/codes.py": "def decode(code):\n    \"\"\"'B12-07-3' -> aisle B12, bay 7, level 3 (level 1 is the floor).\"\"\"\n    aisle, bay, level = code.split(\"-\")\n    return {\"aisle\": aisle, \"bay\": int(bay), \"level\": int(level)}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "locdump",
+      "done": true,
+      "message": "test(locdump): cover location code decoding",
+      "files": {
+        "tests/locdump/test_codes.py": "from locdump.codes import decode\n\n\ndef test_decode_floor_level():\n    assert decode(\"F02-11-1\") == {\"aisle\": \"F02\", \"bay\": 11, \"level\": 1}\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "vel"
+    },
+    {
+      "type": "commit",
+      "step": "vel",
+      "message": "feat(velocity): count picks per SKU from order lines",
+      "files": {
+        "src/velocity/picks.py": "import pandas as pd\n\n\ndef picks_per_sku(order_lines: pd.DataFrame) -> pd.Series:\n    return order_lines.groupby(\"sku\")[\"line_id\"].count().rename(\"picks\")\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump pandas to 2.2 and drop requests",
+      "files": {
+        "pyproject.toml": "[project]\nname = \"slotwise\"\nversion = \"0.1.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"pandas>=2.2\"]\n\n[tool.pytest.ini_options]\npythonpath = [\"src\"]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vel",
+      "message": "feat(velocity): restrict to an 8-week window",
+      "files": {
+        "src/velocity/window.py": "import pandas as pd\n\nWEEKS = 8\n\n\ndef last_weeks(order_lines: pd.DataFrame, today) -> pd.DataFrame:\n    start = pd.Timestamp(today) - pd.Timedelta(weeks=WEEKS)\n    return order_lines[order_lines[\"shipped_at\"] >= start]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vel",
+      "message": "test(velocity): cover the 8-week window",
+      "files": {
+        "tests/velocity/test_window.py": "import pandas as pd\n\nfrom velocity.window import last_weeks\n\n\ndef test_drops_old_lines():\n    df = pd.DataFrame({\"shipped_at\": pd.to_datetime([\"2026-01-01\", \"2026-03-01\"])})\n    assert len(last_weeks(df, \"2026-03-02\")) == 1\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vel",
+      "done": true,
+      "message": "feat(velocity): classify SKUs into A/B/C movers",
+      "files": {
+        "src/velocity/abc.py": "def abc_class(picks):\n    \"\"\"A = top 20% of SKUs by picks, B = next 30%, C = the rest.\"\"\"\n    ranked = picks.rank(pct=True, ascending=False)\n    return ranked.map(lambda p: \"A\" if p <= 0.2 else \"B\" if p <= 0.5 else \"C\")\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "test: add sample location fixture",
+      "files": {
+        "tests/fixtures/locations.csv": "location_code;zone;max_kg;height_cm;width_cm;depth_cm\nA01-01-1;ambient;1000;120;80;120\nF02-11-1;frozen;800;120;80;120\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: first draft of scoring weights",
+      "files": {
+        "docs/scoring.md": "# Scoring weights\n\nDraft, before the pilot.\n\n## Weights\n\n- velocity: 0.5\n- weight: 0.3\n- temperature: 0.2\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "milestone",
+      "key": "m2",
+      "title": "M2 Slot scoring",
+      "what": "Score every SKU/location pair and compute a proposed slot for each SKU."
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-16: score slots by velocity, weight and temperature, then solve the assignment with MILP",
+      "steps": [
+        {
+          "key": "vscore",
+          "title": "Score slots by pick velocity"
+        },
+        {
+          "key": "wscore",
+          "title": "Score slots by item weight"
+        },
+        {
+          "key": "tscore",
+          "title": "Score slots by temperature zone"
+        },
+        {
+          "key": "season",
+          "title": "Seasonal velocity adjustment"
+        },
+        {
+          "key": "milp",
+          "title": "Solve slot assignment with MILP"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "vscore"
+    },
+    {
+      "type": "commit",
+      "step": "vscore",
+      "message": "feat(score-velocity): favour the golden zone for fast movers",
+      "why": "Fast movers go in the golden zone between 80 and 140 cm so pickers stop bending and reaching on the most frequent picks.",
+      "files": {
+        "src/score_velocity/velocity.py": "GOLDEN_MIN_CM, GOLDEN_MAX_CM = 80, 140\n\n\ndef velocity_score(abc, slot_floor_cm):\n    in_golden = GOLDEN_MIN_CM <= slot_floor_cm <= GOLDEN_MAX_CM\n    base = {\"A\": 1.0, \"B\": 0.5, \"C\": 0.1}[abc]\n    return base if in_golden else base * 0.3\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vscore",
+      "message": "feat(score-velocity): derive slot height from rack level",
+      "files": {
+        "src/score_velocity/golden.py": "def slot_floor_cm(level, level_height_cm=110):\n    \"\"\"Height of the beam the picker reaches into; level 1 is the floor.\"\"\"\n    return (level - 1) * level_height_cm\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vscore",
+      "done": true,
+      "message": "test(score-velocity): cover golden zone scoring",
+      "files": {
+        "tests/score_velocity/test_velocity.py": "from score_velocity.velocity import velocity_score\n\n\ndef test_fast_mover_outside_golden_zone_is_penalised():\n    assert velocity_score(\"A\", 110) == 1.0\n    assert velocity_score(\"A\", 330) == 0.3\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: fix typo and add usage to README",
+      "files": {
+        "README.md": "# slotwise\n\nSlotting optimizer for the Padova distribution centre: proposes where each SKU should live in the racks.\n\n## Usage\n\n    slotwise items.csv locations_20260316.csv orders.csv\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "wscore",
+      "message": "feat(score-weight): keep heavy cases on floor level",
+      "why": "Cases of 15 kg or more go on floor level so pickers never lift heavy cases above waist height.",
+      "files": {
+        "src/score_weight/weight.py": "HEAVY_KG = 15\n\n\ndef weight_score(case_kg, level):\n    if case_kg >= HEAVY_KG:\n        return 1.0 if level == 1 else 0.0\n    return 1.0 - 0.1 * (level - 1)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "refactor: shared semicolon CSV reader",
+      "files": {
+        "src/csvio/reader.py": "import csv\n\n\ndef rows(path, encoding=\"utf-8\"):\n    with open(path, newline=\"\", encoding=encoding) as f:\n        yield from csv.DictReader(f, delimiter=\";\")\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "wscore",
+      "done": true,
+      "message": "feat(score-weight): respect per-location load limits",
+      "files": {
+        "src/score_weight/limits.py": "def fits(location, pallet_kg):\n    return pallet_kg <= location[\"max_kg\"]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: temperature zone rules from QA meeting",
+      "files": {
+        "docs/temperature.md": "# Temperature zones\n\nNotes from the meeting with the QA manager.\n\n## Frozen zone rules\n\nFrozen items (-18 °C) may only be slotted in freezer aisles F01-F04.\n\n## Chilled dock rule\n\nChilled items must sit within 15 m of dock door 3 because the HACCP audit requires chilled pallets to stay out of the cold chain for under two minutes.\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m4",
+      "title": "M4 Seasonal planning",
+      "what": "Adjust slotting ahead of seasonal peaks such as summer ice cream and Christmas panettone."
+    },
+    {
+      "type": "defer",
+      "step": "season",
+      "to": "m4"
+    },
+    {
+      "type": "commit",
+      "step": "tscore",
+      "message": "feat(score-temp): restrict frozen items to freezer aisles",
+      "proofFiles": [
+        "docs/temperature.md#Frozen zone rules"
+      ],
+      "files": {
+        "src/score_temp/zones.py": "FREEZER_AISLES = {\"F01\", \"F02\", \"F03\", \"F04\"}\n\n\ndef allowed(temp_class, aisle):\n    if temp_class == \"frozen\":\n        return aisle in FREEZER_AISLES\n    return aisle not in FREEZER_AISLES\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tscore",
+      "message": "feat(score-temp): keep chilled items near dock door 3",
+      "proofFiles": [
+        "docs/temperature.md#Chilled dock rule"
+      ],
+      "files": {
+        "src/score_temp/dock.py": "DOCK_3 = (0.0, 42.0)\nMAX_CHILLED_M = 15.0\n\n\ndef near_dock(xy):\n    dx, dy = xy[0] - DOCK_3[0], xy[1] - DOCK_3[1]\n    return (dx * dx + dy * dy) ** 0.5 <= MAX_CHILLED_M\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tscore",
+      "done": true,
+      "message": "test(score-temp): cover zone and dock rules",
+      "files": {
+        "tests/score_temp/test_zones.py": "from score_temp.dock import near_dock\nfrom score_temp.zones import allowed\n\n\ndef test_rules():\n    assert allowed(\"frozen\", \"F02\") and not allowed(\"frozen\", \"A01\")\n    assert near_dock((5.0, 40.0)) and not near_dock((30.0, 0.0))\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "milp",
+      "message": "feat(assign-milp): PuLP slot assignment model",
+      "files": {
+        "src/assign_milp/model.py": "import pulp\n\n\ndef build(skus, slots, score):\n    prob = pulp.LpProblem(\"slotting\", pulp.LpMaximize)\n    x = pulp.LpVariable.dicts(\"x\", [(s, l) for s in skus for l in slots], cat=\"Binary\")\n    prob += pulp.lpSum(score[s, l] * x[s, l] for s in skus for l in slots)\n    return prob, x\n",
+        "pyproject.toml": "[project]\nname = \"slotwise\"\nversion = \"0.1.0\"\nrequires-python = \">=3.11\"\ndependencies = [\"pandas>=2.2\", \"pulp>=2.8\"]\n\n[tool.pytest.ini_options]\npythonpath = [\"src\"]\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "newsku",
+      "title": "Handle SKUs without pick history",
+      "what": "Items added to the catalogue this week have no order lines yet and the scorer crashes with a KeyError on them."
+    },
+    {
+      "type": "commit",
+      "step": "newsku",
+      "done": true,
+      "message": "fix(newsku): treat items without history as slow movers",
+      "files": {
+        "src/newsku/default.py": "DEFAULT_CLASS = \"C\"\n\n\ndef fill_missing(abc_by_sku, all_skus):\n    \"\"\"New items have no order lines yet; treat them as slow movers.\"\"\"\n    return {s: abc_by_sku.get(s, DEFAULT_CLASS) for s in all_skus}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "milp",
+      "message": "feat(assign-milp): one SKU per slot constraints",
+      "files": {
+        "src/assign_milp/constraints.py": "import pulp\n\n\ndef add_capacity(prob, x, skus, slots):\n    for l in slots:\n        prob += pulp.lpSum(x[s, l] for s in skus) <= 1\n    for s in skus:\n        prob += pulp.lpSum(x[s, l] for l in slots) == 1\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-27: assign slots greedily by score instead of solving the MILP",
+      "steps": [
+        {
+          "key": "greedy",
+          "title": "Greedy slot assignment by score"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "milp",
+      "by": "greedy"
+    },
+    {
+      "type": "start",
+      "step": "greedy"
+    },
+    {
+      "type": "commit",
+      "step": "greedy",
+      "message": "feat(assign-greedy): best free slot per SKU, fastest first",
+      "why": "The MILP needed 47 minutes for the 12,000 Padova locations, longer than the nightly planning window allows.",
+      "files": {
+        "src/assign_greedy/greedy.py": "def assign(skus, slots, score):\n    \"\"\"Best-scoring free slot for each SKU, fastest movers first.\"\"\"\n    free = set(slots)\n    result = {}\n    for s in skus:\n        best = max(free, key=lambda l: score(s, l))\n        result[s] = best\n        free.remove(best)\n    return result\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "greedy",
+      "message": "feat(assign-greedy): break ties by pick-path order",
+      "files": {
+        "src/assign_greedy/ties.py": "def tie_key(slot):\n    \"\"\"On equal score prefer the slot closest to the pick-path start.\"\"\"\n    return (slot[\"aisle\"], slot[\"bay\"], slot[\"level\"])\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add CLI entry point",
+      "files": {
+        "src/slotwise/cli.py": "import argparse\n\n\ndef main():\n    p = argparse.ArgumentParser(prog=\"slotwise\")\n    p.add_argument(\"items\")\n    p.add_argument(\"locations\")\n    p.add_argument(\"orders\")\n    args = p.parse_args()\n    print(f\"planning slots for {args.items}\")\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "greedy",
+      "done": true,
+      "message": "test(assign-greedy): cover assignment order",
+      "files": {
+        "tests/assign_greedy/test_greedy.py": "from assign_greedy.greedy import assign\n\n\ndef test_each_slot_used_once():\n    result = assign([\"a\", \"b\"], [\"L1\", \"L2\"], lambda s, l: 1.0 if l == \"L1\" else 0.5)\n    assert result == {\"a\": \"L1\", \"b\": \"L2\"}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: replace scoring weights after Padova pilot",
+      "files": {
+        "docs/scoring.md": "# Scoring weights\n\nUpdated after the two-week Padova pilot; replaces the draft weights.\n\n## Weights\n\n- velocity: 0.6\n- weight: 0.4\n- temperature: hard rule, not a weight (see temperature.md)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "ci: run ruff and pytest on push",
+      "files": {
+        ".github/workflows/ci.yml": "name: ci\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-python@v5\n        with: {python-version: \"3.12\"}\n      - run: pip install -e . ruff pytest && ruff check . && pytest\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: require Python 3.12",
+      "files": {
+        "pyproject.toml": "[project]\nname = \"slotwise\"\nversion = \"0.1.0\"\nrequires-python = \">=3.12\"\ndependencies = [\"pandas>=2.2\", \"pulp>=2.8\"]\n\n[tool.pytest.ini_options]\npythonpath = [\"src\"]\n",
+        "ruff.toml": "line-length = 100\ntarget-version = \"py312\"\n\n[lint]\nselect = [\"E\", \"F\", \"I\"]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "test: add sample order lines fixture",
+      "files": {
+        "tests/fixtures/orders.csv": "line_id;sku;shipped_at;cases\n1;100;2026-03-20;4\n2;100;2026-03-21;2\n3;245;2026-03-21;1\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "milestone",
+      "key": "m3",
+      "title": "M3 Move planning and reports",
+      "what": "Turn the proposed slots into a nightly move plan and give the planners reports on its effect."
+    },
+    {
+      "type": "plan",
+      "milestone": "m3",
+      "ref": "chat 2026-04-07: build the nightly move list, then reports for moves, zone utilization and pick-path length",
+      "steps": [
+        {
+          "key": "moves",
+          "title": "Generate re-slot move list"
+        },
+        {
+          "key": "mvrep",
+          "title": "Report for slot moves"
+        },
+        {
+          "key": "utilrep",
+          "title": "Report for zone utilization"
+        },
+        {
+          "key": "pathrep",
+          "title": "Report for pick-path length"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "moves"
+    },
+    {
+      "type": "commit",
+      "step": "moves",
+      "message": "feat(moves): diff current and proposed slots",
+      "files": {
+        "src/moves/diff.py": "def moves(current, proposed):\n    \"\"\"SKUs whose proposed slot differs from where they sit today.\"\"\"\n    return [(s, current[s], proposed[s]) for s in proposed if current.get(s) != proposed[s]]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "moves",
+      "message": "feat(moves): cap the plan at 150 moves per night",
+      "why": "The night shift has two forklift drivers, so more than 150 moves cannot finish before the 05:00 picking wave.",
+      "files": {
+        "src/moves/limit.py": "MAX_MOVES_PER_NIGHT = 150\n\n\ndef cap(moves, gain):\n    ranked = sorted(moves, key=gain, reverse=True)\n    return ranked[:MAX_MOVES_PER_NIGHT]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): drop pulp",
+      "files": {
+        "pyproject.toml": "[project]\nname = \"slotwise\"\nversion = \"0.1.0\"\nrequires-python = \">=3.12\"\ndependencies = [\"pandas>=2.2\"]\n\n[tool.pytest.ini_options]\npythonpath = [\"src\"]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "moves",
+      "message": "feat(moves): empty a slot before filling it",
+      "files": {
+        "src/moves/order.py": "def sequence(moves):\n    \"\"\"Moves whose target is still occupied go after the move that empties it.\"\"\"\n    sources = {src for _, src, _ in moves}\n    return sorted(moves, key=lambda m: m[2] in sources)\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "moves",
+      "message": "feat(moves): detect swaps that need a buffer slot",
+      "files": {
+        "src/moves/swap.py": "def needs_buffer(moves):\n    \"\"\"A->B and B->A at once need a buffer slot on the floor of the aisle.\"\"\"\n    pairs = {(src, dst) for _, src, dst in moves}\n    return [(a, b) for a, b in pairs if (b, a) in pairs and a < b]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "moves",
+      "done": true,
+      "message": "test(moves): cover diff and sequencing",
+      "files": {
+        "tests/moves/test_diff.py": "from moves.diff import moves\n\n\ndef test_only_changed_skus():\n    assert moves({\"a\": \"L1\", \"b\": \"L2\"}, {\"a\": \"L1\", \"b\": \"L3\"}) == [(\"b\", \"L2\", \"L3\")]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: ignore generated move sheets",
+      "files": {
+        ".gitignore": "__pycache__/\n.venv/\n*.egg-info/\n.pytest_cache/\nout/move_sheets/\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "mvrep",
+      "message": "feat(report-moves): group moves by source aisle",
+      "files": {
+        "src/report_moves/render.py": "from collections import defaultdict\n\n\ndef by_aisle(moves):\n    sheets = defaultdict(list)\n    for sku, src, dst in moves:\n        sheets[src.split(\"-\")[0]].append((src, dst, sku))\n    return {a: sorted(rows) for a, rows in sheets.items()}\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "labelfix",
+      "title": "Fix aisle labels on printed move sheets",
+      "what": "The night shift reported that aisles print as F2 instead of F02 and do not match the rack signs."
+    },
+    {
+      "type": "commit",
+      "step": "labelfix",
+      "done": true,
+      "message": "fix(labels): pad aisle numbers to two digits",
+      "files": {
+        "src/labels/aisle.py": "def label(aisle):\n    \"\"\"Rack signs use two digits: F2 -> F02.\"\"\"\n    return f\"{aisle[0]}{int(aisle[1:]):02d}\"\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: move sheet layout",
+      "files": {
+        "docs/move-sheet.md": "# Move sheet layout\n\nOne A4 page per aisle, moves sorted by source bay.\nColumns: from, to, SKU, cases, done (tick box).\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "mvrep",
+      "message": "feat(report-moves): write one sheet per aisle",
+      "files": {
+        "src/report_moves/sheet.py": "from labels.aisle import label\n\nHEADER = \"from;to;sku;cases;done\"\n\n\ndef to_csv(aisle, rows):\n    lines = [f\"# aisle {label(aisle)}\", HEADER]\n    lines += [f\"{src};{dst};{sku};;[ ]\" for src, dst, sku in rows]\n    return \"\\n\".join(lines) + \"\\n\"\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "mvrep",
+      "done": true,
+      "message": "test(report-moves): cover per-aisle grouping",
+      "files": {
+        "tests/report_moves/test_render.py": "from report_moves.render import by_aisle\n\n\ndef test_groups_by_source_aisle():\n    sheets = by_aisle([(\"100\", \"F02-01-1\", \"F03-02-1\")])\n    assert sheets == {\"F02\": [(\"F02-01-1\", \"F03-02-1\", \"100\")]}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "utilrep",
+      "message": "feat(utilization): occupancy share per zone",
+      "files": {
+        "src/utilization/occupancy.py": "def occupancy(slots, assignment):\n    \"\"\"Share of slots in use per zone after the proposed moves.\"\"\"\n    used = set(assignment.values())\n    totals, busy = {}, {}\n    for loc in slots:\n        z = loc[\"zone\"]\n        totals[z] = totals.get(z, 0) + 1\n        busy[z] = busy.get(z, 0) + (loc[\"code\"] in used)\n    return {z: busy[z] / totals[z] for z in totals}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "utilrep",
+      "message": "feat(utilization): format zone rows for the report",
+      "files": {
+        "src/utilization/by_zone.py": "from utilization.occupancy import occupancy\n\n\ndef rows(slots, assignment):\n    return [(z, f\"{share:.0%}\") for z, share in sorted(occupancy(slots, assignment).items())]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "utilrep",
+      "message": "feat(utilization): warn when a zone is nearly full",
+      "files": {
+        "src/utilization/thresholds.py": "WARN_AT = {\"ambient\": 0.92, \"chilled\": 0.88, \"frozen\": 0.85}\n\n\ndef warnings(shares):\n    return [z for z, s in shares.items() if s >= WARN_AT.get(z, 0.9)]\n"
+      }
+    }
+  ],
+  "questions": [
+    {
+      "cat": "where",
+      "text": "What is being worked on right now in the move planning and reports milestone, and what comes after it?",
+      "current": "utilrep",
+      "next": "pathrep"
+    },
+    {
+      "cat": "why",
+      "text": "Why must chilled items sit within 15 m of dock door 3 when slots are scored by temperature zone?",
+      "step": "tscore",
+      "reason": "The HACCP audit requires chilled pallets to stay out of the cold chain for under two minutes.",
+      "distractors": [
+        "Fast movers go in the golden zone between 80 and 140 cm so pickers stop bending and reaching on the most frequent picks.",
+        "Cases of 15 kg or more go on floor level so pickers never lift heavy cases above waist height.",
+        "The MILP needed 47 minutes for the 12,000 Padova locations, longer than the nightly planning window allows."
+      ]
+    },
+    {
+      "cat": "proof",
+      "text": "Which file holds the result of scoring slots by item weight?",
+      "step": "wscore",
+      "file": "src/score_weight/weight.py"
+    },
+    {
+      "cat": "deferred",
+      "text": "What happened to the seasonal velocity adjustment that was planned with slot scoring?",
+      "step": "season",
+      "milestone": "m4"
+    },
+    {
+      "cat": "update",
+      "text": "Which decision holds today on how SKUs are assigned to slots?",
+      "step": "greedy"
+    },
+    {
+      "cat": "abstain",
+      "text": "Which voice-picking vendor was selected for the night-shift pilot?"
+    },
+    {
+      "cat": "continue",
+      "text": "Resume the work: make the first change you would make.",
+      "next": "utilrep",
+      "dir": "src/utilization/"
+    }
+  ]
+}
