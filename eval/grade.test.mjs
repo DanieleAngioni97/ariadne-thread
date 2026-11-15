@@ -72,3 +72,11 @@ test('continue: a file of the next step, or a new one in its folder, and nothing
   assert.equal(gradeContinue(q, [], ['src/report.js']).status, 'wrong')
   assert.equal(gradeContinue(q, ['src/totals/index.js', 'src/cache/index.js'], []).status, 'wrong')
 })
+
+test('continue: starting the open step from its tests counts, in tests/<area>/ or test/<area>/', () => {
+  const q = { cat: 'continue', answer: { dir: 'src/totals/', allowed: ['src/totals/index.js'], forbidden: ['src/cache/index.js'] } }
+  assert.equal(gradeContinue(q, [], ['tests/totals/report.test.js']).status, 'correct')
+  assert.equal(gradeContinue(q, ['test/totals/index.test.js'], []).status, 'correct')
+  assert.equal(gradeContinue(q, [], ['tests/cache/index.test.js']).status, 'wrong')
+  assert.equal(gradeContinue(q, ['src/cache/index.js'], ['tests/totals/report.test.js']).status, 'wrong')
+})

@@ -85,12 +85,17 @@ export function grade(q, output, ctx) {
   }
 }
 
-/** Continua: the files the subject modified and added in its copy (plan § 5, rilievo M4). */
+/**
+ * Continua: the files the subject modified and added in its copy (plan § 5, rilievo M4). Starting from the
+ * open step's tests counts too: handoff notes often say "add tests under tests/<area>/" first.
+ */
 export function gradeContinue(q, modified, added) {
   const { dir, allowed, forbidden } = q.answer
   const touched = [...modified, ...added]
   if (touched.length === 0) return result('wrong', touched)
   if (touched.some(f => forbidden.includes(f))) return result('wrong', touched)
-  const next = modified.some(f => allowed.includes(f)) || added.some(f => f.startsWith(dir))
+  const area = dir.split('/').filter(Boolean).at(-1)
+  const tests = f => f.startsWith(`tests/${area}/`) || f.startsWith(`test/${area}/`)
+  const next = modified.some(f => allowed.includes(f) || tests(f)) || added.some(f => f.startsWith(dir) || tests(f))
   return result(next ? 'correct' : 'wrong', touched)
 }
