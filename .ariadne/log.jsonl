@@ -162,3 +162,38 @@
 {"at":"2026-11-15T12:34Z","id":"m4.4.6","op":"fill","text":"completato m4.4.6: detail"}
 {"at":"2026-11-15T12:37Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 6ccc3f8","proof":[{"type":"commit","ref":"6ccc3f8"}]}
 {"at":"2026-11-15T12:38Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 3be8e42","proof":[{"type":"commit","ref":"3be8e42"}]}
+{"at":"2026-11-15T12:40Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 964f21f","proof":[{"type":"commit","ref":"964f21f"}]}
+{"at":"2026-11-15T12:56Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 3fafb3e","proof":[{"type":"commit","ref":"3fafb3e"}]}
+{"at":"2026-11-15T12:59Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 9e0a34e","proof":[{"type":"commit","ref":"9e0a34e"}]}
+{"at":"2026-11-15T13:00Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit ad0b4b9","proof":[{"type":"commit","ref":"ad0b4b9"}]}
+{"at":"2026-11-15T13:01Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 126fb37","proof":[{"type":"commit","ref":"126fb37"}]}
+{"at":"2026-11-15T13:03Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit cba5c7f","proof":[{"type":"commit","ref":"cba5c7f"}]}
+{"at":"2026-11-15T13:03Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit ff6c25e","proof":[{"type":"commit","ref":"ff6c25e"}]}
+{"at":"2026-11-15T13:12Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit b21454f","proof":[{"type":"commit","ref":"b21454f"}]}
+{"at":"2026-11-15T13:12Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit bb3b98d","proof":[{"type":"commit","ref":"bb3b98d"}]}
+{"at":"2026-11-15T13:19Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 07ae0f3","proof":[{"type":"commit","ref":"07ae0f3"}]}
+{"at":"2026-11-15T13:23Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 9a2ac29","proof":[{"type":"commit","ref":"9a2ac29"}]}
+{"at":"2026-11-15T13:23Z","id":"m4.4.6","op":"close","text":"chiuso m4.4.6 Scenari di test, E3 e trascrizioni congelati: 12 scenari di test, prima, parafrasi e 48 turni di E2 congelati; revisione su 4 scenari, grader del Continua corretto; gli scenari di E3 restano a m4.4.10","proof":[{"type":"commit","ref":"9a2ac29"}]}
+{"at":"2026-11-15T13:23Z","id":"m4.4.7","op":"start","text":"iniziato m4.4.7 Commit di pre-registrazione"}
+{"at":"2026-11-15T13:24Z","id":"m4.4.7","op":"close","text":"chiuso m4.4.7 Commit di pre-registrazione: pre-registrazione committata con manifest degli hash, prima di ogni prova sul test","proof":[{"type":"commit","ref":"31beca9"}]}
+{"at":"2026-11-15T13:24Z","id":"m4.4.8","op":"start","text":"iniziato m4.4.8 Approvazione del budget"}
+{"at":"2026-11-15T13:24Z","id":"m4.4.8","op":"close","text":"chiuso m4.4.8 Approvazione del budget: delegato dall'utente: tetto 30 $ a listino, previsti ~26 $","proof":[{"type":"message","ref":"chat 2026-11-15: «Fai pure tutto fino a prima del push», tetto 30 $ dichiarato"}]}
+{"at":"2026-11-15T13:24Z","id":"m4.4.9","op":"start","text":"iniziato m4.4.9 E1, E1b, E2 e analisi"}
+{"at":"2026-11-15T13:24Z","id":"m4.4.8","op":"fill","text":"prova per m4.4.8: file docs/valutazione/preregistrazione.md#spesa","proof":[{"type":"file","ref":"docs/valutazione/preregistrazione.md#spesa"}]}
+{"at":"2026-11-15T13:25Z","id":"m4.4.9","op":"fill","text":"prova per m4.4.9: commit bc099d0","proof":[{"type":"commit","ref":"bc099d0"}]}
+{"at":"2026-11-15T13:49Z","id":"m4.4.9","op":"fill","text":"prova per m4.4.9: commit 3321efb","proof":[{"type":"commit","ref":"3321efb"}]}
+{"at":"2026-11-15T14:29Z","id":"m4.4.11","op":"fill","text":"completato m4.4.11: detail"}
+{"at":"2026-11-15T14:29Z","id":"m4.4.12","op":"plan","text":"piano per Rapporto: Rapporto completo in rapporto.md → Pagina rapporto.html"}
+{"at":"2026-11-15T14:30Z","id":"m4.4.12","op":"fill","text":"completato m4.4.12: detail"}
+{"at":"2026-11-15T14:31Z","id":"m4.4.11","op":"close","text":"chiuso m4.4.11 Confronto D4: tabella a 13 criteri su 13 strumenti; ariadne unico su prova+perché in git, perde su maturità, team, issue, editor","proof":[{"type":"commit","ref":"f824e7f"}]}
+{"at":"2026-11-15T14:42Z","id":"m4.4.12.1","op":"start","text":"iniziato m4.4.12.1 Rapporto completo in rapporto.md"}
+{"at":"2026-11-15T14:42Z","id":"m4.4.9","op":"close","text":"chiuso m4.4.9 E1, E1b, E2 e analisi: E1 H1 passa, H2 non significativa (0,95); E2 adotta l'osservatore (recall 0,93, falsi allarmi 0,04); spesa 26,3 $","proof":[{"type":"commit","ref":"707aa43"}]}
+{"at":"2026-11-15T14:42Z","id":"m4.4.12.1","op":"fill","text":"prova per m4.4.12.1: commit 45b7a08","proof":[{"type":"commit","ref":"45b7a08"}]}
+{"at":"2026-11-15T14:42Z","id":"m4.4.12.2","op":"start","text":"iniziato m4.4.12.2 Pagina rapporto.html"}
+{"at":"2026-11-15T14:42Z","id":"m4.4.12.2","op":"fill","text":"prova per m4.4.12.2: commit b6911a4","proof":[{"type":"commit","ref":"b6911a4"}]}
+{"at":"2026-11-15T14:52Z","id":"m4.4.12.1","op":"close","text":"chiuso m4.4.12.1 Rapporto completo in rapporto.md: rapporto.md completo con E1, E2, confronto, limiti e prossimi passi","proof":[{"type":"commit","ref":"0806fb5"}]}
+{"at":"2026-11-15T14:52Z","id":"m4.4.12.2","op":"fill","text":"prova per m4.4.12.2: commit 38e73d4","proof":[{"type":"commit","ref":"38e73d4"}]}
+{"at":"2026-11-15T14:56Z","id":"m4.4.12.2","op":"close","text":"chiuso m4.4.12.2 Pagina rapporto.html: prima versione della pagina; l'utente chiede una revisione severa della narrazione","proof":[{"type":"commit","ref":"38e73d4"}]}
+{"at":"2026-11-15T14:56Z","id":"m4.4.12","op":"plan","text":"piano per Rapporto: Revisione severa della narrazione di rapporto.html → Dieci slide"}
+{"at":"2026-11-15T14:57Z","id":"m4.4.12.3","op":"fill","text":"completato m4.4.12.3: what, detail"}
+{"at":"2026-11-15T14:57Z","id":"m4.4.12.4","op":"fill","text":"completato m4.4.12.4: what, detail"}
