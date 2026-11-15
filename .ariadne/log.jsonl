@@ -350,3 +350,11 @@
 {"at":"2026-11-15T18:34Z","id":"m4.4.12.7","op":"start","text":"iniziato m4.4.12.7 Revisione comunicativa delle slide"}
 {"at":"2026-11-15T18:36Z","id":"m4.4.12.7","op":"close","text":"chiuso m4.4.12.7 Revisione comunicativa delle slide: revisione a freddo: 6 problemi alti (risultati e prova), 7 medi, 3 bassi, 3 trasversali","proof":[{"type":"file","ref":"~/ariadne-report/revisione-slide.md"}]}
 {"at":"2026-11-15T18:36Z","id":"m4.4.12.8","op":"start","text":"iniziato m4.4.12.8 Logo più semplice"}
+{"at":"2026-11-15T18:42Z","id":"m4.4.12","op":"plan","text":"piano per Rapporto: Brief comune per i tre agenti → Discussione e scaletta approvata → Costruzione e verifica delle slide"}
+{"at":"2026-11-15T18:42Z","id":"m4.4.12.8","op":"replace","text":"sostituito m4.4.12.8 Logo più semplice con m4.4.12.16"}
+{"at":"2026-11-15T18:42Z","id":"m4.4.12.9","op":"replace","text":"sostituito m4.4.12.9 Barra di avanzamento a gomitolo con m4.4.12.16"}
+{"at":"2026-11-15T18:42Z","id":"m4.4.12.10","op":"replace","text":"sostituito m4.4.12.10 Labirinto corretto: piano, fatto, deviazione, arrivo con m4.4.12.16"}
+{"at":"2026-11-15T18:42Z","id":"m4.4.12.11","op":"replace","text":"sostituito m4.4.12.11 Slide come mini guida alle funzioni principali con m4.4.12.15"}
+{"at":"2026-11-15T18:42Z","id":"m4.4.12.12","op":"replace","text":"sostituito m4.4.12.12 Risultati chiarissimi con m4.4.12.15"}
+{"at":"2026-11-15T18:42Z","id":"m4.4.12.13","op":"move","text":"spostato m4.4.12.13 sotto m4.4.12 (correzione tua)"}
+{"at":"2026-11-15T18:42Z","id":"m4.4.12.14","op":"start","text":"iniziato m4.4.12.14 Brief comune per i tre agenti"}
