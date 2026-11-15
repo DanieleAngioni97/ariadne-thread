@@ -9,7 +9,7 @@ prima volta; dopo si usa senza spiegarlo di nuovo.*
 ariadne tiene traccia di dove sta il lavoro con un agente di coding, del perché di ogni scelta e delle prove,
 senza che nessuno scriva note a mano. Su 12 progetti di prova un agente che riprende il lavoro con ariadne
 risponde giusto quanto con le note scritte a mano (98,6% contro 96,5%), spende un po' meno (−5%, differenza
-non significativa) e riprende il lavoro aperto meglio (24 su 24 contro 14 su 24; 20 su 24 con un criterio più
+non dimostrata) e riprende il lavoro aperto meglio (24 su 24 contro 14 su 24; 20 su 24 con un criterio più
 largo). Un modello piccolo che controlla il filo trova il 93% degli errori, con 2 falsi allarmi su 48. Il vantaggio principale non è nei numeri di ripresa: è che le note non vanno più scritte né chieste.
 
 ## 1. Il problema
@@ -154,12 +154,12 @@ quanto con le note scritte a mano, e a che costo?
   sulla domanda di prova: 5 in *prima*, 2 in ariadne. Nessuna risposta sbagliata.
 - **Costo.** ariadne costa meno in 8 scenari su 12 (da −19% a +11%). Costa meno dove *prima* deve cercare nel
   LOG: decisione attuale (−23%), rinvii (−19%), dove sei (−10%). Costa uguale su perché, prova e Continua.
-- **Continua.** Con il criterio pre-registrato ariadne vince 24 a 14. Ma 6 dei 10 errori di *prima* sono
+- **Continua.** Con il criterio pre-registrato ariadne riprende il passo giusto 24 volte su 24, *prima* 14. Ma 6 dei 10 errori di *prima* sono
   inizi giusti in un file fuori dalla cartella del passo, come `tests/test_letters.py`: con un criterio che
   accetta ogni file che nomina l'area del passo, *prima* sale a 20. Gli errori veri di *prima* sono due
   scenari su dodici: lavora su un'altra area, o tocca solo la configurazione.
 
-### L'osservatore (E2)
+### L'osservatore (E2, prototipo non ancora nel prodotto)
 
 Un **osservatore** è un modello piccolo (Haiku 5.5) che legge l'ultimo turno dell'agente e la vista del filo
 e segnala se il filo è rimasto indietro: un passo finito non registrato, una deviazione non annotata, la
