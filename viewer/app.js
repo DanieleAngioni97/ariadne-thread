@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import {
-  Background, BaseEdge, Controls, Handle, MarkerType, Position, ReactFlow, ReactFlowProvider, useReactFlow,
+  Background, BaseEdge, Handle, MarkerType, Position, ReactFlow, ReactFlowProvider, useReactFlow,
 } from '@xyflow/react'
 import ELK from 'elkjs'
 import htm from 'htm'
@@ -30,6 +30,7 @@ const heightOf = node => {
 }
 const PROOFS_SHOWN = 3
 const RELOAD_MS = 2000
+const PANEL_WIDTH = 400
 
 // The repo as it is now: `ariadne view` serves .ariadne/ and tells the page where the repo lives.
 // The files are read again every RELOAD_MS; `load` swaps the graph in when they change.
@@ -302,15 +303,18 @@ function RowValue({ row, onSelect }) {
   return html`<p>${value}</p>`
 }
 
-function Panel({ node, expanded, focus, onSelect, onToggle, onFocus }) {
+function Panel({ node, open, expanded, focus, onSelect, onToggle, onFocus, onClose }) {
   const inside = childCount(node.id)
   const from = cameFrom(data, node.id)
   const led = ledTo(data, node.id)
   const isCurrent = node.id === data.current
   const problem = problems.get(node.id)
   return html`
-    <aside class="panel" aria-label=${t.panel.label}>
+    <aside class="panel" aria-label=${t.panel.label} aria-hidden=${!open} inert=${!open || undefined}>
       <header class=${`panel-head k-${kindOf(node)}`}>
+        <button class="close" aria-label=${t.panel.close} title=${t.panel.closeHint} onClick=${onClose}>
+          <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" /></svg>
+        </button>
         <div class=${`status ${isCurrent ? 'is-here' : ''}`}>
           <${Badge} node=${node} size=${18} />
           <span>${labelText(node)}${isCurrent ? ` · ${t.here}` : ''}</span>
@@ -334,8 +338,8 @@ function Panel({ node, expanded, focus, onSelect, onToggle, onFocus }) {
           <h3>${t.panel.inside}</h3>
           <p>${t.panel.steps(inside)}</p>
           <div class="row-actions">
-            <button class="action" onClick=${() => onToggle(node.id)}>${expanded.has(node.id) ? t.panel.closeSteps : t.panel.openSteps}</button>
-            ${focus !== node.id && html`<button class="action quiet" onClick=${() => onFocus(node.id)}>${t.panel.showOnly}</button>`}
+            <button class="link" onClick=${() => onToggle(node.id)}>${expanded.has(node.id) ? t.panel.closeSteps : t.panel.openSteps}</button>
+            ${focus !== node.id && html`<button class="link" onClick=${() => onFocus(node.id)}>${t.panel.showOnly}</button>`}
           </div>
         </section>`}
 
@@ -346,6 +350,14 @@ function Panel({ node, expanded, focus, onSelect, onToggle, onFocus }) {
             <div class="chips">${from.map(n => html`<${Chip} key=${n.id} node=${n} onSelect=${onSelect} />`)}</div>`}
           ${led.length > 0 && html`<div class="sub">${t.panel.ledTo}</div>
             <div class="chips">${led.map(n => html`<${Chip} key=${n.id} node=${n} onSelect=${onSelect} />`)}</div>`}
+        </section>`}
+
+      ${isCurrent && agentSummary && html`
+        <section>
+          <details class="agent-summary">
+            <summary>${t.agentReads}</summary>
+            <pre>${agentSummary}</pre>
+          </details>
         </section>`}
     </aside>`
 }
@@ -389,12 +401,14 @@ function Invalid() {
     </div>`
 }
 
-/** What the agent reads at every prompt (R7), hidden until asked. */
-function AgentSummary({ onClose }) {
+/** Zoom out, zoom in, fit: three small buttons next to the legend. */
+function ZoomTools({ onFit }) {
+  const flow = useReactFlow()
   return html`
-    <div class="agent-summary" role="dialog" aria-label=${t.agentReads}>
-      <div class="agent-summary-head"><b>${t.agentReads}</b><button class="action quiet" onClick=${onClose}>${t.closeSummary}</button></div>
-      <pre>${agentSummary}</pre>
+    <div class="zoom" role="group" aria-label=${t.zoom.label}>
+      <button class="tool" aria-label=${t.zoom.out} title=${t.zoom.out} onClick=${() => flow.zoomOut({ duration: 160 })}>−</button>
+      <button class="tool" aria-label=${t.zoom.in} title=${t.zoom.in} onClick=${() => flow.zoomIn({ duration: 160 })}>+</button>
+      <button class="tool" onClick=${onFit}>${t.zoom.fit}</button>
     </div>`
 }
 
@@ -412,12 +426,19 @@ function App() {
   // Bumped when .ariadne/ changes on disk, so the graph is drawn again (F5 is never needed).
   const [version, setVersion] = useState(0)
   const [tip, setTip] = useState(null)
-  const [summaryOpen, setSummaryOpen] = useState(false)
+  // The panel slides away for a full-width graph; choosing anything brings it back.
+  const [panelOpen, setPanelOpen] = useState(true)
   const tipTimer = useRef(null)
   // Where to fly after the next layout (a step chosen from the panel or the breadcrumb), and the step just reached.
   const [flyTo, setFlyTo] = useState(null)
   const [arriving, setArriving] = useState(null)
   const flow = useReactFlow()
+
+  // Fitting leaves the panel's strip free while the panel is open.
+  const padding = useCallback(
+    (side = 0.12) => (panelOpen ? { top: side, bottom: side, left: side, right: `${PANEL_WIDTH + 24}px` } : side),
+    [panelOpen])
+  const fit = useCallback(() => flow.fitView({ padding: padding(), duration: 240 }), [padding])
 
   // A reload keeps the viewport: only a change you made refits the view.
   const drawn = useRef(version)
@@ -428,7 +449,7 @@ function App() {
     layout(expanded, focus, revealed).then(next => {
       if (!alive) return
       setGraph(next)
-      if (!flyTo && !reloaded) requestAnimationFrame(() => flow.fitView({ padding: 0.12, duration: 240 }))
+      if (!flyTo && !reloaded) requestAnimationFrame(fit)
     })
     return () => { alive = false }
   }, [expanded, focus, revealed, version])
@@ -449,7 +470,7 @@ function App() {
   // Zoom onto the chosen step once it is drawn, then make it pulse so the eye lands on it.
   useEffect(() => {
     if (!flyTo || !graph.nodes.some(n => n.id === flyTo)) return
-    requestAnimationFrame(() => flow.fitView({ nodes: [{ id: flyTo }], padding: 0.6, maxZoom: 1.1, duration: 500 }))
+    requestAnimationFrame(() => flow.fitView({ nodes: [{ id: flyTo }], padding: padding(0.6), maxZoom: 1.1, duration: 500 }))
     setArriving(flyTo)
     setFlyTo(null)
     const timer = setTimeout(() => setArriving(null), 1600)
@@ -477,8 +498,20 @@ function App() {
     setRevealed(prev => (keys.every(k => prev.has(k)) ? prev : new Set([...prev, ...keys])))
   }, [])
 
-  const choose = useCallback(id => {
+  const select = useCallback(id => {
     setSelected(id)
+    setPanelOpen(true)
+  }, [])
+
+  // Esc puts the panel away.
+  useEffect(() => {
+    const onKey = e => { if (e.key === 'Escape' && !e.target.closest?.('input')) setPanelOpen(false) }
+    addEventListener('keydown', onKey)
+    return () => removeEventListener('keydown', onKey)
+  }, [])
+
+  const choose = useCallback(id => {
+    select(id)
     setFlyTo(id)
     // Make sure the step is drawn: open everything that contains it and every level it sits in.
     const holders = pathTo(data, id).slice(0, -1).map(n => n.id)
@@ -499,35 +532,37 @@ function App() {
 
   return html`
     <${Ctx.Provider} value=${ctx}>
-      <div class="shell">
+      <div class=${`shell ${panelOpen && node ? 'panel-open' : ''}`}>
         <header class="bar">
           <div class="brand">ariadne<span>·</span></div>
           <nav class="where" aria-label=${t.here}>
             <span class="where-label">${t.here}</span>
-            <span>${data.project}</span>
             ${path.map((n, i) => html`
-              <span class="sep" key=${`s${n.id}`}>›</span>
-              <button key=${n.id} class=${`crumb ${i === path.length - 1 ? 'is-here' : ''}`} onClick=${() => choose(n.id)}>${n.title}</button>`)}
+              ${i > 0 && html`<span class="sep" key=${`s${n.id}`}>›</span>`}
+              <button key=${n.id} class=${`crumb ${i === path.length - 1 ? 'is-here' : ''}`} title=${n.title} onClick=${() => choose(n.id)}>${n.title}</button>`)}
           </nav>
-          ${focus && html`<div class="focus-note">${t.only(byId.get(focus).title)} <button onClick=${() => setFocus(null)}>${t.showAll}</button></div>`}
-          ${agentSummary && html`<button class="action quiet" aria-expanded=${summaryOpen} onClick=${() => setSummaryOpen(o => !o)}>${t.agentReads}</button>`}
-          <div class="levels" role="group" aria-label=${t.detail}>
-            ${['milestones', 'path', 'all'].map(key => html`
-              <button key=${key} aria-pressed=${level === key} onClick=${() => showLevel(key)}>${t.levels[key]}</button>`)}
-          </div>
         </header>
-        <main class="canvas">
+        <main class="stage">
           ${missing && html`<p class="no-graph">${t.noGraph}</p>`}
-          <div class="overlays">
-            <${Invalid} />
-            ${summaryOpen && html`<${AgentSummary} onClose=${() => setSummaryOpen(false)} />`}
+          <div class="overlays"><${Invalid} /></div>
+          <div class="canvas-tools">
+            <div class="seg" role="group" aria-label=${t.detail}>
+              ${['milestones', 'path', 'all'].map(key => html`
+                <button key=${key} aria-pressed=${level === key} onClick=${() => showLevel(key)}>${t.levels[key]}</button>`)}
+            </div>
+            ${focus && html`<div class="focus-note">${t.only(byId.get(focus).title)} <button class="link" onClick=${() => setFocus(null)}>${t.showAll}</button></div>`}
           </div>
           <${ReactFlow}
             nodes=${graph.nodes}
             edges=${graph.edges}
             nodeTypes=${nodeTypes}
             edgeTypes=${edgeTypes}
-            onNodeClick=${(_, n) => n.type !== 'more' && setSelected(n.id)}
+            onNodeClick=${(e, n) => {
+              if (n.type === 'more') return
+              // An open container answers only on its heading: the rest of it pans like the background.
+              if (n.type === 'group' && !e.target.closest('.group-head')) return
+              select(n.id)
+            }}
             onMoveStart=${() => hover(null)}
             nodesDraggable=${false}
             nodesConnectable=${false}
@@ -535,13 +570,15 @@ function App() {
             proOptions=${{ hideAttribution: true }}
           >
             <${Background} gap=${24} size=${1} color="#cfd5dc" />
-            <${Controls} position="bottom-right" showInteractive=${false} />
           <//>
-          ${!missing && html`<${Legend} />`}
+          <div class="bottom-tools">
+            ${!missing && html`<${Legend} />`}
+            <${ZoomTools} onFit=${fit} />
+          </div>
+          ${node && html`<${Panel} node=${node} open=${panelOpen} expanded=${expanded} focus=${focus}
+            onSelect=${choose} onToggle=${toggle} onClose=${() => setPanelOpen(false)}
+            onFocus=${id => { setFocus(id); setExpanded(prev => new Set([...prev, id])) }} />`}
         </main>
-        ${node && html`<${Panel} node=${node} expanded=${expanded} focus=${focus}
-          onSelect=${choose} onToggle=${toggle}
-          onFocus=${id => { setFocus(id); setExpanded(prev => new Set([...prev, id])) }} />`}
       </div>
       <${Tip} tip=${tip} />
     <//>`

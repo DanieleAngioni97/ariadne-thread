@@ -24,7 +24,6 @@ const STRINGS = {
       list: 'No points: the list fills up when you approve the points.',
     },
     agentReads: 'What the agent reads',
-    closeSummary: 'Close',
     more: {
       above: k => `${k} hidden above`,
       below: k => `${k} hidden below`,
@@ -48,8 +47,11 @@ const STRINGS = {
     cues: [
       ['current', 'current step'], ['thread', 'where it comes from'], ['review', 'to confirm'], ['uncertain', 'uncertain proof'],
     ],
+    zoom: { label: 'Zoom', in: 'Zoom in', out: 'Zoom out', fit: 'Fit' },
     panel: {
       label: 'Step details',
+      close: 'Close the panel',
+      closeHint: 'Close (Esc)',
       rows: {
         what: 'What', why: 'Why', detail: 'Detail', status: 'Status', proof: 'Proof', uncertain: 'Uncertain',
         by: 'Decided by', confirmed: 'Confirmed', review: 'To confirm', reentry: 'Returns to',
@@ -89,7 +91,6 @@ const STRINGS = {
       list: 'Nessun punto: la lista si riempie quando approvi i punti.',
     },
     agentReads: "Cosa legge l'agente",
-    closeSummary: 'Chiudi',
     more: {
       above: k => (k === 1 ? '1 nascosto sopra' : `${k} nascosti sopra`),
       below: k => (k === 1 ? '1 nascosto sotto' : `${k} nascosti sotto`),
@@ -113,8 +114,11 @@ const STRINGS = {
     cues: [
       ['current', 'passo corrente'], ['thread', 'da dove viene'], ['review', 'da confermare'], ['uncertain', 'prova incerta'],
     ],
+    zoom: { label: 'Zoom', in: 'Ingrandisci', out: 'Rimpicciolisci', fit: 'Adatta' },
     panel: {
       label: 'Dettagli del passo',
+      close: 'Chiudi il pannello',
+      closeHint: 'Chiudi (Esc)',
       rows: {
         what: 'Cosa', why: 'Perché', detail: 'Dettaglio', status: 'Stato', proof: 'Prova', uncertain: 'Incerto',
         by: 'Deciso da', confirmed: 'Confermato', review: 'Da confermare', reentry: 'Rientra in',
