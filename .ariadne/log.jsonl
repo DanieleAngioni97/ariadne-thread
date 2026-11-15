@@ -341,3 +341,6 @@
 {"at":"2026-11-15T18:17Z","id":"m4.4.12.3.3","op":"start","text":"iniziato m4.4.12.3.3 Nuovo rapporto.html dal testo"}
 {"at":"2026-11-15T18:23Z","id":"m4.4.12.3.3","op":"close","text":"chiuso m4.4.12.3.3 Nuovo rapporto.html dal testo: rapporto.html rifatto dal testo: filo dei capitoli con «sei qui», logo, scheda e barra impaginate, 4 screenshot, 3 grafici con tabella, chiaro/scuro e telefono; copia del vecchio in rapporto-v1.html","proof":[{"type":"file","ref":"~/ariadne-report/rapporto.html"}]}
 {"at":"2026-11-15T18:23Z","id":"m4.4.12.3.4","op":"start","text":"iniziato m4.4.12.3.4 Allineare docs/valutazione/rapporto.md"}
+{"at":"2026-11-15T18:24Z","id":"m4.4.12.3.4","op":"close","text":"chiuso m4.4.12.3.4 Allineare docs/valutazione/rapporto.md: rapporto.md allineato su barra, mappa, decisioni in chat, episodio e controllo a regole","proof":[{"type":"commit","ref":"200f88e"}]}
+{"at":"2026-11-15T18:24Z","id":"m4.4.12.3","op":"close","text":"chiuso m4.4.12.3 Revisione severa della narrazione di rapporto.html: rapporto riscritto: testo semplice, pagina nuova con logo, screenshot e grafici, versione tecnica allineata","proof":[{"type":"file","ref":"~/ariadne-report/rapporto.html"},{"type":"file","ref":"docs/valutazione/rapporto.md"}]}
+{"at":"2026-11-15T18:24Z","id":"m4.4.12.4","op":"start","text":"iniziato m4.4.12.4 Dieci slide"}
