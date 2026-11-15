@@ -28,6 +28,9 @@ const item: Band = {
 
 type Call = readonly string[]
 
+/** What each call asked of the CLI, past `node <cli>`. */
+const args = (calls: Call[]) => calls.map(c => c.slice(2))
+
 /** Stands for the host: `ariadne band` answers `count`, or `item` with --review; every call is kept. */
 function host(on: On, calls: Call[], prompts: string[], exitCode = 0) {
   on('process.run', (_, e) => {
@@ -63,13 +66,13 @@ describe('ariadne band', () => {
       expect(await band.find({ type: 'Text', text: /↺ chiuso m3\.2 Viewer/ })).toBeDefined()
 
       await band.press({ key: 'queue-Approva tutto' })
-      expect(calls).toContainEqual(['node', 'bin/ariadne.mjs', 'confirm', '--all'])
+      expect(args(calls)).toContainEqual(['confirm', '--all'])
 
       await band.press({ key: 'context-Chiudi e torna' })
       expect(prompts).toEqual(['torna'])
 
       await band.press({ key: 'where-Apri il grafo' })
-      expect(calls).toContainEqual(['node', 'bin/ariadne.mjs', 'open'])
+      expect(args(calls)).toContainEqual(['open'])
       await band.unmount()
     })
 
@@ -79,16 +82,27 @@ describe('ariadne band', () => {
       await $.session.start(start)
       const band = await $.ui.mount({ plugin: 'ariadne', surface, ...BAND })
       await band.press({ key: 'queue-Rivedi una per una' })
-      expect(calls).toContainEqual(['node', 'bin/ariadne.mjs', 'band', '--review', '0'])
+      expect(args(calls)).toContainEqual(['band', '--review', '0'])
       expect(await band.find({ type: 'Text', text: /Da confermare 1\/2: x1 Passo/ })).toBeDefined()
 
       await band.press({ key: 'queue-Approva' })
-      expect(calls).toContainEqual(['node', 'bin/ariadne.mjs', 'confirm', 'x1'])
+      expect(args(calls)).toContainEqual(['confirm', 'x1'])
       await band.press({ key: 'queue-Mostra nel grafo' })
-      expect(calls).toContainEqual(['node', 'bin/ariadne.mjs', 'open', 'x1'])
+      expect(args(calls)).toContainEqual(['open', 'x1'])
       await band.unmount()
     })
   }
+
+  test('the CLI runs from the plugin\'s own folder, whatever the session\'s folder', async ($, on) => {
+    const calls: Call[] = []
+    host(on, calls, [])
+    await $.session.start(start)
+    expect(calls.length).toBeGreaterThan(0)
+    for (const call of calls) {
+      expect(call[0]).toBe('node')
+      expect(call[1]).toMatch(/^\/.+\/bin\/ariadne\.mjs$/)
+    }
+  })
 
   test('a rule in the theme subtle color sets the band apart from the chat, when a row is free for it', async ($, on) => {
     host(on, [], [])

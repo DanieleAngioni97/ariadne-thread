@@ -6,7 +6,8 @@ import type { EngineInterface, Register } from 'claude-code'
 
 import type { Action, Band, Row } from '../types'
 
-const CLI = ['node', 'bin/ariadne.mjs']
+/** The CLI shipped in this plugin, run in the session's folder: the project the band is about. */
+const cli = ($: EngineInterface, args: readonly string[]) => $.process.run(['node', `${$.plugin.root}/bin/ariadne.mjs`, ...args])
 
 const band = atom({ plugin: 'ariadne', key: 'band' } as const, null)
 const review = atom({ plugin: 'ariadne', key: 'review' } as const, null)
@@ -17,7 +18,7 @@ async function refresh($: EngineInterface): Promise<void> {
   const args = index === null ? ['band'] : ['band', '--review', String(index)]
   let next: Band | null = null
   try {
-    const { exitCode, stdout } = await $.process.run([...CLI, ...args])
+    const { exitCode, stdout } = await cli($, args)
     next = exitCode === 0 ? (JSON.parse(stdout) as Band) : null
   } catch {
     next = null
@@ -27,14 +28,14 @@ async function refresh($: EngineInterface): Promise<void> {
 
 async function act($: EngineInterface, action: Action): Promise<void> {
   if ('run' in action) {
-    await $.process.run([...CLI, ...action.run])
+    await cli($, action.run)
     // Confirming or rejecting an item keeps the place: the next item takes it, or the count comes back.
     if (action.run[1] === '--all') await update($, review, () => null)
   } else if ('say' in action) {
     await $.prompt.submit({ text: action.say, asUser: true })
   } else if ('open' in action) {
     // Through the CLI, which starts the viewer when it is off.
-    await $.process.run([...CLI, 'open', action.open])
+    await cli($, ['open', action.open])
   } else {
     await update($, review, () => action.review)
   }
