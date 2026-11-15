@@ -24,6 +24,9 @@ export function summarize(rows) {
       excluded: count(all, 'excluded'),
       medianTokens: median(valid.map(x => x.tokens)),
       cost: all.reduce((a, x) => a + (x.cost ?? 0), 0),
+      costNorm: valid.reduce((a, x) => a + (x.costNorm ?? 0), 0),
+      medianCostNorm: median(valid.filter(x => x.costNorm != null).map(x => x.costNorm)),
+      asked: { n: valid.filter(x => x.asked === true).length, of: valid.filter(x => x.asked !== undefined).length },
     }
   }
   out.ceiling = out.prima.correct.share > CEILING && out.ariadne.correct.share > CEILING

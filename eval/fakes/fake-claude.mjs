@@ -31,6 +31,8 @@ if (process.env.FAKE_HANDOFF && !checking) {
   writeFileSync('LOG.md', (existsSync('LOG.md') ? readFileSync('LOG.md', 'utf8') : '# Log\n') + '- a milestone\n')
 }
 const answer = checking ? (process.env.FAKE_CHECK ?? '{"changes":[]}') : process.env.FAKE_ANSWER ?? 'done'
-emit({ type: 'assistant', message: { content: [{ type: 'text', text: answer }] } })
+// FAKE_FIRST_READS: the cache reads of the first call, a prefix another trial warmed.
+const first = process.env.FAKE_FIRST_READS ? { usage: { cache_read_input_tokens: Number(process.env.FAKE_FIRST_READS) } } : {}
+emit({ type: 'assistant', message: { content: [{ type: 'text', text: answer }], ...first } })
 if (process.env.FAKE_ERROR) { emit({ type: 'result', subtype: 'error', is_error: true, result: 'usage limit' }); process.exit(1) }
 emit({ type: 'result', subtype: 'success', is_error: false, result: answer, total_cost_usd: 0.01, usage: { input_tokens: 10, cache_creation_input_tokens: 100, cache_read_input_tokens: 1000, output_tokens: 5 } })

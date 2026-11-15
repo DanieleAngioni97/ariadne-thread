@@ -8,6 +8,7 @@ import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 
+import { normalizedCost } from './cost.mjs'
 import { grade, gradeContinue } from './grade.mjs'
 
 const CONDITIONS = ['prima', 'ariadne']
@@ -136,13 +137,17 @@ export function trial({ fixture, condition, q, key, model, seed, bin = 'claude',
     const away = outside(events, copy)
     const u = result?.usage ?? {}
     const excluded = !result || result.is_error ? 'error' : away.length ? 'outside' : !Object.values(injected).every(Boolean) ? 'no-injection' : null
+    const changed = edits ? changedFiles(copy) : null
     const graded = !result ? { status: 'format', value: null }
-      : edits ? (({ modified, added }) => gradeContinue(q, modified, added))(changedFiles(copy))
+      : edits ? gradeContinue(q, changed.modified, changed.added)
       : grade(q, result.result ?? '', { ...key, order })
+    // Autonomy (§ 0): on Continua, an agent that changed nothing and ended on a question stopped to ask.
+    const asked = edits ? changed.modified.length + changed.added.length === 0 && /\?\s*$/.test(result?.result ?? '') : undefined
+    const firstReads = events.find(e => e.type === 'assistant')?.message?.usage?.cache_read_input_tokens ?? 0
     return {
       id, condition, cat: q.cat, phrasing, model, seed, status: graded.status, value: graded.value, order, excluded, outside: away, injected, attempts,
       tokens: (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0) + (u.output_tokens ?? 0),
-      cost: result?.total_cost_usd ?? null, ms: Date.now() - started,
+      cost: result?.total_cost_usd ?? null, costNorm: result ? normalizedCost(model, u, firstReads) : null, asked, ms: Date.now() - started,
     }
   } finally {
     rmSync(copy, { recursive: true, force: true })

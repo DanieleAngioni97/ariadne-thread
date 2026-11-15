@@ -24,3 +24,15 @@ test('the ceiling is reached when both conditions are above 90% on the question 
   const rows = [...Array(10)].flatMap(() => [r('prima', 'where', 'correct'), r('ariadne', 'where', 'correct')])
   assert.equal(summarize(rows).ceiling, true)
 })
+
+test('summary: normalized cost per condition, and how many Continua stopped to ask', () => {
+  const rows = [
+    r('prima', 'where', 'correct', { costNorm: 0.02 }), r('prima', 'continue', 'wrong', { costNorm: 0.04, asked: true }),
+    r('ariadne', 'where', 'correct', { costNorm: 0.01 }), r('ariadne', 'continue', 'correct', { costNorm: 0.03, asked: false }),
+  ]
+  const s = summarize(rows)
+  assert.equal(s.prima.costNorm, 0.06)
+  assert.equal(s.ariadne.medianCostNorm, 0.02)
+  assert.deepEqual(s.prima.asked, { n: 1, of: 1 })
+  assert.deepEqual(s.ariadne.asked, { n: 0, of: 1 })
+})

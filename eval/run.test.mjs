@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
+import { normalizedCost } from './cost.mjs'
 import { generate } from './generate.mjs'
 import { promptFor, runFixture, schedule, settingsFor, trial } from './run.mjs'
 
@@ -94,4 +95,13 @@ test('a run stops at an API error without recording it, and the next run skips w
   const lines = readFileSync(join(out, 'results.jsonl'), 'utf8').trimEnd().split('\n').map(l => JSON.parse(l))
   assert.equal(new Set(lines.map(l => l.id)).size, lines.length)
   assert.ok(lines.every(l => l.id.startsWith(`${fixture.dir.split('/').at(-1)}-original-`)))
+})
+
+test('a trial records the normalized cost from its first call, and whether Continua stopped to ask instead of working', () => {
+  const t = (question, env) => trial({ fixture: fixture.dir, condition: 'ariadne', q: question, key: fixture.key, model: 'claude-haiku-5-5', bin: FAKE, env, seed: 1 })
+  const r = t(q('where'), { FAKE_ANSWER: 'RISPOSTA: x', FAKE_FIRST_READS: '600' })
+  assert.equal(r.costNorm, normalizedCost('claude-haiku-5-5', { input_tokens: 10, cache_creation_input_tokens: 100, cache_read_input_tokens: 1000, output_tokens: 5 }, 600))
+  assert.equal(r.asked, undefined)
+  assert.equal(t(q('continue'), { FAKE_ANSWER: 'Should I finish the totals check first?' }).asked, true)
+  assert.equal(t(q('continue'), { FAKE_ANSWER: 'Done. Shall I go on?', FAKE_WRITE: 'src/totals/extra.js' }).asked, false)
 })
