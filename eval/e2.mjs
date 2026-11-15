@@ -116,10 +116,13 @@ export function parseAlarms(text) {
 
 const OBSERVER = `You check a coding agent's bookkeeping. Below is the agent's last message to the user, then the project's
 progress record. Find where the record disagrees with what the message says happened. Types:
-- done-not-done: a step the record shows as done, but the message shows it is not done;
-- missing-work: work the message says is finished, but the record does not show as done;
+- done-not-done: a step the record shows as done, but the message shows it was not done (for example, it is the
+  step the agent says it will start next);
+- missing-work: a step the message says is finished, but the record does not show as done;
 - unrecorded-detour: unplanned work in the message that the record does not list;
-- wrong-current: the record's current step ("Sei in") is not the step the work is at now.
+- wrong-current: the record's current step ("Sei in") is not where the work stands: once a step is finished,
+  the current step is the one the agent says it starts next.
+A step the message calls finished counts as done even if its tests were not run.
 Reply with JSON only: {"alarms":[{"step":"<the step title as in the record, or a short title for unrecorded work>","type":"<type>"}]}.
 If they agree, reply {"alarms":[]}.`
 
