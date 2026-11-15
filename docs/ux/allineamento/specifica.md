@@ -194,21 +194,31 @@ Stati del viewer:
 
 ### Riassunto per l'agente (R7)
 
-Calcolato da `ariadne summary`, mai scritto da un modello. Iniettato all'avvio, dopo `/clear` e
-la compattazione, e a ogni turno. Formato (dal prototipo):
+Calcolato da `ariadne summary`, mai scritto da un modello. A ogni turno, ma solo se è cambiato da
+quello che la sessione ha già ricevuto (`summary --hook`, per `session_id`). Formato (dal prototipo):
 
 ```
 Sei in: <milestone> › <passo> › <nodo> (<stato>)
 Da dove viene (solo le dipendenze):
 - <id> <titolo>: <what> [(incerto: <motivo>)]
 Rientri in sospeso: nessuno | - <titolo> → rientra in <id>
-Da rivedere al rientro: c da confermare, d da decidere   ← solo se ci sono
 Prossimo: <id> <titolo> | nessuno nel piano
 Per approfondire: ariadne show <id> · ariadne why <id>
 ```
 
 Al più 3 dipendenze, le più vicine. Oltre 300 token si tagliano prima le dipendenze più lontane,
-mai «Sei in», i rientri e «Prossimo».
+mai «Sei in», i rientri e «Prossimo». La coda da confermare non c'è: è per la persona (banda), e nel
+pilota 5 faceva fermare l'agente a chiedere (2026-11-15).
+
+**Scheda di stato** (`ariadne card`, 2026-11-15). All'avvio, dopo `/clear` e la compattazione,
+al posto del riassunto: il passo aperto e cosa resta, il prossimo, i rientri; la milestone corrente
+passo per passo con stato, cosa, perché e file (dai commit); le decisioni sostituite e i rinvii di
+tutto il progetto; le altre milestone in una riga. Al più 3500 caratteri, come uno STATE.md: oltre,
+le altre milestone perdono l'obiettivo e i passi fatti restano col solo titolo. Lo stato di una
+milestone si ricava dai suoi passi. La stessa scheda con tutte le milestone per intero è la vista
+`.ariadne/STATE.md`, riscritta a ogni modifica del grafo e fuori da git: una riga per nodo, per
+Read e grep. Motivo: nel pilota 6 l'agente con il solo riassunto spendeva il 21% in più di *prima*
+in turni di esplorazione (`eval/pilot.md`).
 
 ### Rientro (R26)
 

@@ -1,17 +1,19 @@
 #!/usr/bin/env node
 // ariadne: the command line over .ariadne/ in the current directory.
-// Commands: docs/implementazione.md § m3.5 and § m3.6. `summary` and `sync` always exit 0: a hook must
+// Commands: docs/implementazione.md § m3.5 and § m3.6. `card`, `summary` and `sync` always exit 0: a hook must
 // never block the prompt or a tool call.
 
 import { spawn, spawnSync } from 'node:child_process'
-import { appendFileSync, existsSync, readFileSync, statSync, writeFileSync } from 'node:fs'
-import { homedir } from 'node:os'
+import { createHash } from 'node:crypto'
+import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 
 import { apply } from '../src/apply.mjs'
 import { band } from '../src/band.mjs'
+import { card, view } from '../src/card.mjs'
 import { parse } from '../src/graph.mjs'
 import { show, why } from '../src/inspect.mjs'
 import { openViewer } from '../src/open.mjs'
@@ -24,10 +26,12 @@ import { validate } from '../src/validate.mjs'
 const GRAPH = '.ariadne/graph.jsonl'
 const THREAD = '.ariadne/thread.json'
 const LOG = '.ariadne/log.jsonl'
+const VIEW = '.ariadne/STATE.md'
+const HISTORY = 2000
 const RECENT_COMMITS = 20
 const VIEW_PORT = 8790
 const USAGE = `uso: ariadne <comando>
-  summary · show <id> · why <id> · log [n] · validate [file]
+  card [--hook] · summary [--hook] · show <id> · why <id> · log [n] · validate [file]
   plan <parent> "<passo>"… --ref "<approvazione>"
   start <id> · close <id> "<esito>" (--commit sha | --file path | --message testo)
   add <kind> "<titolo>" --what "…" [--under id] [--after a,b] [--why …] [--detail …] [--reentry id] [--id x] [--start | --done]
@@ -70,6 +74,35 @@ function commits() {
   })
 }
 
+/** The files each commit touched, looked up by any prefix of its sha; empty outside git. */
+function commitFiles() {
+  const r = spawnSync('git', ['log', `-n${HISTORY}`, '--name-only', '--format=%x1d%H'], { encoding: 'utf8' })
+  const all = r.status === 0 ? r.stdout.split('\x1d').filter(Boolean).map(e => e.trim().split('\n')) : []
+  return { get: ref => all.find(([sha]) => sha.startsWith(ref))?.slice(1).filter(Boolean) }
+}
+
+/** Rewrites .ariadne/STATE.md, the view for Read and grep; a .gitignore keeps it out of git. */
+function writeView(nodes, thread) {
+  writeFileSync(VIEW, view(nodes, thread, commitFiles()) + '\n')
+  if (!existsSync('.ariadne/.gitignore')) writeFileSync('.ariadne/.gitignore', 'STATE.md\n')
+}
+
+/** What a hook already told this session, by session id; kept outside the repository. */
+function told(session) {
+  const dir = join(tmpdir(), 'ariadne-sessions')
+  mkdirSync(dir, { recursive: true })
+  const file = join(dir, createHash('sha1').update(`${process.cwd()}\0${session}`).digest('hex'))
+  const hash = text => createHash('sha1').update(text).digest('hex')
+  return {
+    same: text => existsSync(file) && readFileSync(file, 'utf8') === hash(text),
+    remember: text => writeFileSync(file, hash(text)),
+  }
+}
+
+const sessionOf = () => {
+  try { return JSON.parse(readFileSync(0, 'utf8')).session_id ?? null } catch { return null }
+}
+
 /** Applies `ops` and writes graph, thread and log; returns the log entries or the refusal errors. */
 function commit(ops, by) {
   const text = readFileSync(GRAPH, 'utf8')
@@ -79,6 +112,7 @@ function commit(ops, by) {
   if (r.text !== text) writeFileSync(GRAPH, r.text)
   if (JSON.stringify(r.thread) !== JSON.stringify(thread)) writeFileSync(THREAD, JSON.stringify(r.thread, null, 2) + '\n')
   if (r.log.length) appendFileSync(LOG, r.log.map(l => JSON.stringify(l)).join('\n') + '\n')
+  if (r.text !== text || JSON.stringify(r.thread) !== JSON.stringify(thread)) writeView(parse(r.text), r.thread)
   return r
 }
 
@@ -107,8 +141,33 @@ function bandJson(review) {
   console.log(JSON.stringify({ viewer: VIEW_PORT, rows: band({ text, thread, log, review: Number.isInteger(index) ? index : null }) }))
 }
 
-function summary() {
-  if (!existsSync(GRAPH)) return console.log("ariadne: nessun grafo in .ariadne/ · l'agente lo crea con il primo piano")
+const NO_GRAPH = "ariadne: nessun grafo in .ariadne/ · l'agente lo crea con il primo piano"
+
+/** The card at the start of a session; with `hook`, the session remembers the summary it stands for. */
+function cardOut(hook) {
+  if (!existsSync(GRAPH)) return console.log(NO_GRAPH)
+  const nodes = parse(readFileSync(GRAPH, 'utf8'))
+  const thread = readThread(nodes)
+  writeView(nodes, thread)
+  console.log(card(nodes, thread, commitFiles()))
+  const session = hook && sessionOf()
+  if (session) told(session).remember(summaryText())
+}
+
+/** On every prompt; with `hook`, only when it changed since this session last heard it. */
+function summary(hook) {
+  if (!existsSync(GRAPH)) return console.log(NO_GRAPH)
+  const text = summaryText()
+  const session = hook && sessionOf()
+  if (session) {
+    const memory = told(session)
+    if (memory.same(text)) return
+    memory.remember(text)
+  }
+  console.log(text)
+}
+
+function summaryText() {
   const text = readFileSync(GRAPH, 'utf8')
   const nodes = parse(text)
   const out = [summarize(nodes, readThread(nodes))]
@@ -121,7 +180,7 @@ function summary() {
   const recent = commits()
   const k = recent ? untracked(recent) : 0
   if (k > 0) out.push(`⚠ ${k} commit senza Thread: dall'ultimo aggiornamento del grafo`)
-  console.log(out.join('\n'))
+  return out.join('\n')
 }
 
 /** Records the `Thread:` lines of recent commits; one operation at a time, so one bad line blocks nothing. */
@@ -230,9 +289,16 @@ const { positionals: [command, ...args], values } = parsed
 
 if (command === 'summary') {
   try {
-    summary()
+    summary(values.hook)
   } catch (error) {
     console.log(`ariadne: riassunto non disponibile (${error.message})`)
+  }
+}
+else if (command === 'card') {
+  try {
+    cardOut(values.hook)
+  } catch (error) {
+    console.log(`ariadne: scheda non disponibile (${error.message})`)
   }
 }
 else if (command === 'band') {

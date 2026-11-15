@@ -219,3 +219,45 @@ test('close with only a chat message as proof warns that no file holds the resul
   assert.match(r.stderr, /^ariadne: ⚠ a si chiude senza file né commit: dove sta il risultato\? ariadne fill a --file <percorso>\[#sezione\]\n$/)
   assert.equal(run(dir, 'close', 'b', 'B is done.', '--file', 'src/b.mjs').stderr, '')
 })
+
+test('card prints the state card with the files of each commit, and keeps the view in .ariadne/STATE.md out of git', () => {
+  const dir = project({ graph: PLAN, thread: { current: 'a' } })
+  git(dir, 'init', '-q')
+  mkdirSync(join(dir, 'src'))
+  writeFileSync(join(dir, 'src', 'a.js'), 'a')
+  git(dir, 'add', 'src')
+  git(dir, 'commit', '-q', '-m', 'feat: a\n\nThread: a')
+  run(dir, 'sync')
+  const r = run(dir, 'card')
+  assert.equal(r.status, 0, r.stderr)
+  assert.match(r.stdout, /^# Stato del lavoro \(scheda generata da ariadne\)\nSei in: Title m › Title a \(active\)\n/)
+  assert.match(r.stdout, /\n- a \[active\] Title a: a result\. · file: src\/a\.js, x\.md\n/)
+  assert.match(read(dir, 'STATE.md'), /^# Stato del lavoro \(vista generata da ariadne/)
+  assert.equal(read(dir, '.gitignore'), 'STATE.md\n')
+  git(dir, 'add', '.')
+  assert.doesNotMatch(git(dir, 'status', '--porcelain').stdout, /STATE\.md/)
+})
+
+test('every change to the graph rewrites the view', () => {
+  const dir = project({ graph: PLAN, thread: { current: 'a' } })
+  run(dir, 'close', 'a', 'A shipped.', '--file', 'a.md')
+  assert.match(read(dir, 'STATE.md'), /\n- a \[done\] Title a: A shipped\. · file: a\.md, x\.md\n/)
+})
+
+test('card without a graph explains it and exits 0', () => {
+  const r = run(project(), 'card')
+  assert.equal(r.status, 0)
+  assert.match(r.stdout, /nessun grafo/)
+})
+
+test('in a session the prompt hook speaks only when the summary changed since the card or its last word', () => {
+  const dir = project({ graph: PLAN, thread: { current: 'a' } })
+  const session = `test-${process.pid}-${Date.now()}`
+  const hook = (...args) => spawnSync(process.execPath, [CLI, ...args, '--hook'], { cwd: dir, encoding: 'utf8', input: JSON.stringify({ session_id: session }) }).stdout
+  assert.match(hook('card'), /^# Stato del lavoro/)
+  assert.equal(hook('summary'), '')
+  run(dir, 'close', 'a', 'A shipped.', '--file', 'a.md')
+  assert.match(hook('summary'), /^Sei in: Title m › Title b \(active\)/)
+  assert.equal(hook('summary'), '')
+  assert.match(spawnSync(process.execPath, [CLI, 'summary', '--hook'], { cwd: dir, encoding: 'utf8', input: JSON.stringify({ session_id: `${session}-other` }) }).stdout, /^Sei in:/)
+})
