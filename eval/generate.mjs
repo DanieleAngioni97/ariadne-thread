@@ -137,23 +137,26 @@ export function generate(scenario, dir, { until } = {}) {
 const CATEGORIES = ['where', 'why', 'proof', 'deferred', 'update', 'abstain', 'continue']
 
 /** What a scenario breaks: references, steps without a file of their own, answers the events contradict. */
-export function check(scenario) {
+export function check(scenario, { test = false } = {}) {
   const errors = []
   const titles = {}
   const plans = []
   const status = {}
   const reentry = {}
   let current = null
+  const handoffs = []
+  const plannedAt = {}
   const known = key => key in titles || errors.push(`unknown key: ${key}`)
   for (const e of scenario.events) {
     for (const k of [e.step, e.milestone, e.to, e.by].filter(Boolean)) known(k)
     if (e.type === 'milestone') titles[e.key] = e.title
     if (e.type === 'plan') {
-      for (const s of e.steps) { titles[s.key] = s.title; status[s.key] = 'todo' }
+      for (const s of e.steps) { titles[s.key] = s.title; status[s.key] = 'todo'; plannedAt[s.key] = scenario.events.indexOf(e) }
       plans.push(e.steps.map(s => s.key))
     }
     if (e.type === 'start') { current = e.step; status[e.step] = 'active' }
     if (e.type === 'detour') { titles[e.key] = e.title; reentry[e.key] = current; current = e.key; status[e.key] = 'active' }
+    if (e.type === 'handoff') handoffs.push({ at: scenario.events.indexOf(e), open: Object.keys(status).filter(k => ['todo', 'active'].includes(status[k])) })
     if (e.type === 'defer') status[e.step] = 'deferred'
     if (e.type === 'replace') status[e.step] = 'replaced'
     if (e.type === 'commit' && e.done) {
@@ -190,6 +193,27 @@ export function check(scenario) {
     }
     if (q.cat === 'update' && !scenario.events.some(e => e.type === 'replace' && e.by === q.step)) errors.push(`update: "${q.step}" replaces nothing`)
     if (q.cat === 'continue' && q.next !== current) errors.push(`continue: "${q.next}" is not the open step (${current})`)
+  }
+  if (test) errors.push(...testRules(scenario, { handoffs, plannedAt, current, stepsWithCommits }))
+  return errors
+}
+
+/** Test scenarios only (eval/pilot.md): handoffs at the end of a milestone, as the handoff skill prescribes;
+ *  work planned after the last one; an open step whose work lives in a folder of its own. */
+function testRules(scenario, { handoffs, plannedAt, current, stepsWithCommits }) {
+  const errors = []
+  if (handoffs.length === 0) return ['test: no handoff']
+  for (const h of handoffs) if (h.open.length) errors.push(`test: handoff at event ${h.at} with steps still open: ${h.open.join(', ')}`)
+  const last = handoffs.at(-1).at
+  if (current && !(plannedAt[current] > last)) errors.push('test: the open step was planned before the last handoff')
+  const after = scenario.events.slice(last + 1).filter(e => e.type === 'commit').length
+  if (after < 5) errors.push(`test: ${after} commits after the last handoff, at least 5`)
+  const dir = scenario.questions.find(q => q.cat === 'continue')?.dir
+  if (dir) {
+    for (const f of filesOf(scenario, current)) if (!f.startsWith(dir)) errors.push(`test: ${f} of the open step is outside ${dir}`)
+    for (const key of stepsWithCommits.filter(k => k !== current)) {
+      for (const f of filesOf(scenario, key)) if (f.startsWith(dir)) errors.push(`test: ${key} touches ${f}, in the folder of the open step`)
+    }
   }
   return errors
 }

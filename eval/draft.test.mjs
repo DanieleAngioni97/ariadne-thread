@@ -24,3 +24,8 @@ test('a draft that stays incoherent after the repairs fails with its errors', ()
   const out = join(mkdtempSync(join(tmpdir(), 'ariadne-draft-')), 'x.json')
   assert.throws(() => draft(spec, { model: 'fake', bin: FAKE, out, env: { FAKE_ANSWER: JSON.stringify(bad) } }), /after 3 rounds: missing categories: abstain/)
 })
+
+test('a test draft must also follow the rules of the test scenarios', () => {
+  const out = join(mkdtempSync(join(tmpdir(), 'ariadne-draft-')), 'x.json')
+  assert.throws(() => draft({ ...spec, set: 'test' }, { model: 'fake', bin: FAKE, out, env: { FAKE_ANSWER: good } }), /after 3 rounds: .*test: no handoff/)
+})

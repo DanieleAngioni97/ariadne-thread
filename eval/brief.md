@@ -50,6 +50,17 @@ Reply with the JSON only, no prose and no code fence. Shape:
   done, and its plan still has a step after it.
 - File contents are short (1–10 lines) but real.
 
+## Test scenarios only (set: test)
+
+- At least one handoff. Each handoff comes right after the last step of a milestone is closed: at that
+  point no planned step is still to do or open (close, defer or replace them first).
+- After the last handoff the work goes on: a new plan, then at least 5 commits. The scenario ends in the
+  middle of a step of that new plan, so the last handoff does not describe the end.
+- Every file of the open step lives in its own folder (the `dir` of the continue question), and no other
+  step touches a file in that folder.
+- More distractors: at least two detours, two replacements and two groups of three steps with titles
+  that look alike.
+
 ## Questions, exactly one per category
 
 Questions use the project's own words. Never use the words node, graph, thread, ariadne, detour,

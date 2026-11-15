@@ -94,3 +94,31 @@ test('check accepts a coherent scenario and names what breaks one', () => {
     assert.ok(errors.some(e => pattern.test(e)), `${pattern} not in ${errors.join(' | ')}`)
   }
 })
+
+test('a test scenario hands off at the end of a milestone, then runs into an open step with a folder of its own', () => {
+  assert.deepEqual(check(scenario), [])
+  assert.ok(check(scenario, { test: true }).some(e => /test: no handoff/.test(e)))
+
+  const testScenario = structuredClone(scenario)
+  const deferAt = testScenario.events.findIndex(e => e.type === 'defer')
+  testScenario.events.splice(deferAt + 1, 0, { type: 'handoff' })
+  for (const n of [2, 3, 4, 5]) testScenario.events.push({ type: 'commit', step: 'totals', message: `feat(totals): rule ${n}`, files: { [`src/totals/rule-${n}.js`]: `export const rule${n} = true\n` } })
+  assert.deepEqual(check(testScenario, { test: true }), [])
+
+  const early = structuredClone(testScenario)
+  early.events.splice(early.events.findIndex(e => e.type === 'handoff'), 1)
+  early.events.splice(early.events.findIndex(e => e.type === 'detour'), 0, { type: 'handoff' })
+  const short = structuredClone(testScenario)
+  short.events.splice(-4)
+  const shared = structuredClone(testScenario)
+  shared.events.find(e => e.step === 'cache' && e.type === 'commit').files['src/totals/cached.js'] = 'shared'
+  shared.events.at(-1).files = { 'src/report/total.js': 'outside' }
+  const errors = [...check(early, { test: true }), ...check(short, { test: true }), ...check(shared, { test: true })]
+  for (const pattern of [/test: handoff at event \d+ with steps still open: .*export/, /test: 1 commits after the last handoff, at least 5/, /test: src\/report\/total\.js of the open step is outside src\/totals\//, /test: cache touches src\/totals\/cached\.js/]) {
+    assert.ok(errors.some(e => pattern.test(e)), `${pattern} not in ${errors.join(' | ')}`)
+  }
+  const planned = structuredClone(testScenario)
+  const handoff = planned.events.splice(planned.events.findIndex(e => e.type === 'handoff'), 1)[0]
+  planned.events.splice(planned.events.findLastIndex(e => e.type === 'plan') + 1, 0, handoff)
+  assert.ok(check(planned, { test: true }).some(e => /test: the open step was planned before the last handoff/.test(e)))
+})

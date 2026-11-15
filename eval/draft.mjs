@@ -14,7 +14,7 @@ const BRIEF = fileURLToPath(new URL('./brief.md', import.meta.url))
 const ROUNDS = 3
 
 function problems(scenario, spec) {
-  const errors = check(scenario)
+  const errors = check(scenario, { test: spec.set === 'test' })
   const n = scenario.events?.length ?? 0
   if (Math.abs(n - spec.events) > spec.events * 0.1) errors.push(`events: ${n}, asked for ${spec.events} ±10%`)
   if (scenario.id !== spec.id) errors.push(`id: ${scenario.id}, asked for ${spec.id}`)
@@ -24,7 +24,7 @@ function problems(scenario, spec) {
 /** Drafts one scenario into `out`; returns `{ rounds, cost }` or throws with the last errors. */
 export function draft(spec, { model, bin = 'claude', out, env = {} }) {
   const brief = readFileSync(BRIEF, 'utf8')
-  const ask = `${brief}\n\n## This scenario\n\nid: ${spec.id} · start: ${spec.start} · events: ${spec.events} · domain: ${spec.domain}`
+  const ask = `${brief}\n\n## This scenario\n\nid: ${spec.id} · set: ${spec.set ?? 'dev'} · start: ${spec.start} · events: ${spec.events} · domain: ${spec.domain}`
   const cwd = mkdtempSync(join(tmpdir(), 'ariadne-draft-'))
   let prompt = ask
   let cost = 0
@@ -62,7 +62,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     console.error('uso: node eval/draft.mjs --id <id> --set dev|test|e3 --events <n> --domain "<dominio>" --model <id>')
     process.exit(2)
   }
-  const spec = { id: values.id, start: values.start, events: Number(values.events), domain: values.domain }
+  const spec = { id: values.id, set: values.set, start: values.start, events: Number(values.events), domain: values.domain }
   const out = fileURLToPath(new URL(`./scenarios/${values.set}/${values.id}.json`, import.meta.url))
   const r = draft(spec, { model: values.model, out })
   appendFileSync(join(dirname(out), 'drafts.jsonl'), JSON.stringify({ ...spec, model: values.model, ...r }) + '\n')
