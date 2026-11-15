@@ -19,8 +19,10 @@ it tends to close the open step in the graph before doing the work; it may jump 
 next instead of finishing the open one.
 
 Decision (approved by the user on 2026-11-15): test scenarios of 60–120 events with more distractors (the
-ceiling rule), ending mid-milestone after the last handoff as the handoff skill prescribes (instead of a
-handoff at the very end), and an open step whose work lives in its own files. Then an optional small Haiku
+ceiling rule), handoffs at the end of each milestone, the scenario ending mid-milestone after the last one,
+and an open step whose work lives in its own files. prima still gets a handoff at the very end of the
+scenario, as § 6 of the plan prescribes (user, 2026-11-15): the forgotten handoff is a logistics argument
+for the report, not a weaker baseline. Then an optional small Haiku
 pilot, the test drafts, the pre-registration and E1 on Sonnet once.
 
 For the report (user, 2026-11-15; the plan stays as approved):

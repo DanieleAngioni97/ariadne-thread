@@ -64,8 +64,10 @@ Dove resta aperta. Il primo pilota resta in `eval/runs/pilot-haiku/` come regist
 - Soffitto raggiunto: 0,93 (*prima*) e 0,99 (*ariadne*), entrambe sopra 0,90. Gli scenari di test diventano più
   difficili, con regole che il generatore controlla (`check(…, { test: true })`): 60–120 eventi, più distrattori;
   ogni handoff cade alla fine di una milestone, come prescrive la skill `handoff`, e dopo l'ultimo il lavoro
-  prosegue con un piano nuovo per almeno 5 commit, così lo STATE.md di *prima* non descrive la fine; il passo
-  aperto ha una cartella sua che nessun altro passo tocca. Gli scenari di sviluppo restano com'erano.
+  prosegue con un piano nuovo per almeno 5 commit; il passo aperto ha una cartella sua che nessun altro passo
+  tocca. *prima* riceve comunque l'handoff alla fine dello scenario, come prescrive la § 6 (utente,
+  2026-11-15): l'handoff dimenticato è un argomento di logistica per il rapporto, non una baseline più debole.
+  Gli scenari di sviluppo restano com'erano.
 - Da riportare nel rapporto (`eval/pilot.md`): il Continua debole di *ariadne* come problema di chiarezza del
   passo aperto nel riassunto, e l'autonomia (fermate per chiedere, handoff e aggiornamenti chiesti dall'utente,
   filo rimasto indietro) come risultato descrittivo e limite: il piano non la misura come ipotesi.
