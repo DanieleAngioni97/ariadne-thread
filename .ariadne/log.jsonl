@@ -202,3 +202,4 @@
 {"at":"2026-11-15T14:57Z","id":"m4.5","op":"add","text":"aggiunto passo m4.5 Il corrente resta sul genitore dopo plan sotto m4"}
 {"at":"2026-11-15T14:57Z","id":"m4.4.8","op":"fill","text":"prova per m4.4.8: file docs/valutazione/preregistrazione.md#Spesa","proof":[{"type":"file","ref":"docs/valutazione/preregistrazione.md#Spesa"}]}
 {"at":"2026-11-15T14:58Z","id":null,"op":"relink","text":"ricollegato docs/valutazione/preregistrazione.md#spesa → docs/valutazione/preregistrazione.md#Spesa in 1 nodo (m4.4.8)"}
+{"at":"2026-11-15T14:58Z","id":"m4.4.12.4","op":"fill","text":"completato m4.4.12.4: detail"}
