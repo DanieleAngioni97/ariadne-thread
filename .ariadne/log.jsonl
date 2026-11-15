@@ -274,3 +274,4 @@
 {"at":"2026-11-15T16:44Z","id":"m4.6.12","op":"fill","text":"prova per m4.6.12: commit 20e6964","proof":[{"type":"commit","ref":"20e6964"}]}
 {"at":"2026-11-15T16:50Z","id":"m4.6.12","op":"close","text":"chiuso m4.6.12 Ripulire storia e docs dalle tracce aziendali: storia riscritta senza rapporto interno né tracce aziendali (0 occorrenze), SHA del grafo rimappati, repo GitHub ricreato privato con main predefinito; installazione riprovata","proof":[{"type":"commit","ref":"20e6964"}]}
 {"at":"2026-11-15T16:57Z","id":"","op":"confirm","text":"confirmed 2 changes"}
+{"at":"2026-11-15T17:01Z","id":"m4.6.11","op":"fill","text":"prova per m4.6.11: commit c128926","proof":[{"type":"commit","ref":"c128926"}]}
