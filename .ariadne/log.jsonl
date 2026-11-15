@@ -314,3 +314,11 @@
 {"at":"2026-11-15T17:35Z","id":"m4.4.12.6","op":"close","text":"chiuso m4.4.12.6 ariadne parla la lingua della persona: CLI, band and viewer speak the person's language, config lang still pins it","proof":[{"type":"commit","ref":"6d59432"}]}
 {"at":"2026-11-15T17:36Z","id":"","op":"confirm","text":"confermate 1 modifiche"}
 {"at":"2026-11-15T17:37Z","id":"m4.4.12.3","op":"fill","text":"completato m4.4.12.3: detail, message chat 2026-11-15: rivedere tutto, meno tecnico, vendere bene e onesto; logo e grafica propri di ariadne; poi le slide","proof":[{"type":"message","ref":"chat 2026-11-15: rivedere tutto, meno tecnico, vendere bene e onesto; logo e grafica propri di ariadne; poi le slide"}]}
+{"at":"2026-11-15T17:40Z","id":"m4.4.12.3","op":"plan","text":"piano per Revisione severa della narrazione di rapporto.html: Logo e grafica di ariadne → Screenshot dell'interfaccia attuale → Nuovo rapporto.html dal testo → Allineare docs/valutazione/rapporto.md"}
+{"at":"2026-11-15T17:40Z","id":"m4.4.12.3.1","op":"start","text":"iniziato m4.4.12.3.1 Logo e grafica di ariadne"}
+{"at":"2026-11-15T17:40Z","id":"m4","op":"plan","text":"piano per M4 Revisione e feedback: Regola nella skill: registrare subito approvazioni e correzioni in chat → Controllo automatico a fine turno: segnala il filo rimasto indietro → L'episodio dell'handoff tra i limiti del rapporto"}
+{"at":"2026-11-15T17:41Z","id":"m4.4.12.3.1","op":"move","text":"spostato m4.4.12.3.1 sotto m4.4.12.3 (correzione tua)"}
+{"at":"2026-11-15T17:41Z","id":"m4.7","op":"start","text":"iniziato m4.7 Regola nella skill: registrare subito approvazioni e correzioni in chat"}
+{"at":"2026-11-15T17:41Z","id":"m4.4.12.3.1","op":"undo","text":"annullato: m4.4.12.3.1 torna sotto m4.4.12.3"}
+{"at":"2026-11-15T17:41Z","id":"m4.4.12.3.1","op":"move","text":"spostato m4.4.12.3.1 sotto m4.4.12.3 (correzione tua)"}
+{"at":"2026-11-15T17:41Z","id":"m4.10","op":"add","text":"aggiunto passo m4.10 Rimettere un passo avviato tra quelli da fare sotto m4, da m4.8"}
