@@ -1,0 +1,3 @@
+# Log
+- 2026-03-02 · M1 Sessions and booking done (profile cache deferred to M3) · b1b1542
+- 2026-03-02 · M2 Payments and notifications done (reminders via jobs table, cron dropped) · a6ccdbd

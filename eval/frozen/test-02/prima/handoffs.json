@@ -1,0 +1,46 @@
+{
+  "model": "claude-opus-5-5",
+  "checker": "claude-sonnet-5-5",
+  "handoffs": [
+    {
+      "point": 30,
+      "today": "2026-03-02",
+      "before": {
+        "STATE.md": "# State — ubl-check\nUpdated: 2026-11-15 · Branch: `main` (clean at session start) · PR: none · Last commit: `965ee27`\n\n## Milestone\nM1 \"Parsing core\" is done: UBL 2.1 invoice XML is now turned into plain Python data.\nAll steps are closed: loading + namespaces, header, ISO 8601 dates, parties, lines.\nThe next milestone has not been chosen yet.\n\n## Next\n1. Remove what's left of the dropped dateutil step: `src/dates/fuzzy.py` and\n   `tests/dates/test_fuzzy.py`. `python-dateutil` is not in `pyproject.toml`, so this test\n   probably fails to import in CI. Check it with a test run first.\n2. Add tests for `src/lines/` (`parse.py`, `amounts.py`, `allowances.py`). There is no\n   `tests/lines/` yet.\n3. Run `pytest` and record the result, then ask the user what M2 is. Likely candidates:\n   EN 16931 total checks (see `docs/design.md`), or CreditNote support.\n\n## Open decisions and risks\n- Dates are strict ISO 8601 only (`src/dates/iso.py`). The user dropped dateutil, so don't\n  bring back lenient or European date parsing.\n- Amounts are always `Decimal`, never float (`docs/design.md`).\n- `src/loading/bom.py` strips the UTF-8 BOM and leading blank lines that the customer's\n  Windows ERP exports contain. Keep it in place.\n- STATE.md and LOG.md are kept out of git by `.git/info/exclude`. Never commit them.\n\n## Pointers\n- Design: `docs/design.md` · Usage: `README.md` · CI: `.github/workflows/ci.yml`\n- Verify: `pip install -e . pytest && pytest` → not run in this handoff (no shell access)\n- Suggested skills: `commit-checkpoint` for each commit; `handoff` when M2 is planned or done.\n",
+        "LOG.md": "# Log\n- 2026-11-15 · M1 Parsing core done (loading, header, ISO dates, parties, lines) · 965ee27\n"
+      },
+      "applied": [],
+      "rejected": [],
+      "cost": 0.1758188
+    },
+    {
+      "point": 61,
+      "today": "2026-03-02",
+      "before": {
+        "STATE.md": "# State — ubl-check\nUpdated: 2026-11-15 · Branch: `main` (clean) · PR: none · Last commit: `f526024`\n\n## Milestone\nM2 \"Validation rules\" is done: error report (rule ID, XPath, severities, text/JSON), XSD check\nwith lxml, and EN 16931 checks BR-CO-10/14/15/16 (see `docs/rules.md`).\nM3 \"Batch performance\" (validate folders with thousands of invoices quickly) is defined but has\nno approved plan yet. Its only known step so far is \"Cache for code lists\", deferred from M2.\n\n## Next\n1. Run `pip install -e . pytest && pytest` and record the result. It has not been run since M1.\n2. Remove dead code from dropped steps (ask the user first):\n   - `src/schema/xmlschema_check.py`: the xmlschema step was replaced by lxml (`lxml_check.py`).\n     `xmlschema` is not a dependency, so importing this module fails.\n   - `src/dates/fuzzy.py` + `tests/dates/test_fuzzy.py`: dateutil was dropped in M1.\n     `python-dateutil` is not a dependency either, so this test probably breaks collection.\n   - `docs/rules-draft.md`: only a \"Superseded by docs/rules.md\" stub is left.\n3. Fill the test gaps: there is no `tests/lines/` (for `src/lines/*`) and no `tests/report/`.\n4. Plan M3 with the user and get it approved. \"Cache for code lists\" goes first. Other likely\n   steps: a folder or batch CLI, parallel workers, and a benchmark on a large sample set.\n\n## Open decisions and risks\n- Amounts are `Decimal` and are rounded half up to cents (`src/money/rounding.py`), not\n  half-even. Tax subtotals that end in 0.005 broke BR-CO-14 under the default rounding.\n- The XSD check uses lxml with a schema compiled once (`src/schema/lxml_check.py`). Don't\n  return to xmlschema. Keep compiling the schema only once, which matters even more for M3.\n- Dates are strict ISO 8601 only (`src/dates/iso.py`). Don't bring back lenient parsing.\n- `src/loading/bom.py` strips the BOM and blank lines from the customer's Windows ERP exports.\n  Keep it.\n- STATE.md and LOG.md are kept out of git by `.git/info/exclude`. Never commit them.\n\n## Pointers\n- Rules: `docs/rules.md` · Design: `docs/design.md` · CI: `.github/workflows/ci.yml`\n- Verify: `pip install -e . pytest && pytest` → not run in this handoff (no shell access)\n- Suggested skills: `commit-checkpoint` for each commit; `handoff` when M3 is planned or done.\n",
+        "LOG.md": "# Log\n- 2026-11-15 · M1 Parsing core done (loading, header, ISO dates, parties, lines) · 965ee27\n- 2026-11-15 · M2 Validation rules done (report, lxml XSD, BR-CO-10/14/15/16; code-list cache moved to M3) · f526024\n"
+      },
+      "applied": [],
+      "rejected": [],
+      "cost": 0.2276954
+    },
+    {
+      "point": 76,
+      "today": "2026-03-02",
+      "before": {
+        "STATE.md": "# State — ubl-check\nUpdated: 2026-11-15 · Branch: `main` (clean) · PR: none · Last commit: `8ef6b42` · Version 0.2.0\n\n## Milestone\nM3 \"Batch performance\". Approved plan: Batch validation of a folder → Cache for parsed parties →\nCache invalidation on reload → Command-line validator.\n- Done: \"Batch validation of a folder\" (`src/batch/`: runner, process pool, fail-fast/workers\n  options, pass/fail summary), plus the detour \"Skip empty invoice files\" (`src/loading/empty.py`).\n- In progress: \"Cache for parsed parties\" (`src/partycache/`). Its 3 parts exist but are not wired.\n\n## Next\n1. Finish \"Cache for parsed parties\". Read the code: `store.py`, `keys.py` and `lru.py` were checked\n   by reading only.\n   - `store.py` still uses a plain dict `_parties`. Make it use `LRU(512)` from `lru.py`.\n     `LRU.put` evicts, but plain `__setitem__` does not, and a hit must call `move_to_end`.\n   - `keys.party_key` returns `None` when there is no `cbc:EndpointID`. Don't cache under `None`:\n     parse the party without the cache.\n   - Nothing calls `get_or_parse` yet. Wire it into the party parsing (`src/party/*.py`).\n   - Add `tests/partycache/`. `tests/batch/` doesn't exist either: add it.\n2. \"Cache invalidation on reload\": clear the cache when invoices or code lists are reloaded.\n   The cache lives in each module, so every worker process in `src/batch/pool.py` has its own copy.\n3. \"Command-line validator\": a CLI over `src/batch/runner.py` with the fail-fast/workers options\n   from `src/batch/options.py`, plus a `[project.scripts]` entry in `pyproject.toml`.\n4. Run `pip install -e . pytest && pytest`. It hasn't run since M1.\n\n## Open decisions and risks\n- \"Cache for code lists\", deferred from M2, is not in the approved M3 plan. Ask the user whether\n  to drop it or add it.\n- Dead code from M1/M2 is still there (ask before deleting): `src/schema/xmlschema_check.py`\n  (xmlschema is not a dependency), `src/dates/fuzzy.py` + `tests/dates/test_fuzzy.py` (dateutil\n  is not a dependency, so this probably breaks pytest collection), and `docs/rules-draft.md` (a stub).\n- Test gaps: no `tests/lines/` and no `tests/report/`.\n- Amounts are `Decimal` and round half up (`src/money/rounding.py`), not half-even.\n- Keep the XSD check on lxml with the schema compiled once. Dates are strict ISO 8601.\n  `src/loading/bom.py` stays.\n- Empty .xml files are reported, not raised (`src/loading/empty.py`). Keep that for batch runs.\n- STATE.md and LOG.md are kept out of git by `.git/info/exclude`. Never commit them.\n\n## Pointers\n- Rules: `docs/rules.md` · Design: `docs/design.md` · CI: `.github/workflows/ci.yml` (Py 3.11–3.13)\n- Verify: `pip install -e . pytest && pytest` → not run (no shell access in this session)\n- Suggested skills: `commit-checkpoint` for each commit; `handoff` after each M3 step or at the end of M3.\n",
+        "LOG.md": "# Log\n- 2026-11-15 · M1 Parsing core done (loading, header, ISO dates, parties, lines) · 965ee27\n- 2026-11-15 · M2 Validation rules done (report, lxml XSD, BR-CO-10/14/15/16; code-list cache moved to M3) · f526024\n- 2026-11-15 · M3 \"Batch validation of a folder\" done (+ empty-file fix, release 0.2.0); party cache parts added, not wired yet · 8ef6b42\n"
+      },
+      "applied": [
+        {
+          "file": "LOG.md",
+          "find": "(+ empty-file fix, release 0.2.0)",
+          "replace": "(+ empty-file fix)",
+          "reason": "The commit \"chore: release 0.2.0\" came right after M2 closed and before the M3 plan was approved. It isn't part of M3 batch work, and the M2 log line already ends there."
+        }
+      ],
+      "rejected": [],
+      "cost": 0.2329982
+    }
+  ]
+}

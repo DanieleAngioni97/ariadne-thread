@@ -1,0 +1,39 @@
+{
+  "model": "claude-opus-5-5",
+  "checker": "claude-sonnet-5-5",
+  "handoffs": [
+    {
+      "point": 26,
+      "today": "2026-03-02",
+      "before": {
+        "STATE.md": "# State — migralint\nUpdated: 2026-03-02 · Branch: `main` · PR: none (no git remote configured)\n\n## Milestone\nM1 Plugin loading: load third-party rule plugins listed in the config and run their rules\nagainst migrations. All planned items are committed on `main` (last: `0937c3c`); M1 still needs\nwiring and test coverage before it can be called done end-to-end.\n\n## Next\n1. Decide with the user what to do with `src/sandbox/vm.ts`: the vm-contexts approach was dropped\n   for worker threads (see `docs/sandbox.md`), but the file is still in the tree.\n2. `src/cli.ts` imports `./lint.js`, but `src/lint.ts` does not exist: wire config → loaders\n   (`src/loader/*`) → worker sandbox (`src/sandbox/worker.ts`) → error table (`src/loader/errors.ts`).\n3. Add tests: only `tests/loader/local.test.ts` exists; npm loader, sandbox (incl. 2s\n   termination) and error reporting have none. Add a `test` script to `package.json` (vitest 2.0.5).\n\n## Open decisions and risks\n- Sandbox = worker threads, rules terminated after 2s. Settled by the user; do not revisit vm contexts.\n- SQL fixtures are forced to LF via `.gitattributes` (Windows CI broke on CRLF); keep it that way\n  for new fixtures.\n- `STATE.md` and `LOG.md` are kept out of git (listed in `.git/info/exclude`): never commit them.\n\n## Pointers\n- Design: `docs/design.md` · Sandbox decision: `docs/sandbox.md`\n- Plan of M1 (completed): manifest format → local loader → npm loader (`migralint-plugin-*`,\n  manifest in the `migralint` field of `package.json`) → worker sandbox → loader error reporting.\n- Verify: `npx vitest run` → not run in this handoff (no shell access); run it first.\n- Suggested skills: `commit-checkpoint` for each commit; `handoff` at the next milestone.\n",
+        "LOG.md": "# Log\n- 2026-03-02 · M1 Plugin loading: all planned items committed (manifest, local/npm loaders, worker sandbox, error reporting) · 0937c3c\n"
+      },
+      "applied": [],
+      "rejected": [],
+      "cost": 0.17243740000000002
+    },
+    {
+      "point": 52,
+      "today": "2026-03-02",
+      "before": {
+        "STATE.md": "# State — migralint\nUpdated: 2026-03-02 · Branch: `main` · PR: none (no git remote configured) · Last commit: `d5cceff`\n\n## Milestone\nM2 Rule plugins is done: core rules ship as a plugin (`plugins/core/`), parsed ASTs and rule\nresults are cached in `.migralint/cache`, and result keys include the config hash. \"Plugin registry\nlookup\" was deferred to M3. Next up: M3 Plugin distribution (teams publish plugins and pin their\nversions outside the monorepo). M3 has no approved plan yet.\n\n## Next\n1. `src/cache/invalidate.ts` is dead code from the dropped \"Cache invalidation on config change\"\n   item. It wipes the cache on an mtime change, which contradicts `docs/cache.md`. Ask the user\n   whether to delete it, and ask the same about `src/sandbox/vm.ts`, which was left over from M1.\n2. The CLI is still broken: `src/cli.ts` imports `./lint.js`, and `src/lint.ts` does not exist.\n   Wire config → loaders (`src/loader/*`, `plugins/core`) → cache (`src/cache/*`) → worker\n   pool (`src/sandbox/pool.ts`) → reporting (`src/report/load-failures.ts`).\n3. Propose a plan for M3 and get the user's approval. It starts with \"Plugin registry lookup\",\n   which moved here from M2.\n\n## Open decisions and risks\n- The cache is invalidated by the config hash in the keys, not by wiping the directory. The user\n  settled this, so don't bring back the mtime wipe.\n- Sandbox = worker threads, with rules terminated after 2s. The user settled this too, so don't\n  revisit vm contexts.\n- Missing tests: npm loader, sandbox (2s termination), error reporting and AST parse cache. There\n  is no `test` script in `package.json` yet.\n- `package.json` still says `0.1.0` while the CHANGELOG has a 0.2.0 entry. Check this with the\n  user before any release.\n- SQL fixtures are forced to LF via `.gitattributes`. Keep it that way for new fixtures.\n- `STATE.md` and `LOG.md` are kept out of git (listed in `.git/info/exclude`). Never commit them.\n\n## Pointers\n- Design: `docs/design.md` · Sandbox: `docs/sandbox.md` · Cache: `docs/cache.md`\n- Verify: `npx vitest run` → not run in this handoff (no shell access), so run it first.\n- Suggested skills: `commit-checkpoint` for each commit, `handoff` at the end of the next milestone.\n",
+        "LOG.md": "# Log\n- 2026-03-02 · M1 Plugin loading: all planned items committed (manifest, local/npm loaders, worker sandbox, error reporting) · 0937c3c\n- 2026-03-02 · M2 Rule plugins done: core plugin, AST/result caches, config hash in keys; registry lookup deferred to M3 · d5cceff\n"
+      },
+      "applied": [],
+      "rejected": [],
+      "cost": 0.2097408
+    },
+    {
+      "point": 62,
+      "today": "2026-03-02",
+      "before": {
+        "STATE.md": "# State — migralint\nUpdated: 2026-03-02 · Branch: `main` · PR: none (no git remote configured) · Last commit: `fdf6e7d`\n\n## Milestone\nM3 Plugin distribution. The user approved this plan: Plugin lockfile format → Plugin lockfile\nwriter → Publish command for plugins. \"Plugin lockfile format\" is done (`src/pluginlock/`). \"Plugin\nlockfile writer\" is in progress (`src/lockwriter/`): writing, sorting and sha512 integrity are\ncommitted but not yet wired together.\n\n## Next\n1. Finish \"Plugin lockfile writer\". `writeLock` (`src/lockwriter/write.ts`) neither calls\n   `sortEntries` (`sort.ts`) nor `integrityOf` (`integrity.ts`). Compose them (resolve → integrity\n   → sort → write), then add tests under `tests/lockwriter/`, which has no tests yet. Check\n   round-trip with `src/pluginlock/parse.ts`.\n2. Start \"Publish command for plugins\".\n3. Carried over from M2 and still open: ask whether to delete the dead `src/cache/invalidate.ts`\n   (mtime wipe, contradicts `docs/cache.md`) and `src/sandbox/vm.ts` (M1 leftover). The CLI is\n   still broken: `src/cli.ts` imports `./lint.js` and `src/lint.ts` does not exist.\n\n## Open decisions and risks\n- \"Plugin registry lookup\" was deferred from M2 to M3, but it is not in the approved M3 plan. Ask\n  the user whether it is dropped or comes after the publish command.\n- Version mismatch: `package.json` says `0.3.0`, but the CHANGELOG's latest entry is 0.2.0. Check\n  this with the user before any release.\n- Settled, don't revisit: the cache is invalidated by the config hash in the keys, not by an mtime\n  wipe. Sandbox = worker threads, with rules terminated after 2s.\n- Missing tests: lockwriter, npm loader, sandbox, error reporting, AST parse cache. There is no\n  `test` script in `package.json`.\n- SQL fixtures are forced to LF via `.gitattributes`. Keep it that way.\n- `STATE.md` and `LOG.md` are kept out of git (listed in `.git/info/exclude`). Never commit them.\n\n## Pointers\n- Design: `docs/design.md` · Sandbox: `docs/sandbox.md` · Cache: `docs/cache.md`\n- Verify: `npx vitest run` → not run in this handoff (no shell access), so run it first.\n- Suggested skills: `commit-checkpoint` for each commit, `handoff` at the end of the writer item.\n",
+        "LOG.md": "# Log\n- 2026-03-02 · M1 Plugin loading: all planned items committed (manifest, local/npm loaders, worker sandbox, error reporting) · 0937c3c\n- 2026-03-02 · M2 Rule plugins done: core plugin, AST/result caches, config hash in keys; registry lookup deferred to M3 · d5cceff\n- 2026-03-02 · M3 Plugin distribution: lockfile format done, lockfile writer in progress (write/sort/integrity not yet wired) · fdf6e7d\n"
+      },
+      "applied": [],
+      "rejected": [],
+      "cost": 0.22988540000000002
+    }
+  ]
+}
