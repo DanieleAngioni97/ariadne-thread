@@ -105,7 +105,8 @@ const sessionOf = () => {
 
 /** Applies `ops` and writes graph, thread and log; returns the log entries or the refusal errors. */
 function commit(ops, by) {
-  const text = readFileSync(GRAPH, 'utf8')
+  // Before the first node there is no graph yet: it starts empty.
+  const text = existsSync(GRAPH) ? readFileSync(GRAPH, 'utf8') : ''
   const thread = readThread(parse(text))
   const r = apply({ text, thread, ops, at: now(), by })
   if (!r.ok) return r

@@ -63,6 +63,16 @@ test('bin/ariadne runs the CLI by name, as the plugin puts it on the PATH of Cla
   assert.match(r.stdout, /progetto pronto/)
 })
 
+test('after init the first milestone and its plan start the graph', () => {
+  const dir = project()
+  run(dir, 'init')
+  const first = run(dir, 'add', 'milestone', 'Login', '--what', 'Users sign in.', '--start')
+  assert.equal(first.status, 0, first.stderr)
+  const plan = run(dir, 'plan', 'm1', 'Pick the library', '--ref', 'chat: approved')
+  assert.equal(plan.status, 0, plan.stderr)
+  assert.match(run(dir, 'summary').stdout, /^Sei in: Login/)
+})
+
 test('summary on an invalid graph summarizes what it can read and warns, exit 0', () => {
   const graph = GOOD.map(x => JSON.stringify(x)).join('\n') + '\nnot json\n' + JSON.stringify(n('c', { what: '' })) + '\n'
   const r = run(project({ graph, thread: { current: 'b' } }), 'summary')
