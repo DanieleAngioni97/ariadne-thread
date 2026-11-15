@@ -59,13 +59,18 @@ export const limitOf = profile => LIMITS[profile] ?? LIMITS.standard
  */
 function anchorOf(data, live) {
   const nodes = byId(data)
-  const anchors = new Set()
-  for (const at of [data.current, ...containers(nodes, data.current)]) {
-    anchors.add(at)
+  const here = new Set([data.current, ...containers(nodes, data.current)])
+  const returns = new Set()
+  for (const at of here) {
     const node = nodes.get(at)
-    if (node?.kind === 'detour' && node.reentry) [node.reentry, ...containers(nodes, node.reentry)].forEach(a => anchors.add(a))
+    if (node?.kind === 'detour' && node.reentry) [node.reentry, ...containers(nodes, node.reentry)].forEach(a => returns.add(a))
   }
-  const found = [live.findIndex(n => n.id === data.current || anchors.has(n.id)), live.findIndex(n => n.status === 'todo' || n.status === 'active')]
+  // The current node wins over where its detour returns: you must always see where you are.
+  const found = [
+    live.findIndex(n => here.has(n.id)),
+    live.findIndex(n => returns.has(n.id)),
+    live.findIndex(n => n.status === 'todo' || n.status === 'active'),
+  ]
   return found.find(i => i >= 0) ?? live.length - 1
 }
 

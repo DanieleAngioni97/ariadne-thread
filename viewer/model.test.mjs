@@ -238,6 +238,15 @@ test('the window follows a detour back to where it started', () => {
   assert.deepEqual(ids.filter(id => /^s\d$/.test(id)), ['s7', 's8', 's9'])
 })
 
+test('a detour in the same level as its return point shows itself, not only where it returns', () => {
+  const side = {
+    current: 'd',
+    nodes: [...long.nodes, { id: 'd', title: 'D', kind: 'detour', status: 'active', parent: 'm', reentry: 's5' }],
+  }
+  const ids = visibleNodes(side, open, null, { limit: 3 }).map(n => n.id)
+  assert.ok(ids.includes('d'), `current detour hidden: ${ids}`)
+})
+
 test('show opens the level in full; replaced steps show only when asked', () => {
   const all = visibleNodes(long, open, null, { limit: 3, revealed: new Set(['m']) }).map(n => n.id)
   assert.equal(all.filter(id => /^s\d$/.test(id)).length, 10)
