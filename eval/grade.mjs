@@ -42,7 +42,7 @@ const STOP = new Set(['of', 'for', 'in', 'on', 'to', 'by', 'and', 'with', 'from'
 const stems = text => new Set(normalize(text).split(' ').filter(w => w && !STOP.has(w)).map(w => w.slice(0, 5)))
 
 /** The step title closest to a phrase: the share of its words the phrase contains, at least half. */
-function closest(phrase, titles) {
+export function closest(phrase, titles) {
   const words = stems(phrase)
   let best = null
   for (const t of titles) {
