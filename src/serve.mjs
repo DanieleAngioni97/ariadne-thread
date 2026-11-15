@@ -1,9 +1,11 @@
-// The viewer's local server: the page from viewer/, the logic from src/, the data from .ariadne/.
+// The viewer's local server: the page from viewer/ and the logic from src/, both in this package,
+// the data from the project's .ariadne/.
 // Read-only and bound to 127.0.0.1; nothing else in the repo is reachable.
 
 import { readFile } from 'node:fs/promises'
 import { createServer } from 'node:http'
 import { extname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const TYPES = {
   '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/javascript', '.css': 'text/css',
@@ -11,6 +13,7 @@ const TYPES = {
 }
 const FOLDERS = ['src', '.ariadne']
 const FILE = /^[\w.-]+$/
+const PACKAGE = fileURLToPath(new URL('..', import.meta.url))
 
 /** The repo-relative file for a URL path, or null when it falls outside what the viewer may read. */
 export function resolvePath(url) {
@@ -35,7 +38,7 @@ export function serve(root, port) {
     const file = resolvePath(req.url)
     try {
       if (!file) throw new Error('outside')
-      const body = await readFile(join(root, file))
+      const body = await readFile(join(file.startsWith('.ariadne/') ? root : PACKAGE, file))
       res.writeHead(200, { 'content-type': `${TYPES[extname(file)] ?? 'text/plain'}; charset=utf-8`, 'cache-control': 'no-store' })
       res.end(body)
     } catch {
