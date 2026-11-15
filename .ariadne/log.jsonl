@@ -136,3 +136,4 @@
 {"at":"2026-11-14T15:23Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 4044253","proof":[{"type":"commit","ref":"4044253"}]}
 {"at":"2026-11-14T15:46Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 89df770","proof":[{"type":"commit","ref":"89df770"}]}
 {"at":"2026-11-14T16:10Z","id":"m4.4.5","op":"fill","text":"completato m4.4.5: detail, file eval/pilot.md","proof":[{"type":"file","ref":"eval/pilot.md"}]}
+{"at":"2026-11-14T16:10Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 71a8f54","proof":[{"type":"commit","ref":"71a8f54"}]}

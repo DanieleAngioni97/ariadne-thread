@@ -18,7 +18,18 @@ Product observations for the report: with a change in the queue the ariadne agen
 it tends to close the open step in the graph before doing the work; it may jump to the step the summary shows as
 next instead of finishing the open one.
 
-Pending decision (proposed to the user, not yet approved): test scenarios of 60–120 events with more
-distractors (the ceiling rule), ending mid-milestone after the last handoff as the handoff skill prescribes
-(instead of a handoff at the very end), and an open step whose work lives in its own files. Then an optional
-small Haiku pilot, the test drafts, the pre-registration and E1 on Sonnet once.
+Decision (approved by the user on 2026-11-15): test scenarios of 60–120 events with more distractors (the
+ceiling rule), ending mid-milestone after the last handoff as the handoff skill prescribes (instead of a
+handoff at the very end), and an open step whose work lives in its own files. Then an optional small Haiku
+pilot, the test drafts, the pre-registration and E1 on Sonnet once.
+
+For the report (user, 2026-11-15; the plan stays as approved):
+
+- The weak Continua with ariadne is a clarity problem of the current node: the summary shows "Prossimo" as
+  prominently as the open step, with nothing on what is left of it. The open step must be at least as clear
+  as in the handoff notes.
+- ariadne was born from two needs, not only a better resume: explainability (a clearer flow for the person)
+  and logistics (no manual handoff, no reminders to write the state). The report must also weigh autonomy:
+  how often the agent stops to ask, how often the user has to prompt a handoff or a state update, how often
+  the thread falls behind with nobody updating it. The plan measures none of these as a hypothesis; report
+  them as descriptive findings and as a limit.
