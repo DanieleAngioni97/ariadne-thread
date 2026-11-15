@@ -246,3 +246,13 @@
 {"at":"2026-11-15T16:21Z","id":"m4.6.6","op":"close","text":"chiuso m4.6.6 Prova d'installazione da zero: installato da un clone pulito in una config temporanea; in un progetto vuoto /ariadne:init, piano, commit con Thread e chiusura del passo funzionano; 251 test verdi nel clone; riemerso m4.5","proof":[{"type":"message","ref":"chat 2026-11-15: prova headless con --plugin-dir"}]}
 {"at":"2026-11-15T16:21Z","id":"m4.5","op":"start","text":"iniziato m4.5 Il corrente resta sul genitore dopo plan"}
 {"at":"2026-11-15T16:22Z","id":"m4.5","op":"close","text":"chiuso m4.5 Il corrente resta sul genitore dopo plan: plan sotto il nodo corrente avvia il primo passo nuovo","proof":[{"type":"commit","ref":"383f977"}]}
+{"at":"2026-11-15T16:30Z","id":"m4.6","op":"start","text":"iniziato m4.6 Pacchetto installabile e configurabile"}
+{"at":"2026-11-15T16:30Z","id":"m4.6","op":"plan","text":"piano per Pacchetto installabile e configurabile: Licenza MIT → Push su GitHub → Questo repo usa il plugin → CLI e banda in inglese"}
+{"at":"2026-11-15T16:30Z","id":"m4.6.8","op":"start","text":"iniziato m4.6.8 Licenza MIT"}
+{"at":"2026-11-15T16:30Z","id":"m4.6.8","op":"close","text":"chiuso m4.6.8 Licenza MIT: licenza MIT nel repo, nel manifest e nel README","proof":[{"type":"commit","ref":"6f54d8b"}]}
+{"at":"2026-11-15T16:30Z","id":"m4.6.9","op":"start","text":"iniziato m4.6.9 Push su GitHub"}
+{"at":"2026-11-15T16:37Z","id":"m4.6.9","op":"close","text":"chiuso m4.6.9 Push su GitHub: branch e main su GitHub (6f54d8b); installazione da DanieleAngioni97/ariadne-thread provata in una config temporanea; repo resta privato finché non si decide sul rapporto interno","proof":[{"type":"commit","ref":"6f54d8b"}]}
+{"at":"2026-11-15T16:37Z","id":"m4.6.10","op":"start","text":"iniziato m4.6.10 Questo repo usa il plugin"}
+{"at":"2026-11-15T16:39Z","id":"m4.6.10","op":"close","text":"chiuso m4.6.10 Questo repo usa il plugin: plugin installato dalla cartella del repo; tolti hook di progetto e link rotti in dev-mods","proof":[{"type":"commit","ref":"a70a29a"}]}
+{"at":"2026-11-15T16:39Z","id":"m4.6.11","op":"start","text":"iniziato m4.6.11 CLI e banda in inglese"}
+{"at":"2026-11-15T16:40Z","id":"m4.6.12","op":"add","text":"deviazione m4.6.12 Ripulire storia e docs dalle tracce aziendali, rientra in m4.6.11"}
