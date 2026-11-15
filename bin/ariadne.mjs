@@ -328,10 +328,12 @@ function showLog(n = 20) {
   for (const e of entries.slice(-n)) console.log(`${e.at} ${e.text}`)
 }
 
+// A file in the home folder is saved as ~/…: the graph lives in git and must not carry the local user name.
+const homeRelative = ref => (ref.startsWith(homedir() + '/') ? '~' + ref.slice(homedir().length) : ref)
 const list = value => value?.split(',').map(s => s.trim()).filter(Boolean)
 const proofs = v => [
   ...(v.commit ?? []).map(ref => ({ type: 'commit', ref })),
-  ...(v.file ?? []).map(ref => ({ type: 'file', ref })),
+  ...(v.file ?? []).map(ref => ({ type: 'file', ref: homeRelative(ref) })),
   ...(v.message ?? []).map(ref => ({ type: 'message', ref })),
 ]
 

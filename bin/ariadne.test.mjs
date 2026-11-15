@@ -309,6 +309,17 @@ test('view on a project port held by another server takes a free one and saves i
   assert.equal(JSON.parse(run(dir, 'band').stdout).viewer, port)
 })
 
+test('a file proof in the home folder is saved as ~/, so the graph in git does not carry the local user name', () => {
+  const dir = project({ graph: PLAN, thread: { current: 'a' } })
+  const home = mkdtempSync(join(tmpdir(), 'ariadne-home-'))
+  mkdirSync(join(home, 'notes'))
+  writeFileSync(join(home, 'notes', 'report.md'), '# Report\n')
+  const r = spawnSync(process.execPath, [CLI, 'fill', 'a', '--file', join(home, 'notes', 'report.md')], { cwd: dir, encoding: 'utf8', env: { ...process.env, HOME: home } })
+  assert.equal(r.status, 0, r.stderr)
+  assert.deepEqual(nodesOf(dir).find(x => x.id === 'a').proof.at(-1), { type: 'file', ref: '~/notes/report.md' })
+  assert.doesNotMatch(read(dir, 'log.jsonl'), new RegExp(home))
+})
+
 test('close with only a chat message as proof warns that no file holds the result', () => {
   const chatOnly = { proof: [{ type: 'message', ref: 'chat' }] }
   const graph = [PLAN[0], { ...PLAN[1], ...chatOnly }, { ...PLAN[2], ...chatOnly }]
