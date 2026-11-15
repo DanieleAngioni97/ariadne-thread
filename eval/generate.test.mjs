@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, readFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -77,6 +77,9 @@ test('a generation can stop at an event, for the handoffs of prima; a handoff ev
   assert.equal(git(join(full.dir, 'prima'), 'rev-list', '--count', 'HEAD').trim(), '7')
   const part = generate(withHandoff, mkdtempSync(join(tmpdir(), 'ariadne-eval-')), { until: 5 })
   assert.equal(git(join(part.dir, 'prima'), 'log', '--format=%s'), 'chore: scaffold the project\n')
+  // Before the steps the questions name exist: a partial generation writes no questions.
+  const early = generate(withHandoff, mkdtempSync(join(tmpdir(), 'ariadne-eval-')), { until: 1 })
+  assert.equal(existsSync(join(early.dir, 'questions.json')), false)
 })
 
 test('check accepts a coherent scenario and names what breaks one', () => {

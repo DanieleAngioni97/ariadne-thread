@@ -120,6 +120,8 @@ export function generate(scenario, dir, { until } = {}) {
     const frozen = join(FROZEN, scenario.id, 'prima', f)
     if (existsSync(frozen)) cpSync(frozen, join(prima, f))
   }
+  // A partial generation, for the handoffs of prima, needs no questions: the steps they name may not exist yet.
+  if (until !== undefined) return { dir }
   const questions = scenario.questions.map(q => ({ cat: q.cat, text: q.text, ...answer(q, scenario, titles) }))
   writeFileSync(join(dir, 'questions.json'), JSON.stringify(questions, null, 2) + '\n')
   // What the graders need besides each answer: every step title, to catch an answer that names the wrong one.
