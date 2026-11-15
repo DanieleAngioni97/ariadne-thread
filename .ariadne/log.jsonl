@@ -379,3 +379,8 @@
 {"at":"2026-11-15T21:06Z","id":"m4.4.12.19","op":"close","text":"chiuso m4.4.12.19 Rivedere rapporto.html sulla narrazione delle slide: rapporto.html ricostruito sul testo lungo v2 verificato dallo scienziato, tema delle slide, indice a filo e gomitolo, chiaro/scuro/telefono; resta la revisione a mano dell'utente","proof":[{"type":"file","ref":"~/ariadne-report/rapporto.html"},{"type":"file","ref":"~/ariadne-report/rapporto-testo-v2.md"},{"type":"file","ref":"~/ariadne-report/lavoro/costruzione/verifica-testo-v2.md"}]}
 {"at":"2026-11-15T21:06Z","id":"m4.4.12.13","op":"start","text":"iniziato m4.4.12.13 Dettagli tecnici nel README"}
 {"at":"2026-11-15T21:06Z","id":"m4.4.12.13","op":"pause","text":"rimesso tra i da fare m4.4.12.13 Dettagli tecnici nel README"}
+{"at":"2026-11-15T21:21Z","id":"m5","op":"plan","text":"piano per M5 Pubblicazione: Percorsi esterni salvati come ~/ nel grafo → Togliere le tracce private dal grafo e dalla storia del branch → README tecnico → Unire il branch in main → Rendere pubblico il repo"}
+{"at":"2026-11-15T21:21Z","id":"m4.4.12.13","op":"replace","text":"sostituito m4.4.12.13 Dettagli tecnici nel README con m5.4"}
+{"at":"2026-11-15T21:21Z","id":"m5.2","op":"start","text":"iniziato m5.2 Percorsi esterni salvati come ~/ nel grafo"}
+{"at":"2026-11-15T21:22Z","id":"m5.2","op":"close","text":"chiuso m5.2 Percorsi esterni salvati come ~/ nel grafo: le prove fuori dal repo si salvano come ~/, senza nome utente","proof":[{"type":"commit","ref":"fa196a2"}]}
+{"at":"2026-11-15T21:22Z","id":"m5.3","op":"start","text":"iniziato m5.3 Togliere le tracce private dal grafo e dalla storia del branch"}
