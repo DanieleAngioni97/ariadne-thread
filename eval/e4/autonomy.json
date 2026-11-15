@@ -1,0 +1,23 @@
+{
+  "since": "2026-11-11T11:39:06.000Z",
+  "groups": {
+    "by-hand": {
+      "projects": 7,
+      "sessions": 107,
+      "prompts": 1085,
+      "requests": 44,
+      "perSession": 0.411214953271028,
+      "sessionsWithRequest": 0.3177570093457944,
+      "per100Prompts": 4.055299539170507
+    },
+    "ariadne": {
+      "projects": 1,
+      "sessions": 3,
+      "prompts": 26,
+      "requests": 1,
+      "perSession": 0.3333333333333333,
+      "sessionsWithRequest": 0.3333333333333333,
+      "per100Prompts": 3.8461538461538463
+    }
+  }
+}
