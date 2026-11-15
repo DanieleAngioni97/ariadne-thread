@@ -358,3 +358,5 @@
 {"at":"2026-11-15T18:42Z","id":"m4.4.12.12","op":"replace","text":"sostituito m4.4.12.12 Risultati chiarissimi con m4.4.12.15"}
 {"at":"2026-11-15T18:42Z","id":"m4.4.12.13","op":"move","text":"spostato m4.4.12.13 sotto m4.4.12 (correzione tua)"}
 {"at":"2026-11-15T18:42Z","id":"m4.4.12.14","op":"start","text":"iniziato m4.4.12.14 Brief comune per i tre agenti"}
+{"at":"2026-11-15T18:46Z","id":"m4.4.12.14","op":"close","text":"chiuso m4.4.12.14 Brief comune per i tre agenti: brief comune con pubblico, frase da ricordare, vincoli dell'utente, funzioni come mini guida, fonti dei numeri","proof":[{"type":"file","ref":"~/ariadne-report/lavoro/brief.md"}]}
+{"at":"2026-11-15T18:46Z","id":"m4.4.12.15","op":"start","text":"iniziato m4.4.12.15 Discussione e scaletta approvata"}
