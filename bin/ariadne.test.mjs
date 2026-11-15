@@ -44,6 +44,7 @@ test('outside an ariadne project the hooks and the band say nothing, so the plug
   assert.equal(hook('card').stdout, '')
   assert.equal(hook('summary').stdout, '')
   assert.equal(hook('sync').stdout, '')
+  assert.equal(hook('check').stdout, '')
   assert.deepEqual(JSON.parse(run(dir, 'band').stdout).rows, [])
   assert.equal(existsSync(join(dir, '.ariadne')), false)
 })
@@ -200,6 +201,32 @@ test('the commit hook reports to the agent only after a git commit', () => {
   const out = JSON.parse(hook('git commit -m x').stdout)
   assert.equal(out.hookSpecificOutput.hookEventName, 'PostToolUse')
   assert.match(out.hookSpecificOutput.additionalContext, /prova per a: commit/)
+})
+
+test('the end-of-turn hook hands the agent back what the thread missed, once per turn', () => {
+  const dir = project({ graph: PLAN, thread: { current: 'a' } })
+  git(dir, 'init', '-q')
+  git(dir, 'commit', '-q', '--allow-empty', '-m', 'feat: a\n\nThread: a')
+  const transcript = join(dir, 'transcript.jsonl')
+  const turn = entries => writeFileSync(transcript, entries.map(e => JSON.stringify(e)).join('\n') + '\n')
+  const hook = (input = {}) => spawnSync(process.execPath, [CLI, 'check', '--hook'], { cwd: dir, encoding: 'utf8', env: { ...process.env, TMPDIR: '/scratch-elsewhere' }, input: JSON.stringify({ transcript_path: transcript, ...input }) })
+  const write = path => ({ type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Write', input: { file_path: path } }] } })
+
+  turn([{ type: 'user', message: { content: 'Procedi pure' } }])
+  const out = JSON.parse(hook().stdout)
+  assert.equal(out.decision, 'block')
+  assert.match(out.reason, /^ariadne: .*ariadne plan/s)
+  assert.equal(hook({ stop_hook_active: true }).stdout, '')
+
+  const outside = join(mkdtempSync(join(tmpdir(), 'ariadne-out-')), 'report.html')
+  turn([{ type: 'user', message: { content: 'scrivi il rapporto' } }, write(outside), write(join(dir, 'in.md'))])
+  assert.match(JSON.parse(hook().stdout).reason, new RegExp(`${outside}.*--file`))
+  run(dir, 'fill', 'a', '--file', outside)
+  assert.equal(hook().stdout, '')
+
+  turn([{ type: 'user', message: { content: 'spiegami' } }])
+  assert.equal(hook().stdout, '')
+  assert.equal(hook({ transcript_path: join(dir, 'missing.jsonl') }).status, 0)
 })
 
 test('sync outside a git repository does nothing and exits 0', () => {

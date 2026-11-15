@@ -21,8 +21,8 @@ const run = (command, project, input = '{}') => spawnSync('/bin/sh', ['-c', comm
   env: { ...process.env, CLAUDE_PLUGIN_ROOT: PLUGIN, CLAUDE_PROJECT_DIR: project },
 })
 
-test('the plugin hooks the start of a session, every prompt and every Bash call', () => {
-  assert.deepEqual(Object.keys(hooks).sort(), ['PostToolUse', 'SessionStart', 'UserPromptSubmit'])
+test('the plugin hooks the start of a session, every prompt, every Bash call and the end of every turn', () => {
+  assert.deepEqual(Object.keys(hooks).sort(), ['PostToolUse', 'SessionStart', 'Stop', 'UserPromptSubmit'])
   for (const event of Object.keys(hooks)) assert.ok(commands(event).every(c => c.includes('${CLAUDE_PLUGIN_ROOT}/bin/ariadne.mjs')))
 })
 

@@ -5,15 +5,16 @@
 
 import { spawn, spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { appendFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { basename, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 
 import { apply } from '../src/apply.mjs'
 import { band } from '../src/band.mjs'
 import { card, view } from '../src/card.mjs'
+import { behind } from '../src/check.mjs'
 import { parse } from '../src/graph.mjs'
 import { systemLang, words } from '../src/i18n.mjs'
 import { show, why } from '../src/inspect.mjs'
@@ -265,6 +266,30 @@ function sync(hook) {
   console.log(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: `ariadne:\n${lines.join('\n')}` } }))
 }
 
+/** At the end of a turn, hands the agent back what the thread missed (src/check.mjs); once, never in a loop. */
+function endOfTurn() {
+  let input = {}
+  try { input = JSON.parse(readFileSync(0, 'utf8')) } catch { return }
+  if (input.stop_hook_active || !input.transcript_path || !existsSync(GRAPH)) return
+  const entries = readFileSync(input.transcript_path, 'utf8').split('\n').filter(Boolean).flatMap(l => {
+    try { return [JSON.parse(l)] } catch { return [] }
+  })
+  // A file gone since the turn still resolves through its folder.
+  const real = path => {
+    try { return realpathSync(path) } catch {}
+    try { return join(realpathSync(dirname(path)), basename(path)) } catch { return path }
+  }
+  const nodes = parse(readFileSync(GRAPH, 'utf8'))
+  const cited = nodes.flatMap(n => (n.proof ?? []).filter(p => p.type === 'file').map(p => p.ref))
+  const recent = commits()
+  const reasons = behind({
+    entries, root: process.cwd(), home: homedir(), ignore: [real(tmpdir()) + '/', '/tmp/', '/private/tmp/'],
+    cited, untracked: recent ? untracked(recent) : 0, real,
+  })
+  if (reasons.length === 0) return
+  console.log(JSON.stringify({ decision: 'block', reason: `ariadne: ${reasons.join('\n')}` }))
+}
+
 function inspect(fn, id) {
   const text = fn(parse(readFileSync(GRAPH, 'utf8')), id)
   if (text === null) {
@@ -379,6 +404,11 @@ else if (command === 'sync') {
   } catch (error) {
     if (!values.hook) console.error(say('noSync', error.message))
   }
+}
+else if (command === 'check') {
+  try {
+    endOfTurn()
+  } catch {}
 }
 else if (command === 'show' && args[0]) inspect(show, args[0])
 else if (command === 'why' && args[0]) inspect(why, args[0])
