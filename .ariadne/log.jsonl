@@ -160,3 +160,5 @@
 {"at":"2026-11-15T12:34Z","id":"m4.4.5","op":"close","text":"chiuso m4.4.5 Pilota di E1 ed E2: pilota E1 chiuso: 7 run Haiku; scheda di stato -10% di costo; H1 non inferiorità e H2 costo normalizzato; 12 scenari per potenza 0,93","proof":[{"type":"commit","ref":"628e75d"}]}
 {"at":"2026-11-15T12:34Z","id":"m4.4.6","op":"start","text":"iniziato m4.4.6 Scenari di test, E3 e trascrizioni congelati"}
 {"at":"2026-11-15T12:34Z","id":"m4.4.6","op":"fill","text":"completato m4.4.6: detail"}
+{"at":"2026-11-15T12:37Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 6ccc3f8","proof":[{"type":"commit","ref":"6ccc3f8"}]}
+{"at":"2026-11-15T12:38Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 3be8e42","proof":[{"type":"commit","ref":"3be8e42"}]}

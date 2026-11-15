@@ -45,7 +45,7 @@ function copyCli(dir) {
  * Builds `<dir>/ariadne`, `<dir>/prima`, the questions and the grading key; returns `{ dir, questions, key }`.
  * `until` stops before that event and leaves out the frozen STATE.md and LOG.md: the handoffs of prima start there.
  */
-export function generate(scenario, dir, { until } = {}) {
+export function generate(scenario, dir, { until, paraphrases } = {}) {
   const errors = check(scenario)
   if (errors.length) throw new Error(`${scenario.id}: ${errors.join('; ')}`)
   const ariadne = join(dir, 'ariadne')
@@ -126,7 +126,10 @@ export function generate(scenario, dir, { until } = {}) {
   }
   // A partial generation, for the handoffs of prima, needs no questions: the steps they name may not exist yet.
   if (until !== undefined) return { dir }
-  const questions = scenario.questions.map(q => ({ cat: q.cat, text: q.text, ...answer(q, scenario, titles) }))
+  // Frozen paraphrases (eval/paraphrase.mjs), when the scenario has them.
+  const frozenParaphrases = join(FROZEN, scenario.id, 'paraphrases.json')
+  const reworded = paraphrases ?? (existsSync(frozenParaphrases) ? JSON.parse(readFileSync(frozenParaphrases, 'utf8')) : [])
+  const questions = scenario.questions.map((q, i) => ({ cat: q.cat, text: q.text, ...(reworded[i] ? { paraphrase: reworded[i] } : {}), ...answer(q, scenario, titles) }))
   writeFileSync(join(dir, 'questions.json'), JSON.stringify(questions, null, 2) + '\n')
   // What the graders need besides each answer: every step title, to catch an answer that names the wrong one.
   // Milestones are kept apart: an answer may name the milestone around a step without naming a wrong step.

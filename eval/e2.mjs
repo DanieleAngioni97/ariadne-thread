@@ -12,10 +12,9 @@ import { fileURLToPath } from 'node:url'
 import { parseArgs } from 'node:util'
 
 import { view } from '../src/card.mjs'
-import { normalizedCost } from './cost.mjs'
 import { generate } from './generate.mjs'
 import { closest } from './grade.mjs'
-import { launch } from './run.mjs'
+import { ask } from './run.mjs'
 
 const FROZEN = fileURLToPath(new URL('./frozen', import.meta.url))
 export const VERSIONS = ['F0', 'F1', 'F2', 'F3', 'F4']
@@ -123,20 +122,6 @@ progress record. Find where the record disagrees with what the message says happ
 - wrong-current: the record's current step ("Sei in") is not the step the work is at now.
 Reply with JSON only: {"alarms":[{"step":"<the step title as in the record, or a short title for unrecorded work>","type":"<type>"}]}.
 If they agree, reply {"alarms":[]}.`
-
-function ask(prompt, { model, bin, env }) {
-  const cwd = mkdtempSync(join(tmpdir(), 'ariadne-e2-ask-'))
-  try {
-    const r = launch(bin, ['-p', prompt, '--model', model, '--restricted', '--tools', 'Read', '--permission-mode', 'dontAsk', '--strict-mcp-config',
-      '--disable-slash-commands', '--no-session-persistence', '--output-format', 'stream-json', '--verbose'], cwd, env)
-    const events = (r.stdout ?? '').split('\n').flatMap(l => { try { return [JSON.parse(l)] } catch { return [] } })
-    const result = events.find(e => e.type === 'result')
-    const firstReads = events.find(e => e.type === 'assistant')?.message?.usage?.cache_read_input_tokens ?? 0
-    return { text: result?.result ?? '', error: !result || result.is_error, cost: result?.total_cost_usd ?? null, costNorm: result ? normalizedCost(model, result.usage ?? {}, firstReads) : null }
-  } finally {
-    rmSync(cwd, { recursive: true, force: true })
-  }
-}
 
 /** One observation: the turn and the view in, the alarms out. */
 export function observe({ turn, view: record, model, bin = 'claude', env = {} }) {

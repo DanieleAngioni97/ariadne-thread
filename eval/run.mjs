@@ -99,6 +99,21 @@ export function launch(bin, args, cwd, env) {
   return spawnSync(cmd, [...pre, ...args], { cwd, input: '', timeout: TIMEOUT_MS, maxBuffer: 256 * 1024 * 1024, encoding: 'utf8', env: { ...process.env, ...env } })
 }
 
+/** One prompt to a model with no project around it: its text, whether it failed, and its costs. */
+export function ask(prompt, { model, bin, env }) {
+  const cwd = mkdtempSync(join(tmpdir(), 'ariadne-ask-'))
+  try {
+    const r = launch(bin, ['-p', prompt, '--model', model, '--restricted', '--tools', 'Read', '--permission-mode', 'dontAsk', '--strict-mcp-config',
+      '--disable-slash-commands', '--no-session-persistence', '--output-format', 'stream-json', '--verbose'], cwd, env)
+    const events = (r.stdout ?? '').split('\n').flatMap(l => { try { return [JSON.parse(l)] } catch { return [] } })
+    const result = events.find(e => e.type === 'result')
+    const firstReads = events.find(e => e.type === 'assistant')?.message?.usage?.cache_read_input_tokens ?? 0
+    return { text: result?.result ?? '', error: !result || result.is_error, cost: result?.total_cost_usd ?? null, costNorm: result ? normalizedCost(model, result.usage ?? {}, firstReads) : null }
+  } finally {
+    rmSync(cwd, { recursive: true, force: true })
+  }
+}
+
 /** Runs one trial and returns its record; `raw` is a folder for the stream, kept as it came (P2). */
 export function trial({ fixture, condition, q, key, model, seed, bin = 'claude', env = {}, raw, id = 'trial', phrasing = 'original' }) {
   const copy = mkdtempSync(join(tmpdir(), 'ariadne-trial-'))

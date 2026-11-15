@@ -136,3 +136,11 @@ test('after a deferral the work on the step lands on the node that resumes it, a
   assert.equal(original.status, 'deferred')
   assert.equal(resumed.status, 'done')
 })
+
+test('frozen paraphrases go into the questions, next to the text', () => {
+  const withParaphrase = { ...scenario, id: 'dev-01-paraphrase-test' }
+  const dir = mkdtempSync(join(tmpdir(), 'ariadne-eval-'))
+  const { questions } = generate(withParaphrase, dir, { paraphrases: scenario.questions.map((q, i) => (q.cat === 'continue' ? null : `P${i}?`)) })
+  assert.equal(questions.find(q => q.cat === 'where').paraphrase, `P${scenario.questions.findIndex(q => q.cat === 'where')}?`)
+  assert.equal(questions.find(q => q.cat === 'continue').paraphrase, undefined)
+})
