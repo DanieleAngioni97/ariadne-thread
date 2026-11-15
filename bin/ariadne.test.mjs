@@ -56,6 +56,13 @@ test('init makes the project an ariadne project, says what comes next, and can r
   assert.match(run(dir, 'card', '--hook').stdout, /nessun grafo/)
 })
 
+test('bin/ariadne runs the CLI by name, as the plugin puts it on the PATH of Claude\'s Bash', () => {
+  const dir = project()
+  const r = spawnSync('ariadne', ['init'], { cwd: dir, encoding: 'utf8', env: { ...process.env, PATH: `${join(CLI, '..')}:${process.env.PATH}` } })
+  assert.equal(r.status, 0, r.stderr)
+  assert.match(r.stdout, /progetto pronto/)
+})
+
 test('summary on an invalid graph summarizes what it can read and warns, exit 0', () => {
   const graph = GOOD.map(x => JSON.stringify(x)).join('\n') + '\nnot json\n' + JSON.stringify(n('c', { what: '' })) + '\n'
   const r = run(project({ graph, thread: { current: 'b' } }), 'summary')

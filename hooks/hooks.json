@@ -1,1 +1,40 @@
-{ "modules": ["./register.tsx"] }
+{
+  "modules": ["./register.tsx"],
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && node \"${CLAUDE_PLUGIN_ROOT}/bin/ariadne.mjs\" sync; node \"${CLAUDE_PLUGIN_ROOT}/bin/ariadne.mjs\" card --hook",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && node \"${CLAUDE_PLUGIN_ROOT}/bin/ariadne.mjs\" sync --hook",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd \"$CLAUDE_PROJECT_DIR\" && node \"${CLAUDE_PLUGIN_ROOT}/bin/ariadne.mjs\" sync; node \"${CLAUDE_PLUGIN_ROOT}/bin/ariadne.mjs\" summary --hook",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}
