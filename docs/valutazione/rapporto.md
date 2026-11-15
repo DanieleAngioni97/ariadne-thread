@@ -20,13 +20,13 @@ dato momento, pagato a token a ogni richiesta.
 
 Quando una sessione finisce, il contesto si perde. La pratica comune è l'**handoff**: prima di chiudere,
 l'agente scrive due note, `STATE.md` (dove siamo, cosa viene dopo) e `LOG.md` (cosa è successo), e la
-sessione successiva le legge. In questo rapporto la chiamiamo condizione ***prima***.
+sessione successiva le legge. In questo rapporto la chiamiamo condizione ***note a mano***: è il termine di paragone di ogni numero.
 
 L'handoff ha due difetti, ed è da questi che ariadne nasce.
 
 - **Logistica.** Qualcuno deve ricordarsi di chiederlo. Nell'archivio di 7 progetti dell'autore (107
   sessioni, 1085 prompt) l'utente ha chiesto un handoff o un aggiornamento dello stato 44 volte: 0,41 per
-  sessione, in quasi una sessione su tre. Quando nessuno lo chiede, le note restano indietro.
+  sessione, in circa due sessioni su cinque. Quando nessuno lo chiede, le note restano indietro.
 - **Explainability.** Le note dicono dove sei, non come ci sei arrivato: perché si è scelta una strada,
   quale è stata abbandonata, che cosa è stato rinviato e dove sta la prova che un passo è finito.
 
@@ -105,12 +105,12 @@ quanto con le note scritte a mano, e a che costo?
 
 - **Scenari.** Uno **scenario** è la storia di un progetto finto: piani, commit, deviazioni, rinvii,
   decisioni sostituite, da 60 a 120 eventi. Da ogni scenario un generatore deterministico costruisce due
-  copie del repository, una per **condizione**: *prima* (con `STATE.md` e `LOG.md` scritti dalla skill di
+  copie del repository, una per **condizione**: *note a mano* (con `STATE.md` e `LOG.md` scritti dalla skill di
   handoff a ogni fine milestone e alla fine) e *ariadne* (con il filo). Il codice del progetto finto è lo
   stesso nelle due.
 - **Domande.** Sette per scenario: dove sei, perché, quale prova, cosa è stato rinviato, quale decisione
-  vale oggi, una domanda senza risposta (per vedere se l'agente inventa) e il **Continua**: «riprendi il
-  lavoro, fai la prima modifica». Il Continua passa se l'agente modifica un file del passo aperto, o ne
+  vale oggi, una domanda senza risposta (per vedere se l'agente inventa) e la **prova di ripartenza**: «riprendi il
+  lavoro, fai la prima modifica». La prova di ripartenza passa se l'agente modifica un file del passo aperto, o ne
   aggiunge uno nella sua cartella, senza toccare lavoro sostituito o rinviato.
 - **Cieco.** I 12 scenari di test li ha scritti un modello (Opus 5.5) da un brief fisso. L'autore di ariadne
   non ha letto né domande né risposte. Un revisore con contesto pulito ne ha controllati 4 estratti a caso e
@@ -120,45 +120,45 @@ quanto con le note scritte a mano, e a che costo?
   possono scegliere a posteriori le analisi che danno ragione.
 - **Prove.** Il soggetto è Sonnet 5.5, in sessioni isolate: 12 scenari × 7 domande × 2 condizioni × 2
   ripetizioni = 336 prove, più 56 con le domande riformulate e 56 con Opus 5.5 come controllo.
-- **Spesa.** 26,3 $ a prezzi di listino, contro un tetto di 30 $ fissato prima: scenari 7,2, note di
-  *prima* 7,8, E1 7,5, controllo Opus 2,4, E2 e il resto 1,3.
+- **Spesa.** 26,3 $ a prezzi di listino, contro un tetto di 30 $ fissato prima: scenari 7,2, note a mano
+  scritte per gli scenari 7,8, prove di ripresa 7,5, controllo Opus 2,4, osservatore e il resto 1,3.
 - **Pilota.** Sette piloti su Haiku, su scenari di sviluppo separati, hanno messo a punto domande e grader e
   hanno trovato tre difetti di ariadne, poi corretti (sotto).
 
 ### Le ipotesi
 
-- **H1, correttezza.** ariadne non è peggio di *prima* di più di 10 punti percentuali. È un test di **non
+- **Ipotesi 1, correttezza.** ariadne non è peggio delle *note a mano* di più di 10 punti percentuali. È un test di **non
   inferiorità**: passa se il limite basso dell'**intervallo** al 97,5% (l'insieme dei valori compatibili con
   i dati) sta sopra −10 punti.
-- **H2, costo.** Il costo per prova differisce tra le due condizioni. Il costo è a prezzi di listino, con la
+- **Ipotesi 2, costo.** Il costo per prova differisce tra le due condizioni. Il costo è a prezzi di listino, con la
   **cache** (il testo già visto dal modello, che costa un decimo) trattata allo stesso modo in entrambe, così
   l'ordine delle prove non cambia il conto.
 
 ## 7. I risultati
 
-### Ripresa del lavoro (E1, Sonnet 5.5)
+### Ripresa del lavoro (Sonnet 5.5)
 
-| Misura | *prima* | ariadne | Esito |
+| Misura | *note a mano* | ariadne | Esito |
 |---|---|---|---|
-| Domande giuste (sei categorie) | 96,5% | 98,6% | **H1 passa**: +2,1 punti, limite basso −2,7 contro −10 |
+| Domande giuste (sei categorie) | 96,5% | 98,6% | **ipotesi 1 confermata**: +2,1 punti, limite basso −2,7 contro −10 |
 | Giuste in entrambe le ripetizioni | 95,8% | 97,2% | — |
-| Costo per prova, rapporto ariadne/*prima* | 1 | 0,95 (0,90–1,00) | **H2 non significativa** (p = 0,11) |
-| Continua | 14/24 | 24/24 | secondaria |
-| Continua, criterio largo (post-hoc) | 20/24 | 24/24 | secondaria |
+| Costo per prova, rapporto ariadne/*note a mano* | 1 | 0,95 (0,90–1,00) | **ipotesi 2 non confermata** (p = 0,11) |
+| Ripartenza | 14/24 | 24/24 | secondaria |
+| Ripartenza, criterio largo (deciso dopo) | 20/24 | 24/24 | secondaria |
 | Domande riformulate (4 scenari) | 95,8% | 100% | secondaria |
-| Fermate per chiedere sul Continua | 0/24 | 0/24 | — |
+| Fermate per chiedere sulla ripartenza | 0/24 | 0/24 | — |
 | Controllo Opus 5.5 (2 scenari) | 95,8% | 100% | costo −11% |
 
 - **Correttezza.** Le due condizioni sono quasi al massimo. Gli errori sono tutti astensioni («non risulta»)
-  sulla domanda di prova: 5 in *prima*, 2 in ariadne. Nessuna risposta sbagliata.
-- **Costo.** ariadne costa meno in 8 scenari su 12 (da −19% a +11%). Costa meno dove *prima* deve cercare nel
-  LOG: decisione attuale (−23%), rinvii (−19%), dove sei (−10%). Costa uguale su perché, prova e Continua.
-- **Continua.** Con il criterio pre-registrato ariadne riprende il passo giusto 24 volte su 24, *prima* 14. Ma 6 dei 10 errori di *prima* sono
+  sulla domanda di prova: 5 con le *note a mano*, 2 con ariadne. Nessuna risposta sbagliata.
+- **Costo.** ariadne costa meno in 8 scenari su 12 (da −19% a +11%). Costa meno dove con le *note a mano* bisogna cercare nel
+  LOG: decisione attuale (−23%), rinvii (−19%), dove sei (−10%). Costa uguale su perché, prova e ripartenza.
+- **Ripartenza.** Con il criterio fissato prima ariadne riprende il passo giusto 24 volte su 24, le *note a mano* 14. Ma 6 dei 10 errori delle *note a mano* sono
   inizi giusti in un file fuori dalla cartella del passo, come `tests/test_letters.py`: con un criterio che
-  accetta ogni file che nomina l'area del passo, *prima* sale a 20. Gli errori veri di *prima* sono due
+  accetta ogni file che nomina l'area del passo, le *note a mano* salgono a 20. Gli errori veri delle *note a mano* sono due
   scenari su dodici: lavora su un'altra area, o tocca solo la configurazione.
 
-### L'osservatore (E2, prototipo non ancora nel prodotto)
+### L'osservatore (prototipo non ancora nel prodotto)
 
 Un **osservatore** è un modello piccolo (Haiku 5.5) che legge l'ultimo turno dell'agente e la vista del filo
 e segnala se il filo è rimasto indietro: un passo finito non registrato, una deviazione non annotata, la
@@ -181,7 +181,7 @@ difficili (0,77). Nel pilota il primo prompt dava falsi allarmi nel 75% dei casi
 
 La valutazione ha cambiato il prodotto prima di misurarlo:
 
-- **Il Continua.** Nei primi piloti ariadne riprendeva peggio di *prima* (25% contro 80%): il riassunto
+- **La ripartenza.** Nei primi piloti ariadne riprendeva peggio delle *note a mano* (25% contro 80%): il riassunto
   mostrava il prossimo passo con lo stesso peso di quello aperto, e non diceva cosa ne restava. La scheda di
   stato ora apre con «Sei in» e «Resta da fare»: sul test, 24 su 24.
 - **Il costo.** Al sesto pilota ariadne costava il 21% in più, perché il riassunto si ripeteva a ogni prompt.
@@ -189,9 +189,9 @@ La valutazione ha cambiato il prodotto prima di misurarlo:
 - **Comportamenti.** L'agente con ariadne tendeva a chiudere un passo prima di farlo, a saltare al passo
   successivo, a fermarsi a chiedere conferma. Sul test non si è mai fermato a chiedere.
 
-## 8. Pro e contro rispetto a prima
+## 8. Pro e contro rispetto alle note a mano
 
-| | ariadne | *prima* (handoff a mano) |
+| | ariadne | *note a mano* (handoff) |
 |---|---|---|
 | Correttezza della ripresa | pari (98,6%) | pari (96,5%) |
 | Costo della ripresa | uguale o poco meno (−5%, non significativo) | riferimento |
@@ -205,12 +205,12 @@ La valutazione ha cambiato il prodotto prima di misurarlo:
 
 ## 9. Limiti
 
-- **Un solo autore e un solo utente.** La prova con la persona (E3) non è ancora fatta: questo rapporto dice
+- **Un solo autore e un solo utente.** La prova con la persona non è ancora fatta: questo rapporto dice
   come se la cava l'agente, non quanto la persona capisce meglio il flusso.
 - **Scenari sintetici.** Progetti finti scritti da un modello, non lavoro vero; il set è piccolo (12).
 - **Effetto soffitto.** Entrambe le condizioni sono vicine al 100%: il test misura la non inferiorità, non
   un vantaggio.
-- **L'handoff di *prima* c'è sempre.** Negli scenari *prima* riceve l'handoff alla fine, come prescrive la
+- **Le note a mano ci sono sempre.** Negli scenari la condizione *note a mano* riceve l'handoff alla fine, come prescrive la
   skill. Nella pratica l'handoff si dimentica: il vantaggio logistico di ariadne non entra nei numeri.
 - **Autonomia.** Le richieste di handoff vengono da un filtro automatico sui prompt, di precisione non
   verificata; con ariadne ci sono solo 3 sessioni, troppe poche per un confronto.
@@ -220,10 +220,10 @@ La valutazione ha cambiato il prodotto prima di misurarlo:
 
 ## 10. Prossimi passi
 
-1. **E3, con l'utente:** 8 sessioni alternate a caso tra le due condizioni, con 4 compiti di comprensione ciascuna; tempo, facilità percepita (SEQ) e carico mentale.
+1. **Prova con la persona:** 8 sessioni alternate a caso tra le due condizioni, con 4 compiti di comprensione ciascuna; tempo, facilità percepita (SEQ) e carico mentale.
 2. **Scribe:** trasformare la nota dell'agente in operazioni validate, per i casi che i commit non coprono.
-3. **Osservatore nel prodotto:** E2 lo adotta; va collegato agli hook per segnalare quando il filo resta indietro.
-4. **Pubblicazione (M5):** README in inglese, licenza Apache-2.0, installazione in un comando.
+3. **Osservatore nel prodotto:** la valutazione lo adotta; va collegato agli hook per segnalare quando il filo resta indietro.
+4. **Uso da parte di altri:** il plugin si installa già con `/plugin install ariadne --marketplace DanieleAngioni97/ariadne-thread` e `/ariadne:init`; serve qualcuno che lo provi su un progetto vero.
 
 ## Fonti e materiali
 

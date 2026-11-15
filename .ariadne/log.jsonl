@@ -308,3 +308,4 @@
 {"at":"2026-11-15T17:05Z","id":"m4.6.11","op":"close","text":"closed m4.6.11 CLI e banda in inglese: CLI, scheda, riassunto, banda e viewer in inglese di default, italiano con lang in .ariadne/config.json; nodi storici collegati a documenti e commit","proof":[{"type":"commit","ref":"c128926"}]}
 {"at":"2026-11-15T17:12Z","id":"m4.6","op":"fill","text":"proof for m4.6: commit a464143","proof":[{"type":"commit","ref":"a464143"}]}
 {"at":"2026-11-15T17:14Z","id":"m4.6","op":"close","text":"closed m4.6 Pacchetto installabile e configurabile: installable plugin: one-command install from GitHub, /ariadne:init, per-project viewer port, English by default, MIT, clean history; band in two rows","proof":[{"type":"commit","ref":"a464143"}]}
+{"at":"2026-11-15T17:14Z","id":"m4.4.12.3","op":"start","text":"started m4.4.12.3 Revisione severa della narrazione di rapporto.html"}
