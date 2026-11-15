@@ -11,11 +11,11 @@ nodi con stato, rami, posizione corrente, contesto su hover/click.
 ## Il filo (dogfooding, R24)
 
 `ariadne` = `node bin/ariadne.mjs`. Dove sei, da dove vieni e cosa viene dopo stanno in `.ariadne/`, non in
-STATE.md o LOG.md, che non esistono più: `handoff` qui non serve. Il riassunto arriva da solo a ogni
-prompt. Non frenare il lavoro per il grafo: traccia quello che fai già.
+STATE.md o LOG.md scritti a mano: `handoff` qui non serve. All'avvio arriva da sola la scheda di stato;
+a ogni prompt il riassunto, solo se è cambiato. Non frenare il lavoro per il grafo: traccia quello che fai già.
 
-- **Riprendere dopo `/clear`:** leggi il riassunto, poi `node bin/ariadne.mjs why <id>` sui nodi che
-  servono e apri solo i «File utili». `show <id>` per un nodo, `log` per gli ultimi eventi.
+- **Riprendere dopo `/clear`:** leggi la scheda; per il resto cerca in `.ariadne/STATE.md` (una riga
+  per nodo, generata), poi `node bin/ariadne.mjs why <id>` solo sui nodi che servono.
 - **Commit:** ogni messaggio porta `Thread: <id>` del nodo su cui lavori; l'ultimo di un passo
   `Thread: <id> done: <esito in una riga>`. Un hook registra la prova e passa al passo successivo.
 - **Piano approvato:** `ariadne plan <parent> "<passo>"… --ref "chat <data>: <cosa hai approvato>"`.
