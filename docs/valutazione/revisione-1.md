@@ -2,7 +2,7 @@
 
 *2026-11-14, revisore Opus con contesto pulito (subagente `reviewer`), passo `m4.3.4`. Ha letto solo
 meta-piano, principi, piano, le due ricerche, lo STATE.md originale, la skill `handoff` e specifica § Dati.
-Testo riportato senza modifiche di sostanza; righe riferite alla bozza `cb48d0f`.*
+Testo riportato senza modifiche di sostanza; righe riferite alla bozza `b52214e`.*
 
 **Verdetto:** pronto con correzioni sostanziali. L'impianto regge (D1–D4 separate, pre-registrazione,
 E2 con fixture F0), ma E1 misura in parte l'aderenza al formato di ariadne, il soggetto non è isolato dal

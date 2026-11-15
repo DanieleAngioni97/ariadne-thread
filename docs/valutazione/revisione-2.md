@@ -1,6 +1,6 @@
 # Revisione indipendente 2 del piano
 
-*2026-11-14, secondo revisore Opus con contesto pulito: verifica della versione 2 (`2de33d8`) contro
+*2026-11-14, secondo revisore Opus con contesto pulito: verifica della versione 2 (`f455ad8`) contro
 `revisione-1.md`. Ha letto revisione 1, piano, principi e ricerca-metodi; ha eseguito `claude --version`
 (2.1.302) e `claude --help`. Testo riportato senza modifiche di sostanza.*
 

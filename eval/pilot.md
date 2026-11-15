@@ -6,7 +6,7 @@ question categories (Continua apart), after the exclusions.
 | Run | Reps | prima | ariadne | Continua prima / ariadne | What it changed next |
 |---|---|---|---|---|---|
 | pilot-haiku | 1 | 0.57 | 0.72 | 0.80 / 0.25 | update and deferred became multiple choice, answers in English |
-| pilot-haiku-2 | 1 | 0.89 | 0.86 | 0.80 / 0.00 | helper commands allowed; ariadne bug in `next` fixed (`c73faca`) |
+| pilot-haiku-2 | 1 | 0.89 | 0.86 | 0.80 / 0.00 | helper commands allowed; ariadne bug in `next` fixed (`06c7b09`) |
 | pilot-haiku-3 | 1 | 0.89 | 0.94 | 0.83 / 0.33 | Continua asks for a code change; Prova accepts any own file |
 | pilot-haiku-4 | 2 | 0.85 | 0.93 | 0.75 / 0.82 | Where graded on two fields by the closest title |
 | pilot-haiku-5 | 2 | 0.93 | 0.99 | 0.75 / 0.55 | ceiling rule reached: both above 0.90 |
@@ -17,7 +17,7 @@ pilot-haiku-6: 56 trials, 1 excluded (a read outside the copy), about 0.10 $; me
 (prima) and 34k (ariadne). Longer scenarios and more distractors did not lift the ceiling: with a handoff at
 the very end, STATE.md answers every category.
 
-pilot-haiku-7 (state card, `bc1dba6`; deferral fix in the generator, `66c6b11`): 112 trials, none excluded.
+pilot-haiku-7 (state card, `5b64b03`; deferral fix in the generator, `a78cafc`): 112 trials, none excluded.
 Cost 0.080 $ (ariadne) against 0.088 $ (prima), -10%, where pilot 6 had +21%; 3.4 turns against 3.8, and
 the prompt hook stays silent. Still dearer: proof (x1.26) and abstain (x1.07); cheaper: update, deferred,
 where (about x0.67) and continue (x0.85).
@@ -58,4 +58,4 @@ Variant A (Haiku 5.5 on the last turn and the view), 12 checkpoints on dev-03..0
 
 - The first run flagged a correct graph because the observer prompt did not say what "done" and "current"
   mean once a step is closed: a step the agent says it starts next is current, a finished step is done even
-  if its tests were not run (`3fafb3e`). Only the prompt changed; the turns are the same frozen ones.
+  if its tests were not run (`31213f8`). Only the prompt changed; the turns are the same frozen ones.

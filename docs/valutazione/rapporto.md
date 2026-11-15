@@ -1,8 +1,7 @@
 # ariadne: il filo del lavoro con un agente, senza handoff
 
-*Rapporto finale della valutazione, 2026-11-15 (passo `m4.4.12`). Versione completa per chi vuole il metodo;
-la pagina `docs/rapporto.html` lo presenta in breve. Ogni termine in grassetto è spiegato dove compare la
-prima volta; dopo si usa senza spiegarlo di nuovo.*
+*Rapporto finale della valutazione, 2026-11-15 (passo `m4.4.12`). Versione completa per chi vuole il metodo.
+Ogni termine in grassetto è spiegato dove compare la prima volta; dopo si usa senza spiegarlo di nuovo.*
 
 ## In breve
 

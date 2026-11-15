@@ -60,7 +60,7 @@ prevale. Il commit che lo introduce è il punto di riferimento: dopo, cambiano s
   scenario, diversi da quelli congelati, e si ferma. Il testo sopra dice già 4 per scenario; il run usa `--k 4`.
 - **Regola (piano § 7):** si adotta se il limite inferiore del recall complessivo è ≥ 0,6 e il limite superiore
   dei falsi allarmi su F0 è ≤ 0,15, con intervalli bootstrap per scenario. Il prompt dell'osservatore è quello
-  del commit `3fafb3e`, provato sul pilota 2 (recall 0,98, falsi allarmi 0 su 12 checkpoint di sviluppo).
+  del commit `31213f8`, provato sul pilota 2 (recall 0,98, falsi allarmi 0 su 12 checkpoint di sviluppo).
 
 ## Spesa
 
@@ -84,7 +84,7 @@ Revisore `reviewer` (Sonnet), contesto pulito, 2026-11-15. Criteri del piano: si
 condizioni? Le domande usano vocabolario di ariadne? Il rapporto cita le domande solo per indice e categoria.
 
 - test-03, test-06, test-08: usabili. test-09: da correggere sul Continua.
-- **Bloccante, corretto** (`9a2ac29`): le note di *prima* di test-09 fanno cominciare il passo aperto dai
+- **Bloccante, corretto** (`cf94396`): le note di *prima* di test-09 fanno cominciare il passo aperto dai
   test in `tests/<area>/`, che il grader del Continua dava sbagliati. Lo stesso, minore, in test-08. Ora un
   test del passo aperto in `tests/<area>/` o `test/<area>/` conta, per tutti gli scenari e le condizioni.
 - *Minori, lasciati e da riportare:*

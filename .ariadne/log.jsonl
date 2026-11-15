@@ -1,13 +1,13 @@
-{"at":"2026-11-11T11:41Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit cf8c1c2","proof":[{"type":"commit","ref":"cf8c1c2"}]}
-{"at":"2026-11-11T11:41Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit db17c78","proof":[{"type":"commit","ref":"db17c78"}]}
-{"at":"2026-11-11T11:41Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit 7f318ab","proof":[{"type":"commit","ref":"7f318ab"}]}
-{"at":"2026-11-11T11:41Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit e44310f","proof":[{"type":"commit","ref":"e44310f"}]}
+{"at":"2026-11-11T11:41Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit 70ae3c3","proof":[{"type":"commit","ref":"70ae3c3"}]}
+{"at":"2026-11-11T11:41Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit 0eb701d","proof":[{"type":"commit","ref":"0eb701d"}]}
+{"at":"2026-11-11T11:41Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit a147ceb","proof":[{"type":"commit","ref":"a147ceb"}]}
+{"at":"2026-11-11T11:41Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit 67dc810","proof":[{"type":"commit","ref":"67dc810"}]}
 {"at":"2026-11-11T11:42Z","id":"m3.8","op":"defer","text":"rinviato m3.8 Misurare il costo dell’osservatore a M4 Revisione e feedback (m4.1)"}
 {"at":"2026-11-11T11:42Z","id":"m3.7","op":"defer","text":"rinviato m3.7 Scribe a M4 Revisione e feedback (m4.2)"}
-{"at":"2026-11-11T11:43Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit cc5214d","proof":[{"type":"commit","ref":"cc5214d"}]}
-{"at":"2026-11-11T11:43Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit 4076ae4","proof":[{"type":"commit","ref":"4076ae4"}]}
-{"at":"2026-11-11T11:43Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit 6cd9b10","proof":[{"type":"commit","ref":"6cd9b10"}]}
-{"at":"2026-11-11T11:43Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit 24beed5","proof":[{"type":"commit","ref":"24beed5"}]}
+{"at":"2026-11-11T11:43Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit e353a78","proof":[{"type":"commit","ref":"e353a78"}]}
+{"at":"2026-11-11T11:43Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit b8ac6f4","proof":[{"type":"commit","ref":"b8ac6f4"}]}
+{"at":"2026-11-11T11:43Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit f02acc5","proof":[{"type":"commit","ref":"f02acc5"}]}
+{"at":"2026-11-11T11:43Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit 6fa67f6","proof":[{"type":"commit","ref":"6fa67f6"}]}
 {"at":"2026-11-11T12:03Z","id":"m3.10","op":"add","text":"deviazione m3.10 Albero mai pulito dopo un commit, rientra in m3.6"}
 {"at":"2026-11-11T12:03Z","id":"i1","op":"add","text":"aggiunto lista i1 Indagine sull'albero sporco sotto m3.10"}
 {"at":"2026-11-11T12:03Z","id":"k1","op":"add","text":"aggiunto punto k1 Indizio: l'hook scrive dopo il commit sotto i1"}
@@ -17,55 +17,55 @@
 {"at":"2026-11-11T12:03Z","id":"h1","op":"replace","text":"sostituito h1 Ipotesi: amend del commit con k3"}
 {"at":"2026-11-11T12:03Z","id":"k4","op":"add","text":"aggiunto punto k4 Deduzione: i commit solo di .ariadne/ sono neutri sotto i1, da k1, k2, k3"}
 {"at":"2026-11-11T12:04Z","id":"k1","op":"close","text":"chiuso k1 Indizio: l'hook scrive dopo il commit: sync --hook aggiunge la prova del commit appena fatto a graph.jsonl e log.jsonl.","proof":[{"type":"file","ref":"bin/ariadne.mjs"}]}
-{"at":"2026-11-11T12:04Z","id":"k2","op":"close","text":"chiuso k2 Indizio: anche il commit del grafo ha Thread: Il commit che salva .ariadne/ porta Thread: m3.6, quindi riceve a sua volta una prova.","proof":[{"type":"commit","ref":"24beed5"}]}
+{"at":"2026-11-11T12:04Z","id":"k2","op":"close","text":"chiuso k2 Indizio: anche il commit del grafo ha Thread: Il commit che salva .ariadne/ porta Thread: m3.6, quindi riceve a sua volta una prova.","proof":[{"type":"commit","ref":"6fa67f6"}]}
 {"at":"2026-11-11T12:04Z","id":"k3","op":"close","text":"chiuso k3 Indizio: l'amend cambia lo sha: Dopo un amend lo sha registrato come prova non esiste più nella storia.","proof":[{"type":"message","ref":"git: amend crea un commit nuovo"}]}
-{"at":"2026-11-11T12:04Z","id":"m3.10","op":"fill","text":"prova per m3.10: commit d252091","proof":[{"type":"commit","ref":"d252091"}]}
-{"at":"2026-11-11T12:04Z","id":"m3.10","op":"fill","text":"prova per m3.10: commit cbad5c2","proof":[{"type":"commit","ref":"cbad5c2"}]}
-{"at":"2026-11-11T12:05Z","id":"k4","op":"close","text":"chiuso k4 Deduzione: i commit solo di .ariadne/ sono neutri: I commit che salvano solo .ariadne/ sono neutri: niente prova, non contano tra quelli senza Thread.","proof":[{"type":"commit","ref":"11eaac7"}]}
-{"at":"2026-11-11T12:05Z","id":"i1","op":"close","text":"chiuso i1 Indagine sull'albero sporco: Causa trovata: il commit del grafo riceveva a sua volta una prova; l'amend scartato perché cambia lo sha.","proof":[{"type":"commit","ref":"11eaac7"}]}
-{"at":"2026-11-11T12:05Z","id":"m3.10","op":"close","text":"chiuso m3.10 Albero mai pulito dopo un commit: Dopo un commit si salva .ariadne/ con un commit solo del grafo e l'albero resta pulito.","proof":[{"type":"commit","ref":"11eaac7"}]}
-{"at":"2026-11-11T12:06Z","id":"m3.6","op":"close","text":"chiuso m3.6 Operazioni tipizzate e diario: ariadne apply e i sottocomandi tracciano il lavoro senza frenarlo (commit con Thread:, deviazioni, indagini con indizi e deduzioni, conferma dopo); diario leggibile in log.jsonl; riassunto con File utili (239 token); STATE.md e LOG.md tolti.","proof":[{"type":"commit","ref":"f6a539f"}]}
+{"at":"2026-11-11T12:04Z","id":"m3.10","op":"fill","text":"prova per m3.10: commit f4e71bf","proof":[{"type":"commit","ref":"f4e71bf"}]}
+{"at":"2026-11-11T12:04Z","id":"m3.10","op":"fill","text":"prova per m3.10: commit b4e8b46","proof":[{"type":"commit","ref":"b4e8b46"}]}
+{"at":"2026-11-11T12:05Z","id":"k4","op":"close","text":"chiuso k4 Deduzione: i commit solo di .ariadne/ sono neutri: I commit che salvano solo .ariadne/ sono neutri: niente prova, non contano tra quelli senza Thread.","proof":[{"type":"commit","ref":"9f1efa4"}]}
+{"at":"2026-11-11T12:05Z","id":"i1","op":"close","text":"chiuso i1 Indagine sull'albero sporco: Causa trovata: il commit del grafo riceveva a sua volta una prova; l'amend scartato perché cambia lo sha.","proof":[{"type":"commit","ref":"9f1efa4"}]}
+{"at":"2026-11-11T12:05Z","id":"m3.10","op":"close","text":"chiuso m3.10 Albero mai pulito dopo un commit: Dopo un commit si salva .ariadne/ con un commit solo del grafo e l'albero resta pulito.","proof":[{"type":"commit","ref":"9f1efa4"}]}
+{"at":"2026-11-11T12:06Z","id":"m3.6","op":"close","text":"chiuso m3.6 Operazioni tipizzate e diario: ariadne apply e i sottocomandi tracciano il lavoro senza frenarlo (commit con Thread:, deviazioni, indagini con indizi e deduzioni, conferma dopo); diario leggibile in log.jsonl; riassunto con File utili (239 token); STATE.md e LOG.md tolti.","proof":[{"type":"commit","ref":"c7b27e4"}]}
 {"at":"2026-11-11T12:06Z","id":"m3.2","op":"start","text":"iniziato m3.2 Viewer che legge .ariadne/"}
-{"at":"2026-11-11T16:30Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit 8be1935","proof":[{"type":"commit","ref":"8be1935"}]}
+{"at":"2026-11-11T16:30Z","id":"m3.6","op":"fill","text":"prova per m3.6: commit 4aad07e","proof":[{"type":"commit","ref":"4aad07e"}]}
 {"at":"2026-11-11T18:41Z","id":"m3.2","op":"plan","text":"piano per Viewer che legge .ariadne/: Viewer sul grafo vero → Nodi e pannello della specifica → Raggruppamento per profilo → Ricarica e layout stabile → Stati del viewer"}
 {"at":"2026-11-11T18:44Z","id":"m3.2.1","op":"start","text":"iniziato m3.2.1 Viewer sul grafo vero"}
-{"at":"2026-11-11T18:45Z","id":"m3.2.1","op":"fill","text":"prova per m3.2.1: commit 24e0695","proof":[{"type":"commit","ref":"24e0695"}]}
-{"at":"2026-11-11T18:45Z","id":"m3.2.1","op":"close","text":"chiuso m3.2.1 Viewer sul grafo vero: il viewer disegna il grafo vero di .ariadne/, servito da ariadne view","proof":[{"type":"commit","ref":"ca49944"}]}
+{"at":"2026-11-11T18:45Z","id":"m3.2.1","op":"fill","text":"prova per m3.2.1: commit 28950a3","proof":[{"type":"commit","ref":"28950a3"}]}
+{"at":"2026-11-11T18:45Z","id":"m3.2.1","op":"close","text":"chiuso m3.2.1 Viewer sul grafo vero: il viewer disegna il grafo vero di .ariadne/, servito da ariadne view","proof":[{"type":"commit","ref":"909eccb"}]}
 {"at":"2026-11-11T18:45Z","id":"m3.2.2","op":"start","text":"iniziato m3.2.2 Nodi e pannello della specifica"}
-{"at":"2026-11-11T18:48Z","id":"m3.2.2","op":"close","text":"chiuso m3.2.2 Nodi e pannello della specifica: nodi con simbolo, id, etichetta e incerto; pannello con le righe della specifica","proof":[{"type":"commit","ref":"2c55b71"}]}
+{"at":"2026-11-11T18:48Z","id":"m3.2.2","op":"close","text":"chiuso m3.2.2 Nodi e pannello della specifica: nodi con simbolo, id, etichetta e incerto; pannello con le righe della specifica","proof":[{"type":"commit","ref":"ec14a5d"}]}
 {"at":"2026-11-11T18:48Z","id":"m3.2.3","op":"start","text":"iniziato m3.2.3 Raggruppamento per profilo"}
-{"at":"2026-11-11T18:51Z","id":"m3.2.3","op":"close","text":"chiuso m3.2.3 Raggruppamento per profilo: livelli raggruppati per profilo con nascosti sopra/sotto e sostituiti nascosti","proof":[{"type":"commit","ref":"f3235fb"}]}
+{"at":"2026-11-11T18:51Z","id":"m3.2.3","op":"close","text":"chiuso m3.2.3 Raggruppamento per profilo: livelli raggruppati per profilo con nascosti sopra/sotto e sostituiti nascosti","proof":[{"type":"commit","ref":"377f5fc"}]}
 {"at":"2026-11-11T18:51Z","id":"m3.2.4","op":"start","text":"iniziato m3.2.4 Ricarica e layout stabile"}
-{"at":"2026-11-11T18:54Z","id":"m3.2.4","op":"close","text":"chiuso m3.2.4 Ricarica e layout stabile: ricarica ogni 2 s senza F5; aggiungere un nodo sposta solo i successivi, di lato (misurato: 8 su 60)","proof":[{"type":"commit","ref":"6b451fb"}]}
+{"at":"2026-11-11T18:54Z","id":"m3.2.4","op":"close","text":"chiuso m3.2.4 Ricarica e layout stabile: ricarica ogni 2 s senza F5; aggiungere un nodo sposta solo i successivi, di lato (misurato: 8 su 60)","proof":[{"type":"commit","ref":"8d5786e"}]}
 {"at":"2026-11-11T18:54Z","id":"m3.2.5","op":"start","text":"iniziato m3.2.5 Stati del viewer"}
-{"at":"2026-11-11T18:55Z","id":"m3.2.5","op":"fill","text":"prova per m3.2.5: commit 2c1aa64","proof":[{"type":"commit","ref":"2c1aa64"}]}
-{"at":"2026-11-11T18:57Z","id":"m3.2.5","op":"close","text":"chiuso m3.2.5 Stati del viewer: stati del viewer (nessun grafo, grafo non valido, milestone e lista vuote) e riassunto per l'agente","proof":[{"type":"commit","ref":"4ca6cfc"}]}
+{"at":"2026-11-11T18:55Z","id":"m3.2.5","op":"fill","text":"prova per m3.2.5: commit 348a510","proof":[{"type":"commit","ref":"348a510"}]}
+{"at":"2026-11-11T18:57Z","id":"m3.2.5","op":"close","text":"chiuso m3.2.5 Stati del viewer: stati del viewer (nessun grafo, grafo non valido, milestone e lista vuote) e riassunto per l'agente","proof":[{"type":"commit","ref":"f445c70"}]}
 {"at":"2026-11-11T18:57Z","id":"m3.2","op":"close","text":"chiuso m3.2 Viewer che legge .ariadne/: Il viewer legge .ariadne/ (ariadne view): nodi e pannello della specifica, raggruppamento per profilo, ricarica senza F5 con layout stabile, stati vuoto e non valido","proof":[{"type":"file","ref":"viewer/app.js"},{"type":"file","ref":"docs/implementazione.md"}]}
 {"at":"2026-11-11T18:57Z","id":"m3.1","op":"start","text":"iniziato m3.1 Banda nella mod"}
 {"at":"2026-11-11T19:41Z","id":"m3.1","op":"plan","text":"piano per Banda nella mod: Banda calcolata dal grafo → Mod in mod/ con la banda → Banda provata nella sessione"}
 {"at":"2026-11-11T19:41Z","id":"m3.1.1","op":"start","text":"iniziato m3.1.1 Banda calcolata dal grafo"}
-{"at":"2026-11-11T19:43Z","id":"m3.1.1","op":"close","text":"chiuso m3.1.1 Banda calcolata dal grafo: ariadne band calcola le righe della banda dal grafo (dove, contesto, coda, esito)","proof":[{"type":"commit","ref":"2f6d573"}]}
+{"at":"2026-11-11T19:43Z","id":"m3.1.1","op":"close","text":"chiuso m3.1.1 Banda calcolata dal grafo: ariadne band calcola le righe della banda dal grafo (dove, contesto, coda, esito)","proof":[{"type":"commit","ref":"617f478"}]}
 {"at":"2026-11-11T19:43Z","id":"m3.1.2","op":"start","text":"iniziato m3.1.2 Mod in mod/ con la banda"}
-{"at":"2026-11-11T19:45Z","id":"m3.1.2","op":"close","text":"chiuso m3.1.2 Mod in mod/ con la banda: mod in mod/ con la banda della specifica; test su terminale e desktop, validate e tsc puliti","proof":[{"type":"commit","ref":"87aeaa8"}]}
+{"at":"2026-11-11T19:45Z","id":"m3.1.2","op":"close","text":"chiuso m3.1.2 Mod in mod/ con la banda: mod in mod/ con la banda della specifica; test su terminale e desktop, validate e tsc puliti","proof":[{"type":"commit","ref":"77994d1"}]}
 {"at":"2026-11-11T19:45Z","id":"m3.1.3","op":"start","text":"iniziato m3.1.3 Banda provata nella sessione"}
-{"at":"2026-11-11T19:45Z","id":"m3.1.3","op":"fill","text":"prova per m3.1.3: commit e4c1974","proof":[{"type":"commit","ref":"e4c1974"}]}
+{"at":"2026-11-11T19:45Z","id":"m3.1.3","op":"fill","text":"prova per m3.1.3: commit 5b21fcf","proof":[{"type":"commit","ref":"5b21fcf"}]}
 {"at":"2026-11-14T09:47Z","id":"m3.1.3","op":"fill","text":"completato m3.1.3: detail"}
 {"at":"2026-11-14T09:57Z","id":"m3.1.4","op":"add","text":"deviazione m3.1.4 Pulsante Apri il grafo nella banda, rientra in m3.1.3"}
 {"at":"2026-11-14T10:01Z","id":"","op":"confirm","text":"confermate 5 modifiche"}
 {"at":"2026-11-14T10:02Z","id":"m3.1.5","op":"add","text":"aggiunto passo m3.1.5 Banda distinta dal testo della chat sotto m3.1"}
-{"at":"2026-11-14T10:08Z","id":"m3.1.4","op":"fill","text":"prova per m3.1.4: commit ffdecce","proof":[{"type":"commit","ref":"ffdecce"}]}
-{"at":"2026-11-14T10:08Z","id":"m3.1.4","op":"close","text":"chiuso m3.1.4 Pulsante Apri il grafo nella banda: «Apri il grafo» sulla riga dove; apre il viewer e lo avvia se spento","proof":[{"type":"commit","ref":"40b72ea"}]}
+{"at":"2026-11-14T10:08Z","id":"m3.1.4","op":"fill","text":"prova per m3.1.4: commit 55c63f5","proof":[{"type":"commit","ref":"55c63f5"}]}
+{"at":"2026-11-14T10:08Z","id":"m3.1.4","op":"close","text":"chiuso m3.1.4 Pulsante Apri il grafo nella banda: «Apri il grafo» sulla riga dove; apre il viewer e lo avvia se spento","proof":[{"type":"commit","ref":"306290d"}]}
 {"at":"2026-11-14T10:21Z","id":"m3.1.5","op":"start","text":"iniziato m3.1.5 Banda distinta dal testo della chat"}
-{"at":"2026-11-14T10:22Z","id":"m3.1.5","op":"close","text":"chiuso m3.1.5 Banda distinta dal testo della chat: linea «── ariadne» nel colore subtle del tema sopra la banda; omessa se farebbe scorrere","proof":[{"type":"commit","ref":"72cfde6"}]}
+{"at":"2026-11-14T10:22Z","id":"m3.1.5","op":"close","text":"chiuso m3.1.5 Banda distinta dal testo della chat: linea «── ariadne» nel colore subtle del tema sopra la banda; omessa se farebbe scorrere","proof":[{"type":"commit","ref":"2aedc4c"}]}
 {"at":"2026-11-14T10:29Z","id":"m4","op":"plan","text":"piano per M4 Revisione e feedback: Progetto della valutazione → Esecuzione della valutazione"}
 {"at":"2026-11-14T10:29Z","id":"m3.9","op":"move","text":"spostato m3.9 sotto m3 (correzione tua)"}
 {"at":"2026-11-14T10:29Z","id":"m3.4","op":"move","text":"spostato m3.4 sotto m3 (correzione tua)"}
 {"at":"2026-11-14T10:29Z","id":"m4.3","op":"move","text":"spostato m4.3 sotto m4 (correzione tua)"}
 {"at":"2026-11-14T10:29Z","id":"m4.2","op":"move","text":"spostato m4.2 sotto m4 (correzione tua)"}
 {"at":"2026-11-14T10:29Z","id":"m3.1.3","op":"close","text":"chiuso m3.1.3 Banda provata nella sessione: banda usata dal vivo: Approva tutto dalla banda, Apri il grafo e linea separatrice approvati dall'utente","proof":[{"type":"message","ref":"chat 2026-11-14: «Ok va benissimo così»"}]}
-{"at":"2026-11-14T10:29Z","id":"m3.1","op":"close","text":"chiuso m3.1 Banda nella mod: banda nella mod: dove, contesto, coda, esito, Apri il grafo, linea separatrice; provata nella sessione","proof":[{"type":"commit","ref":"72cfde6"}]}
+{"at":"2026-11-14T10:29Z","id":"m3.1","op":"close","text":"chiuso m3.1 Banda nella mod: banda nella mod: dove, contesto, coda, esito, Apri il grafo, linea separatrice; provata nella sessione","proof":[{"type":"commit","ref":"2aedc4c"}]}
 {"at":"2026-11-14T10:29Z","id":"m3.9","op":"start","text":"iniziato m3.9 Task tools come sorgente"}
-{"at":"2026-11-14T10:30Z","id":"m3.9","op":"close","text":"chiuso m3.9 Task tools come sorgente: Task tools nel catalogo ma non esposti qui; senza prova né perché, non diventano una sorgente","proof":[{"type":"commit","ref":"1f37982"}]}
+{"at":"2026-11-14T10:30Z","id":"m3.9","op":"close","text":"chiuso m3.9 Task tools come sorgente: Task tools nel catalogo ma non esposti qui; senza prova né perché, non diventano una sorgente","proof":[{"type":"commit","ref":"9febee2"}]}
 {"at":"2026-11-14T10:30Z","id":"m3.4","op":"start","text":"iniziato m3.4 Segnalibri nella chat"}
 {"at":"2026-11-14T11:16Z","id":"m3.4","op":"fill","text":"completato m3.4: detail"}
 {"at":"2026-11-14T11:16Z","id":"m3.4","op":"defer","text":"rinviato m3.4 Segnalibri nella chat a M5 Pubblicazione (m5.1)"}
@@ -73,7 +73,7 @@
 {"at":"2026-11-14T11:20Z","id":null,"op":"relink","text":"ricollegato spikes/viewer → viewer in 1 nodi (m1.2)"}
 {"at":"2026-11-14T11:20Z","id":null,"op":"relink","text":"ricollegato scripts/ariadne/validate.mjs → src/validate.mjs in 1 nodi (m2.8)"}
 {"at":"2026-11-14T11:20Z","id":"m3.11","op":"fill","text":"prova per m3.11: file docs/implementazione.md#m3.11","proof":[{"type":"file","ref":"docs/implementazione.md#m3.11"}]}
-{"at":"2026-11-14T11:20Z","id":"m3.11","op":"close","text":"chiuso m3.11 Nodi agganciati a file e sezioni: prove file con sezione, validate segnala i riferimenti rotti, relink, avviso in close","proof":[{"type":"commit","ref":"1afef7a"}]}
+{"at":"2026-11-14T11:20Z","id":"m3.11","op":"close","text":"chiuso m3.11 Nodi agganciati a file e sezioni: prove file con sezione, validate segnala i riferimenti rotti, relink, avviso in close","proof":[{"type":"commit","ref":"2473f15"}]}
 {"at":"2026-11-14T11:24Z","id":"m3","op":"close","text":"chiuso m3 M3 Implementazione: M3 chiusa: CLI e riassunto, operazioni e diario, viewer, banda nella mod con Apri il grafo, nodi agganciati a file e sezioni; scribe, osservatore e segnalibri rinviati","proof":[{"type":"file","ref":"docs/implementazione.md"}]}
 {"at":"2026-11-14T11:24Z","id":"m4","op":"start","text":"iniziato m4 M4 Revisione e feedback"}
 {"at":"2026-11-14T11:24Z","id":"m4","op":"start","text":"iniziato m4 M4 Revisione e feedback"}
@@ -84,114 +84,114 @@
 {"at":"2026-11-14T11:33Z","id":"m4.3","op":"plan","text":"piano per Progetto della valutazione: Ricerca su metodi e metriche → Principi di valutazione → Piano di valutazione → Revisione indipendente del piano → Piano rivisto e approvato"}
 {"at":"2026-11-14T11:33Z","id":"m4.3.1","op":"start","text":"iniziato m4.3.1 Ricerca su metodi e metriche"}
 {"at":"2026-11-14T11:34Z","id":"m4.3","op":"fill","text":"prova per m4.3: file docs/valutazione/meta-piano.md","proof":[{"type":"file","ref":"docs/valutazione/meta-piano.md"}]}
-{"at":"2026-11-14T11:34Z","id":"m4.3.1","op":"fill","text":"prova per m4.3.1: commit 97bc231","proof":[{"type":"commit","ref":"97bc231"}]}
-{"at":"2026-11-14T11:36Z","id":"m4.3.1","op":"close","text":"chiuso m4.3.1 Ricerca su metodi e metriche: due ricerche con fonti: metodi e metriche per memoria degli agenti; usabilità n=1 e concorrenti","proof":[{"type":"commit","ref":"8004bab"}]}
+{"at":"2026-11-14T11:34Z","id":"m4.3.1","op":"fill","text":"prova per m4.3.1: commit 9d6117a","proof":[{"type":"commit","ref":"9d6117a"}]}
+{"at":"2026-11-14T11:36Z","id":"m4.3.1","op":"close","text":"chiuso m4.3.1 Ricerca su metodi e metriche: due ricerche con fonti: metodi e metriche per memoria degli agenti; usabilità n=1 e concorrenti","proof":[{"type":"commit","ref":"e914f10"}]}
 {"at":"2026-11-14T11:36Z","id":"m4.3.2","op":"start","text":"iniziato m4.3.2 Principi di valutazione"}
 {"at":"2026-11-14T11:36Z","id":"m4.3.1","op":"fill","text":"prova per m4.3.1: file docs/valutazione/ricerca-metodi.md","proof":[{"type":"file","ref":"docs/valutazione/ricerca-metodi.md"}]}
 {"at":"2026-11-14T11:36Z","id":"m4.3.1","op":"fill","text":"prova per m4.3.1: file docs/valutazione/ricerca-usabilita.md","proof":[{"type":"file","ref":"docs/valutazione/ricerca-usabilita.md"}]}
 {"at":"2026-11-14T11:37Z","id":"m4.3.2","op":"fill","text":"prova per m4.3.2: file docs/valutazione/principi.md","proof":[{"type":"file","ref":"docs/valutazione/principi.md"}]}
-{"at":"2026-11-14T11:37Z","id":"m4.3.2","op":"close","text":"chiuso m4.3.2 Principi di valutazione: 20 principi in 7 gruppi, ognuno con fonte; glossario prima dei principi","proof":[{"type":"commit","ref":"52bc011"}]}
+{"at":"2026-11-14T11:37Z","id":"m4.3.2","op":"close","text":"chiuso m4.3.2 Principi di valutazione: 20 principi in 7 gruppi, ognuno con fonte; glossario prima dei principi","proof":[{"type":"commit","ref":"16bf2c0"}]}
 {"at":"2026-11-14T11:37Z","id":"m4.3.3","op":"start","text":"iniziato m4.3.3 Piano di valutazione"}
 {"at":"2026-11-14T11:39Z","id":"m4.3.3","op":"fill","text":"prova per m4.3.3: file docs/valutazione/piano.md","proof":[{"type":"file","ref":"docs/valutazione/piano.md"}]}
-{"at":"2026-11-14T11:39Z","id":"m4.3.3","op":"close","text":"chiuso m4.3.3 Piano di valutazione: bozza del piano con E1–E4, confronto e minacce alla validità, pronta per la revisione","proof":[{"type":"commit","ref":"cb48d0f"}]}
+{"at":"2026-11-14T11:39Z","id":"m4.3.3","op":"close","text":"chiuso m4.3.3 Piano di valutazione: bozza del piano con E1–E4, confronto e minacce alla validità, pronta per la revisione","proof":[{"type":"commit","ref":"b52214e"}]}
 {"at":"2026-11-14T11:39Z","id":"m4.3.4","op":"start","text":"iniziato m4.3.4 Revisione indipendente del piano"}
 {"at":"2026-11-14T11:44Z","id":"m4.3.4","op":"fill","text":"prova per m4.3.4: file docs/valutazione/revisione-1.md","proof":[{"type":"file","ref":"docs/valutazione/revisione-1.md"}]}
-{"at":"2026-11-14T11:44Z","id":"m4.3.4","op":"close","text":"chiuso m4.3.4 Revisione indipendente del piano: revisore Opus indipendente: pronto con correzioni; 3 bloccanti, 12 maggiori, 4 minori","proof":[{"type":"commit","ref":"65ecfd6"}]}
+{"at":"2026-11-14T11:44Z","id":"m4.3.4","op":"close","text":"chiuso m4.3.4 Revisione indipendente del piano: revisore Opus indipendente: pronto con correzioni; 3 bloccanti, 12 maggiori, 4 minori","proof":[{"type":"commit","ref":"4094bf5"}]}
 {"at":"2026-11-14T11:44Z","id":"m4.3.5","op":"start","text":"iniziato m4.3.5 Piano rivisto e approvato"}
-{"at":"2026-11-14T11:48Z","id":"m4.3.5","op":"fill","text":"prova per m4.3.5: commit 2de33d8","proof":[{"type":"commit","ref":"2de33d8"}]}
-{"at":"2026-11-14T11:52Z","id":"m4.3.5","op":"fill","text":"prova per m4.3.5: commit 5932dcc","proof":[{"type":"commit","ref":"5932dcc"}]}
-{"at":"2026-11-14T11:56Z","id":"m4.3.5","op":"fill","text":"prova per m4.3.5: commit 8a30b82","proof":[{"type":"commit","ref":"8a30b82"}]}
+{"at":"2026-11-14T11:48Z","id":"m4.3.5","op":"fill","text":"prova per m4.3.5: commit f455ad8","proof":[{"type":"commit","ref":"f455ad8"}]}
+{"at":"2026-11-14T11:52Z","id":"m4.3.5","op":"fill","text":"prova per m4.3.5: commit e330e2a","proof":[{"type":"commit","ref":"e330e2a"}]}
+{"at":"2026-11-14T11:56Z","id":"m4.3.5","op":"fill","text":"prova per m4.3.5: commit 9e7cebb","proof":[{"type":"commit","ref":"9e7cebb"}]}
 {"at":"2026-11-14T11:57Z","id":"m4.3.5","op":"fill","text":"completato m4.3.5: detail, file docs/valutazione/piano.md","proof":[{"type":"file","ref":"docs/valutazione/piano.md"}]}
 {"at":"2026-11-14T11:57Z","id":"m4.3.5","op":"fill","text":"prova per m4.3.5: file docs/valutazione/principi.md","proof":[{"type":"file","ref":"docs/valutazione/principi.md"}]}
 {"at":"2026-11-14T12:00Z","id":"","op":"confirm","text":"confermate 1 modifiche"}
 {"at":"2026-11-14T12:12Z","id":"m4.3.5","op":"close","text":"chiuso m4.3.5 Piano rivisto e approvato: piano v3.1 approvato dall'utente: si parte con m4.4 § 15","proof":[{"type":"message","ref":"chat 2026-11-14: l'utente approva il piano v3.1 e dice di proseguire"}]}
 {"at":"2026-11-14T12:12Z","id":"m4.4","op":"plan","text":"piano per Esecuzione della valutazione: Orologio finto ARIADNE_NOW → Repository ariadne-eval con generatore, runner e grader → E4 sull'archivio congelato → Scenari di sviluppo e condizione prima → Pilota di E1 ed E2 → Scenari di test, E3 e trascrizioni congelati → Commit di pre-registrazione → Approvazione del budget → E1, E1b, E2 e analisi → E3 con l'utente → Confronto D4 → Rapporto"}
 {"at":"2026-11-14T12:12Z","id":"m4.4.1","op":"start","text":"iniziato m4.4.1 Orologio finto ARIADNE_NOW"}
-{"at":"2026-11-14T12:13Z","id":"m4.4.1","op":"close","text":"chiuso m4.4.1 Orologio finto ARIADNE_NOW: ARIADNE_NOW fissa l'orologio della CLI, con il suo test","proof":[{"type":"commit","ref":"0ecd44f"}]}
+{"at":"2026-11-14T12:13Z","id":"m4.4.1","op":"close","text":"chiuso m4.4.1 Orologio finto ARIADNE_NOW: ARIADNE_NOW fissa l'orologio della CLI, con il suo test","proof":[{"type":"commit","ref":"03b00e4"}]}
 {"at":"2026-11-14T12:13Z","id":"m4.4.2","op":"start","text":"iniziato m4.4.2 Repository ariadne-eval con generatore, runner e grader"}
 {"at":"2026-11-14T13:42Z","id":"m4.4.2","op":"fill","text":"completato m4.4.2: title"}
-{"at":"2026-11-14T13:42Z","id":"m4.4.2","op":"fill","text":"prova per m4.4.2: commit d8503dc","proof":[{"type":"commit","ref":"d8503dc"}]}
-{"at":"2026-11-14T13:46Z","id":"m4.4.2","op":"fill","text":"prova per m4.4.2: commit 84092ec","proof":[{"type":"commit","ref":"84092ec"}]}
-{"at":"2026-11-14T13:47Z","id":"m4.4.2","op":"fill","text":"prova per m4.4.2: commit cbaacfc","proof":[{"type":"commit","ref":"cbaacfc"}]}
-{"at":"2026-11-14T13:48Z","id":"m4.4.2","op":"fill","text":"prova per m4.4.2: commit b571cc0","proof":[{"type":"commit","ref":"b571cc0"}]}
-{"at":"2026-11-14T13:53Z","id":"m4.4.2","op":"close","text":"chiuso m4.4.2 Cartella eval/ con generatore, runner e grader: generatore, grader e runner in eval/, provati con un finto claude e con Haiku","proof":[{"type":"commit","ref":"a00c3a9"}]}
+{"at":"2026-11-14T13:42Z","id":"m4.4.2","op":"fill","text":"prova per m4.4.2: commit 4164ee7","proof":[{"type":"commit","ref":"4164ee7"}]}
+{"at":"2026-11-14T13:46Z","id":"m4.4.2","op":"fill","text":"prova per m4.4.2: commit 3832022","proof":[{"type":"commit","ref":"3832022"}]}
+{"at":"2026-11-14T13:47Z","id":"m4.4.2","op":"fill","text":"prova per m4.4.2: commit c202aa5","proof":[{"type":"commit","ref":"c202aa5"}]}
+{"at":"2026-11-14T13:48Z","id":"m4.4.2","op":"fill","text":"prova per m4.4.2: commit 826d9fc","proof":[{"type":"commit","ref":"826d9fc"}]}
+{"at":"2026-11-14T13:53Z","id":"m4.4.2","op":"close","text":"chiuso m4.4.2 Cartella eval/ con generatore, runner e grader: generatore, grader e runner in eval/, provati con un finto claude e con Haiku","proof":[{"type":"commit","ref":"2f9004e"}]}
 {"at":"2026-11-14T13:53Z","id":"m4.4.3","op":"start","text":"iniziato m4.4.3 E4 sull'archivio congelato"}
-{"at":"2026-11-14T13:55Z","id":"m4.4.3","op":"fill","text":"prova per m4.4.3: commit 0d59d44","proof":[{"type":"commit","ref":"0d59d44"}]}
-{"at":"2026-11-14T13:55Z","id":"m4.4.3","op":"close","text":"chiuso m4.4.3 E4 sull'archivio congelato: E4 a 0d59d44: 9% dei commit senza Thread, 8 prompt mediani per sessione su 8, 1 nodo chiuso con un solo messaggio, 0 riferimenti rotti","proof":[{"type":"commit","ref":"ecacd94"}]}
+{"at":"2026-11-14T13:55Z","id":"m4.4.3","op":"fill","text":"prova per m4.4.3: commit 99d65a0","proof":[{"type":"commit","ref":"99d65a0"}]}
+{"at":"2026-11-14T13:55Z","id":"m4.4.3","op":"close","text":"chiuso m4.4.3 E4 sull'archivio congelato: E4 a 99d65a0: 9% dei commit senza Thread, 8 prompt mediani per sessione su 8, 1 nodo chiuso con un solo messaggio, 0 riferimenti rotti","proof":[{"type":"commit","ref":"1114b24"}]}
 {"at":"2026-11-14T13:55Z","id":"m4.4.4","op":"start","text":"iniziato m4.4.4 Scenari di sviluppo e condizione prima"}
-{"at":"2026-11-14T13:59Z","id":"m4.4.4","op":"fill","text":"prova per m4.4.4: commit f5e1e96","proof":[{"type":"commit","ref":"f5e1e96"}]}
-{"at":"2026-11-14T13:59Z","id":"m4.4.4","op":"fill","text":"prova per m4.4.4: commit 033ff8a","proof":[{"type":"commit","ref":"033ff8a"}]}
-{"at":"2026-11-14T14:00Z","id":"m4.4.4","op":"fill","text":"prova per m4.4.4: commit 500ef30","proof":[{"type":"commit","ref":"500ef30"}]}
-{"at":"2026-11-14T14:03Z","id":"m4.4.4","op":"fill","text":"prova per m4.4.4: commit 705da16","proof":[{"type":"commit","ref":"705da16"}]}
-{"at":"2026-11-14T14:25Z","id":"m4.4.4","op":"fill","text":"prova per m4.4.4: commit 5e6ef82","proof":[{"type":"commit","ref":"5e6ef82"}]}
-{"at":"2026-11-14T14:32Z","id":"m4.4.4","op":"close","text":"chiuso m4.4.4 Scenari di sviluppo e condizione prima: 6 scenari di sviluppo (1 a mano, 5 dal brief) e prima congelata: 13 handoff, 1 correzione di fatto, ~3,5 $","proof":[{"type":"commit","ref":"bf83d03"}]}
+{"at":"2026-11-14T13:59Z","id":"m4.4.4","op":"fill","text":"prova per m4.4.4: commit 359ceeb","proof":[{"type":"commit","ref":"359ceeb"}]}
+{"at":"2026-11-14T13:59Z","id":"m4.4.4","op":"fill","text":"prova per m4.4.4: commit 6c9275f","proof":[{"type":"commit","ref":"6c9275f"}]}
+{"at":"2026-11-14T14:00Z","id":"m4.4.4","op":"fill","text":"prova per m4.4.4: commit 0fdcc20","proof":[{"type":"commit","ref":"0fdcc20"}]}
+{"at":"2026-11-14T14:03Z","id":"m4.4.4","op":"fill","text":"prova per m4.4.4: commit 29083f1","proof":[{"type":"commit","ref":"29083f1"}]}
+{"at":"2026-11-14T14:25Z","id":"m4.4.4","op":"fill","text":"prova per m4.4.4: commit 01c961c","proof":[{"type":"commit","ref":"01c961c"}]}
+{"at":"2026-11-14T14:32Z","id":"m4.4.4","op":"close","text":"chiuso m4.4.4 Scenari di sviluppo e condizione prima: 6 scenari di sviluppo (1 a mano, 5 dal brief) e prima congelata: 13 handoff, 1 correzione di fatto, ~3,5 $","proof":[{"type":"commit","ref":"d0ecd22"}]}
 {"at":"2026-11-14T14:32Z","id":"m4.4.5","op":"start","text":"iniziato m4.4.5 Pilota di E1 ed E2"}
-{"at":"2026-11-14T14:41Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit b2eab83","proof":[{"type":"commit","ref":"b2eab83"}]}
-{"at":"2026-11-14T14:41Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 6fc444b","proof":[{"type":"commit","ref":"6fc444b"}]}
-{"at":"2026-11-14T14:42Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit c832c30","proof":[{"type":"commit","ref":"c832c30"}]}
-{"at":"2026-11-14T14:43Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 12d687d","proof":[{"type":"commit","ref":"12d687d"}]}
-{"at":"2026-11-14T14:56Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit fabb651","proof":[{"type":"commit","ref":"fabb651"}]}
-{"at":"2026-11-14T15:08Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit c73faca","proof":[{"type":"commit","ref":"c73faca"}]}
-{"at":"2026-11-14T15:10Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 63f6dff","proof":[{"type":"commit","ref":"63f6dff"}]}
-{"at":"2026-11-14T15:23Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 4044253","proof":[{"type":"commit","ref":"4044253"}]}
-{"at":"2026-11-14T15:46Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 89df770","proof":[{"type":"commit","ref":"89df770"}]}
+{"at":"2026-11-14T14:41Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit a5956e2","proof":[{"type":"commit","ref":"a5956e2"}]}
+{"at":"2026-11-14T14:41Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 02411ce","proof":[{"type":"commit","ref":"02411ce"}]}
+{"at":"2026-11-14T14:42Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 7a97ac0","proof":[{"type":"commit","ref":"7a97ac0"}]}
+{"at":"2026-11-14T14:43Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 1f8eab3","proof":[{"type":"commit","ref":"1f8eab3"}]}
+{"at":"2026-11-14T14:56Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit b128f88","proof":[{"type":"commit","ref":"b128f88"}]}
+{"at":"2026-11-14T15:08Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 06c7b09","proof":[{"type":"commit","ref":"06c7b09"}]}
+{"at":"2026-11-14T15:10Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 336feed","proof":[{"type":"commit","ref":"336feed"}]}
+{"at":"2026-11-14T15:23Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit ab9c5c5","proof":[{"type":"commit","ref":"ab9c5c5"}]}
+{"at":"2026-11-14T15:46Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit d04fdd3","proof":[{"type":"commit","ref":"d04fdd3"}]}
 {"at":"2026-11-14T16:10Z","id":"m4.4.5","op":"fill","text":"completato m4.4.5: detail, file eval/pilot.md","proof":[{"type":"file","ref":"eval/pilot.md"}]}
-{"at":"2026-11-14T16:10Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 71a8f54","proof":[{"type":"commit","ref":"71a8f54"}]}
-{"at":"2026-11-15T11:15Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit e6890a1","proof":[{"type":"commit","ref":"e6890a1"}]}
-{"at":"2026-11-15T11:17Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 6ce68da","proof":[{"type":"commit","ref":"6ce68da"}]}
-{"at":"2026-11-15T11:17Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 9a0e5d9","proof":[{"type":"commit","ref":"9a0e5d9"}]}
-{"at":"2026-11-15T11:18Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 87c32ba","proof":[{"type":"commit","ref":"87c32ba"}]}
-{"at":"2026-11-15T11:23Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 3b98603","proof":[{"type":"commit","ref":"3b98603"}]}
-{"at":"2026-11-15T11:24Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit cb64b01","proof":[{"type":"commit","ref":"cb64b01"}]}
-{"at":"2026-11-15T11:28Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 32917f2","proof":[{"type":"commit","ref":"32917f2"}]}
-{"at":"2026-11-15T11:39Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 9dba8df","proof":[{"type":"commit","ref":"9dba8df"}]}
+{"at":"2026-11-14T16:10Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 7c52253","proof":[{"type":"commit","ref":"7c52253"}]}
+{"at":"2026-11-15T11:15Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 2282a29","proof":[{"type":"commit","ref":"2282a29"}]}
+{"at":"2026-11-15T11:17Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 191d968","proof":[{"type":"commit","ref":"191d968"}]}
+{"at":"2026-11-15T11:17Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 474a404","proof":[{"type":"commit","ref":"474a404"}]}
+{"at":"2026-11-15T11:18Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit cd3ca7a","proof":[{"type":"commit","ref":"cd3ca7a"}]}
+{"at":"2026-11-15T11:23Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 6041ed9","proof":[{"type":"commit","ref":"6041ed9"}]}
+{"at":"2026-11-15T11:24Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 542bdcf","proof":[{"type":"commit","ref":"542bdcf"}]}
+{"at":"2026-11-15T11:28Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 828261d","proof":[{"type":"commit","ref":"828261d"}]}
+{"at":"2026-11-15T11:39Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit dbd82ac","proof":[{"type":"commit","ref":"dbd82ac"}]}
 {"at":"2026-11-15T11:59Z","id":"m4.4.13","op":"add","text":"deviazione m4.4.13 Scheda di stato a costo pari a prima, rientra in m4.4.5"}
-{"at":"2026-11-15T12:05Z","id":"m4.4.13","op":"fill","text":"prova per m4.4.13: commit 66c6b11","proof":[{"type":"commit","ref":"66c6b11"}]}
-{"at":"2026-11-15T12:05Z","id":"m4.4.13","op":"fill","text":"prova per m4.4.13: commit c62129d","proof":[{"type":"commit","ref":"c62129d"}]}
-{"at":"2026-11-15T12:05Z","id":"m4.4.13","op":"fill","text":"prova per m4.4.13: commit bc1dba6","proof":[{"type":"commit","ref":"bc1dba6"}]}
-{"at":"2026-11-15T12:07Z","id":"m4.4.13","op":"fill","text":"prova per m4.4.13: commit 71b3685","proof":[{"type":"commit","ref":"71b3685"}]}
-{"at":"2026-11-15T12:08Z","id":"m4.4.13","op":"fill","text":"prova per m4.4.13: commit f045280","proof":[{"type":"commit","ref":"f045280"}]}
-{"at":"2026-11-15T12:08Z","id":"m4.4.13","op":"fill","text":"prova per m4.4.13: commit 48ae9c4","proof":[{"type":"commit","ref":"48ae9c4"}]}
-{"at":"2026-11-15T12:25Z","id":"m4.4.13","op":"close","text":"chiuso m4.4.13 Scheda di stato a costo pari a prima: scheda di stato: ariadne -10% in costo su prima (era +21%), correttezza 0,96 contro 0,94","proof":[{"type":"commit","ref":"a586bed"}]}
-{"at":"2026-11-15T12:29Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit d63ece9","proof":[{"type":"commit","ref":"d63ece9"}]}
-{"at":"2026-11-15T12:32Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 628e75d","proof":[{"type":"commit","ref":"628e75d"}]}
-{"at":"2026-11-15T12:33Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit ff3010e","proof":[{"type":"commit","ref":"ff3010e"}]}
+{"at":"2026-11-15T12:05Z","id":"m4.4.13","op":"fill","text":"prova per m4.4.13: commit a78cafc","proof":[{"type":"commit","ref":"a78cafc"}]}
+{"at":"2026-11-15T12:05Z","id":"m4.4.13","op":"fill","text":"prova per m4.4.13: commit 8f5a206","proof":[{"type":"commit","ref":"8f5a206"}]}
+{"at":"2026-11-15T12:05Z","id":"m4.4.13","op":"fill","text":"prova per m4.4.13: commit 5b64b03","proof":[{"type":"commit","ref":"5b64b03"}]}
+{"at":"2026-11-15T12:07Z","id":"m4.4.13","op":"fill","text":"prova per m4.4.13: commit a1b5596","proof":[{"type":"commit","ref":"a1b5596"}]}
+{"at":"2026-11-15T12:08Z","id":"m4.4.13","op":"fill","text":"prova per m4.4.13: commit 57b96d4","proof":[{"type":"commit","ref":"57b96d4"}]}
+{"at":"2026-11-15T12:08Z","id":"m4.4.13","op":"fill","text":"prova per m4.4.13: commit 16dff81","proof":[{"type":"commit","ref":"16dff81"}]}
+{"at":"2026-11-15T12:25Z","id":"m4.4.13","op":"close","text":"chiuso m4.4.13 Scheda di stato a costo pari a prima: scheda di stato: ariadne -10% in costo su prima (era +21%), correttezza 0,96 contro 0,94","proof":[{"type":"commit","ref":"db6531a"}]}
+{"at":"2026-11-15T12:29Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 8478178","proof":[{"type":"commit","ref":"8478178"}]}
+{"at":"2026-11-15T12:32Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 337129b","proof":[{"type":"commit","ref":"337129b"}]}
+{"at":"2026-11-15T12:33Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit 541aa5e","proof":[{"type":"commit","ref":"541aa5e"}]}
 {"at":"2026-11-15T12:34Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: file docs/valutazione/piano.md","proof":[{"type":"file","ref":"docs/valutazione/piano.md"}]}
-{"at":"2026-11-15T12:34Z","id":"m4.4.5","op":"close","text":"chiuso m4.4.5 Pilota di E1 ed E2: pilota E1 chiuso: 7 run Haiku; scheda di stato -10% di costo; H1 non inferiorità e H2 costo normalizzato; 12 scenari per potenza 0,93","proof":[{"type":"commit","ref":"628e75d"}]}
+{"at":"2026-11-15T12:34Z","id":"m4.4.5","op":"close","text":"chiuso m4.4.5 Pilota di E1 ed E2: pilota E1 chiuso: 7 run Haiku; scheda di stato -10% di costo; H1 non inferiorità e H2 costo normalizzato; 12 scenari per potenza 0,93","proof":[{"type":"commit","ref":"337129b"}]}
 {"at":"2026-11-15T12:34Z","id":"m4.4.6","op":"start","text":"iniziato m4.4.6 Scenari di test, E3 e trascrizioni congelati"}
 {"at":"2026-11-15T12:34Z","id":"m4.4.6","op":"fill","text":"completato m4.4.6: detail"}
-{"at":"2026-11-15T12:37Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 6ccc3f8","proof":[{"type":"commit","ref":"6ccc3f8"}]}
-{"at":"2026-11-15T12:38Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 3be8e42","proof":[{"type":"commit","ref":"3be8e42"}]}
-{"at":"2026-11-15T12:40Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 964f21f","proof":[{"type":"commit","ref":"964f21f"}]}
-{"at":"2026-11-15T12:56Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 3fafb3e","proof":[{"type":"commit","ref":"3fafb3e"}]}
-{"at":"2026-11-15T12:59Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 9e0a34e","proof":[{"type":"commit","ref":"9e0a34e"}]}
-{"at":"2026-11-15T13:00Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit ad0b4b9","proof":[{"type":"commit","ref":"ad0b4b9"}]}
-{"at":"2026-11-15T13:01Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 126fb37","proof":[{"type":"commit","ref":"126fb37"}]}
-{"at":"2026-11-15T13:03Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit cba5c7f","proof":[{"type":"commit","ref":"cba5c7f"}]}
-{"at":"2026-11-15T13:03Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit ff6c25e","proof":[{"type":"commit","ref":"ff6c25e"}]}
-{"at":"2026-11-15T13:12Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit b21454f","proof":[{"type":"commit","ref":"b21454f"}]}
-{"at":"2026-11-15T13:12Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit bb3b98d","proof":[{"type":"commit","ref":"bb3b98d"}]}
-{"at":"2026-11-15T13:19Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 07ae0f3","proof":[{"type":"commit","ref":"07ae0f3"}]}
-{"at":"2026-11-15T13:23Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 9a2ac29","proof":[{"type":"commit","ref":"9a2ac29"}]}
-{"at":"2026-11-15T13:23Z","id":"m4.4.6","op":"close","text":"chiuso m4.4.6 Scenari di test, E3 e trascrizioni congelati: 12 scenari di test, prima, parafrasi e 48 turni di E2 congelati; revisione su 4 scenari, grader del Continua corretto; gli scenari di E3 restano a m4.4.10","proof":[{"type":"commit","ref":"9a2ac29"}]}
+{"at":"2026-11-15T12:37Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit b34ac41","proof":[{"type":"commit","ref":"b34ac41"}]}
+{"at":"2026-11-15T12:38Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit bdf9b6e","proof":[{"type":"commit","ref":"bdf9b6e"}]}
+{"at":"2026-11-15T12:40Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit c06df4f","proof":[{"type":"commit","ref":"c06df4f"}]}
+{"at":"2026-11-15T12:56Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 31213f8","proof":[{"type":"commit","ref":"31213f8"}]}
+{"at":"2026-11-15T12:59Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 82cddab","proof":[{"type":"commit","ref":"82cddab"}]}
+{"at":"2026-11-15T13:00Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 6fbaae5","proof":[{"type":"commit","ref":"6fbaae5"}]}
+{"at":"2026-11-15T13:01Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 673c0b3","proof":[{"type":"commit","ref":"673c0b3"}]}
+{"at":"2026-11-15T13:03Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 7933e0f","proof":[{"type":"commit","ref":"7933e0f"}]}
+{"at":"2026-11-15T13:03Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 5784fff","proof":[{"type":"commit","ref":"5784fff"}]}
+{"at":"2026-11-15T13:12Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 1c98679","proof":[{"type":"commit","ref":"1c98679"}]}
+{"at":"2026-11-15T13:12Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 031c162","proof":[{"type":"commit","ref":"031c162"}]}
+{"at":"2026-11-15T13:19Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit 2711c77","proof":[{"type":"commit","ref":"2711c77"}]}
+{"at":"2026-11-15T13:23Z","id":"m4.4.6","op":"fill","text":"prova per m4.4.6: commit cf94396","proof":[{"type":"commit","ref":"cf94396"}]}
+{"at":"2026-11-15T13:23Z","id":"m4.4.6","op":"close","text":"chiuso m4.4.6 Scenari di test, E3 e trascrizioni congelati: 12 scenari di test, prima, parafrasi e 48 turni di E2 congelati; revisione su 4 scenari, grader del Continua corretto; gli scenari di E3 restano a m4.4.10","proof":[{"type":"commit","ref":"cf94396"}]}
 {"at":"2026-11-15T13:23Z","id":"m4.4.7","op":"start","text":"iniziato m4.4.7 Commit di pre-registrazione"}
-{"at":"2026-11-15T13:24Z","id":"m4.4.7","op":"close","text":"chiuso m4.4.7 Commit di pre-registrazione: pre-registrazione committata con manifest degli hash, prima di ogni prova sul test","proof":[{"type":"commit","ref":"31beca9"}]}
+{"at":"2026-11-15T13:24Z","id":"m4.4.7","op":"close","text":"chiuso m4.4.7 Commit di pre-registrazione: pre-registrazione committata con manifest degli hash, prima di ogni prova sul test","proof":[{"type":"commit","ref":"eb49753"}]}
 {"at":"2026-11-15T13:24Z","id":"m4.4.8","op":"start","text":"iniziato m4.4.8 Approvazione del budget"}
 {"at":"2026-11-15T13:24Z","id":"m4.4.8","op":"close","text":"chiuso m4.4.8 Approvazione del budget: delegato dall'utente: tetto 30 $ a listino, previsti ~26 $","proof":[{"type":"message","ref":"chat 2026-11-15: «Fai pure tutto fino a prima del push», tetto 30 $ dichiarato"}]}
 {"at":"2026-11-15T13:24Z","id":"m4.4.9","op":"start","text":"iniziato m4.4.9 E1, E1b, E2 e analisi"}
 {"at":"2026-11-15T13:24Z","id":"m4.4.8","op":"fill","text":"prova per m4.4.8: file docs/valutazione/preregistrazione.md#spesa","proof":[{"type":"file","ref":"docs/valutazione/preregistrazione.md#spesa"}]}
-{"at":"2026-11-15T13:25Z","id":"m4.4.9","op":"fill","text":"prova per m4.4.9: commit bc099d0","proof":[{"type":"commit","ref":"bc099d0"}]}
-{"at":"2026-11-15T13:49Z","id":"m4.4.9","op":"fill","text":"prova per m4.4.9: commit 3321efb","proof":[{"type":"commit","ref":"3321efb"}]}
+{"at":"2026-11-15T13:25Z","id":"m4.4.9","op":"fill","text":"prova per m4.4.9: commit ab0ebcb","proof":[{"type":"commit","ref":"ab0ebcb"}]}
+{"at":"2026-11-15T13:49Z","id":"m4.4.9","op":"fill","text":"prova per m4.4.9: commit c82fa99","proof":[{"type":"commit","ref":"c82fa99"}]}
 {"at":"2026-11-15T14:29Z","id":"m4.4.11","op":"fill","text":"completato m4.4.11: detail"}
 {"at":"2026-11-15T14:29Z","id":"m4.4.12","op":"plan","text":"piano per Rapporto: Rapporto completo in rapporto.md → Pagina rapporto.html"}
 {"at":"2026-11-15T14:30Z","id":"m4.4.12","op":"fill","text":"completato m4.4.12: detail"}
-{"at":"2026-11-15T14:31Z","id":"m4.4.11","op":"close","text":"chiuso m4.4.11 Confronto D4: tabella a 13 criteri su 13 strumenti; ariadne unico su prova+perché in git, perde su maturità, team, issue, editor","proof":[{"type":"commit","ref":"f824e7f"}]}
+{"at":"2026-11-15T14:31Z","id":"m4.4.11","op":"close","text":"chiuso m4.4.11 Confronto D4: tabella a 13 criteri su 13 strumenti; ariadne unico su prova+perché in git, perde su maturità, team, issue, editor","proof":[{"type":"commit","ref":"7bd1930"}]}
 {"at":"2026-11-15T14:42Z","id":"m4.4.12.1","op":"start","text":"iniziato m4.4.12.1 Rapporto completo in rapporto.md"}
-{"at":"2026-11-15T14:42Z","id":"m4.4.9","op":"close","text":"chiuso m4.4.9 E1, E1b, E2 e analisi: E1 H1 passa, H2 non significativa (0,95); E2 adotta l'osservatore (recall 0,93, falsi allarmi 0,04); spesa 26,3 $","proof":[{"type":"commit","ref":"707aa43"}]}
-{"at":"2026-11-15T14:42Z","id":"m4.4.12.1","op":"fill","text":"prova per m4.4.12.1: commit 45b7a08","proof":[{"type":"commit","ref":"45b7a08"}]}
+{"at":"2026-11-15T14:42Z","id":"m4.4.9","op":"close","text":"chiuso m4.4.9 E1, E1b, E2 e analisi: E1 H1 passa, H2 non significativa (0,95); E2 adotta l'osservatore (recall 0,93, falsi allarmi 0,04); spesa 26,3 $","proof":[{"type":"commit","ref":"2a182ab"}]}
+{"at":"2026-11-15T14:42Z","id":"m4.4.12.1","op":"fill","text":"prova per m4.4.12.1: commit bdd3cfa","proof":[{"type":"commit","ref":"bdd3cfa"}]}
 {"at":"2026-11-15T14:42Z","id":"m4.4.12.2","op":"start","text":"iniziato m4.4.12.2 Pagina rapporto.html"}
-{"at":"2026-11-15T14:42Z","id":"m4.4.12.2","op":"fill","text":"prova per m4.4.12.2: commit b6911a4","proof":[{"type":"commit","ref":"b6911a4"}]}
-{"at":"2026-11-15T14:52Z","id":"m4.4.12.1","op":"close","text":"chiuso m4.4.12.1 Rapporto completo in rapporto.md: rapporto.md completo con E1, E2, confronto, limiti e prossimi passi","proof":[{"type":"commit","ref":"0806fb5"}]}
+{"at":"2026-11-15T14:42Z","id":"m4.4.12.2","op":"fill","text":"prova per m4.4.12.2: commit dc0d8ba","proof":[{"type":"commit","ref":"dc0d8ba"}]}
+{"at":"2026-11-15T14:52Z","id":"m4.4.12.1","op":"close","text":"chiuso m4.4.12.1 Rapporto completo in rapporto.md: rapporto.md completo con E1, E2, confronto, limiti e prossimi passi","proof":[{"type":"commit","ref":"098946b"}]}
 {"at":"2026-11-15T14:52Z","id":"m4.4.12.2","op":"fill","text":"prova per m4.4.12.2: commit 38e73d4","proof":[{"type":"commit","ref":"38e73d4"}]}
 {"at":"2026-11-15T14:56Z","id":"m4.4.12.2","op":"close","text":"chiuso m4.4.12.2 Pagina rapporto.html: prima versione della pagina; l'utente chiede una revisione severa della narrazione","proof":[{"type":"commit","ref":"38e73d4"}]}
 {"at":"2026-11-15T14:56Z","id":"m4.4.12","op":"plan","text":"piano per Rapporto: Revisione severa della narrazione di rapporto.html → Dieci slide"}
@@ -206,18 +206,18 @@
 {"at":"2026-11-15T15:04Z","id":"m4.4.12.5","op":"add","text":"deviazione m4.4.12.5 Revisione UI/UX del viewer, rientra in m4.4.12.3"}
 {"at":"2026-11-15T15:14Z","id":"m4.4.12.5","op":"plan","text":"piano per Revisione UI/UX del viewer: Corrente sempre visibile nella finestra → Icone di stato SVG e legenda a scomparsa → Pannello ritraibile e comandi compatti → Cronologia ed Elenco con filtri e ricerca → Zoom leggibile, pillola Sei qui e tastiera → Revisione d'usabilità e correzioni"}
 {"at":"2026-11-15T15:14Z","id":"m4.4.12.5.1","op":"start","text":"iniziato m4.4.12.5.1 Corrente sempre visibile nella finestra"}
-{"at":"2026-11-15T15:16Z","id":"m4.4.12.5.1","op":"close","text":"chiuso m4.4.12.5.1 Corrente sempre visibile nella finestra: il corrente vince sul punto di rientro nella finestra; test rosso poi verde","proof":[{"type":"commit","ref":"4378320"}]}
+{"at":"2026-11-15T15:16Z","id":"m4.4.12.5.1","op":"close","text":"chiuso m4.4.12.5.1 Corrente sempre visibile nella finestra: il corrente vince sul punto di rientro nella finestra; test rosso poi verde","proof":[{"type":"commit","ref":"3947165"}]}
 {"at":"2026-11-15T15:16Z","id":"m4.4.12.5.2","op":"start","text":"iniziato m4.4.12.5.2 Icone di stato SVG e legenda a scomparsa"}
-{"at":"2026-11-15T15:22Z","id":"m4.4.12.5.2","op":"close","text":"chiuso m4.4.12.5.2 Icone di stato SVG e legenda a scomparsa: sei icone SVG disegnate (forma = stato) ovunque; legenda dietro un pulsante, ricorda lo stato","proof":[{"type":"commit","ref":"62556ba"}]}
+{"at":"2026-11-15T15:22Z","id":"m4.4.12.5.2","op":"close","text":"chiuso m4.4.12.5.2 Icone di stato SVG e legenda a scomparsa: sei icone SVG disegnate (forma = stato) ovunque; legenda dietro un pulsante, ricorda lo stato","proof":[{"type":"commit","ref":"d67f90a"}]}
 {"at":"2026-11-15T15:22Z","id":"m4.4.12.5.3","op":"start","text":"iniziato m4.4.12.5.3 Pannello ritraibile e comandi compatti"}
-{"at":"2026-11-15T15:24Z","id":"m4.4.12.5.3","op":"close","text":"chiuso m4.4.12.5.3 Pannello ritraibile e comandi compatti: pannello sovrapposto e ritraibile (× o Esc); livelli, legenda e zoom compatti nel canvas; riassunto dell'agente nel pannello","proof":[{"type":"commit","ref":"dd1c3e9"}]}
+{"at":"2026-11-15T15:24Z","id":"m4.4.12.5.3","op":"close","text":"chiuso m4.4.12.5.3 Pannello ritraibile e comandi compatti: pannello sovrapposto e ritraibile (× o Esc); livelli, legenda e zoom compatti nel canvas; riassunto dell'agente nel pannello","proof":[{"type":"commit","ref":"871b9a9"}]}
 {"at":"2026-11-15T15:24Z","id":"m4.4.12.5.4","op":"start","text":"iniziato m4.4.12.5.4 Cronologia ed Elenco con filtri e ricerca"}
-{"at":"2026-11-15T15:28Z","id":"m4.4.12.5.4","op":"close","text":"chiuso m4.4.12.5.4 Cronologia ed Elenco con filtri e ricerca: schede Cronologia (diario per giorno, 3 chip) ed Elenco (nodi per tipo con conteggi); ricerca unica con / ; storia del nodo nel pannello","proof":[{"type":"commit","ref":"c57b073"}]}
+{"at":"2026-11-15T15:28Z","id":"m4.4.12.5.4","op":"close","text":"chiuso m4.4.12.5.4 Cronologia ed Elenco con filtri e ricerca: schede Cronologia (diario per giorno, 3 chip) ed Elenco (nodi per tipo con conteggi); ricerca unica con / ; storia del nodo nel pannello","proof":[{"type":"commit","ref":"1d668b2"}]}
 {"at":"2026-11-15T15:28Z","id":"m4.4.12.5.5","op":"start","text":"iniziato m4.4.12.5.5 Zoom leggibile, pillola Sei qui e tastiera"}
-{"at":"2026-11-15T15:34Z","id":"m4.4.12.5.5","op":"close","text":"chiuso m4.4.12.5.5 Zoom leggibile, pillola Sei qui e tastiera: adattamento leggibile sul contenitore del corrente; pillola Sei qui sul bordo; frecce e Invio nel grafo","proof":[{"type":"commit","ref":"4271cd3"}]}
+{"at":"2026-11-15T15:34Z","id":"m4.4.12.5.5","op":"close","text":"chiuso m4.4.12.5.5 Zoom leggibile, pillola Sei qui e tastiera: adattamento leggibile sul contenitore del corrente; pillola Sei qui sul bordo; frecce e Invio nel grafo","proof":[{"type":"commit","ref":"bea9eb3"}]}
 {"at":"2026-11-15T15:34Z","id":"m4.4.12.5.6","op":"start","text":"iniziato m4.4.12.5.6 Revisione d'usabilità e correzioni"}
-{"at":"2026-11-15T15:38Z","id":"m4.4.12.5.6","op":"close","text":"chiuso m4.4.12.5.6 Revisione d'usabilità e correzioni: revisione leggera in docs/ux/viewer/valutazione.md; corretto il volo da Cronologia/Elenco e aggiunti i tasti in legenda; 2 minori aperti","proof":[{"type":"commit","ref":"bce699e"}]}
-{"at":"2026-11-15T15:41Z","id":"m4.4.12.5","op":"fill","text":"prova per m4.4.12.5: commit 82d0794","proof":[{"type":"commit","ref":"82d0794"}]}
+{"at":"2026-11-15T15:38Z","id":"m4.4.12.5.6","op":"close","text":"chiuso m4.4.12.5.6 Revisione d'usabilità e correzioni: revisione leggera in docs/ux/viewer/valutazione.md; corretto il volo da Cronologia/Elenco e aggiunti i tasti in legenda; 2 minori aperti","proof":[{"type":"commit","ref":"da81b35"}]}
+{"at":"2026-11-15T15:41Z","id":"m4.4.12.5","op":"fill","text":"prova per m4.4.12.5: commit 0fff08a","proof":[{"type":"commit","ref":"0fff08a"}]}
 {"at":"2026-11-15T15:41Z","id":"m4.4.12.5","op":"close","text":"chiuso m4.4.12.5 Revisione UI/UX del viewer: viewer rivisto: icone SVG, pannello ritraibile, Cronologia ed Elenco con filtri, ricerca, zoom leggibile, pillola Sei qui, tastiera","proof":[{"type":"file","ref":"docs/ux/viewer/valutazione.md"}]}
 {"at":"2026-11-15T15:46Z","id":"","op":"confirm","text":"confermate 2 modifiche"}
 {"at":"2026-11-15T15:52Z","id":"m4","op":"plan","text":"piano per M4 Revisione e feedback: Pacchetto installabile e configurabile"}
@@ -227,32 +227,47 @@
 {"at":"2026-11-15T15:53Z","id":"m4.6","op":"start","text":"iniziato m4.6 Pacchetto installabile e configurabile"}
 {"at":"2026-11-15T16:00Z","id":"m4.6","op":"plan","text":"piano per Pacchetto installabile e configurabile: Porta del viewer per progetto → Hook silenziosi fuori da un progetto e ariadne init → Il repo diventa il plugin → Skill per l'agente in inglese → README pubblico in inglese → Prova d'installazione da zero"}
 {"at":"2026-11-15T16:00Z","id":"m4.6.1","op":"start","text":"iniziato m4.6.1 Porta del viewer per progetto"}
-{"at":"2026-11-15T16:07Z","id":"m4.6.1","op":"fill","text":"prova per m4.6.1: commit f47f89b","proof":[{"type":"commit","ref":"f47f89b"}]}
-{"at":"2026-11-15T16:07Z","id":"m4.6.1","op":"close","text":"chiuso m4.6.1 Porta del viewer per progetto: porta del viewer per progetto in .ariadne/local.json; il viewer serve pagina e logica dal pacchetto","proof":[{"type":"commit","ref":"31f8e43"}]}
+{"at":"2026-11-15T16:07Z","id":"m4.6.1","op":"fill","text":"prova per m4.6.1: commit 7aca9c6","proof":[{"type":"commit","ref":"7aca9c6"}]}
+{"at":"2026-11-15T16:07Z","id":"m4.6.1","op":"close","text":"chiuso m4.6.1 Porta del viewer per progetto: porta del viewer per progetto in .ariadne/local.json; il viewer serve pagina e logica dal pacchetto","proof":[{"type":"commit","ref":"6d36438"}]}
 {"at":"2026-11-15T16:07Z","id":"m4.6.2","op":"start","text":"iniziato m4.6.2 Hook silenziosi fuori da un progetto e ariadne init"}
-{"at":"2026-11-15T16:09Z","id":"m4.6.2","op":"close","text":"chiuso m4.6.2 Hook silenziosi fuori da un progetto e ariadne init: hook e banda muti fuori da un progetto; ariadne init crea .ariadne/","proof":[{"type":"commit","ref":"15500ad"}]}
+{"at":"2026-11-15T16:09Z","id":"m4.6.2","op":"close","text":"chiuso m4.6.2 Hook silenziosi fuori da un progetto e ariadne init: hook e banda muti fuori da un progetto; ariadne init crea .ariadne/","proof":[{"type":"commit","ref":"615043f"}]}
 {"at":"2026-11-15T16:09Z","id":"m4.6.3","op":"start","text":"iniziato m4.6.3 Il repo diventa il plugin"}
-{"at":"2026-11-15T16:11Z","id":"m4.6.3","op":"fill","text":"prova per m4.6.3: commit bc16cf8","proof":[{"type":"commit","ref":"bc16cf8"}]}
-{"at":"2026-11-15T16:12Z","id":"m4.6.3","op":"fill","text":"prova per m4.6.3: commit 13a5803","proof":[{"type":"commit","ref":"13a5803"}]}
-{"at":"2026-11-15T16:14Z","id":"m4.6.3","op":"fill","text":"prova per m4.6.3: commit 0c1b4da","proof":[{"type":"commit","ref":"0c1b4da"}]}
-{"at":"2026-11-15T16:14Z","id":"m4.6.3","op":"close","text":"chiuso m4.6.3 Il repo diventa il plugin: la radice del repo è il plugin: hook, CLI, banda, marketplace e /ariadne:init","proof":[{"type":"commit","ref":"7d4a31e"}]}
+{"at":"2026-11-15T16:11Z","id":"m4.6.3","op":"fill","text":"prova per m4.6.3: commit 1b6731a","proof":[{"type":"commit","ref":"1b6731a"}]}
+{"at":"2026-11-15T16:12Z","id":"m4.6.3","op":"fill","text":"prova per m4.6.3: commit 0853258","proof":[{"type":"commit","ref":"0853258"}]}
+{"at":"2026-11-15T16:14Z","id":"m4.6.3","op":"fill","text":"prova per m4.6.3: commit 6e02d2e","proof":[{"type":"commit","ref":"6e02d2e"}]}
+{"at":"2026-11-15T16:14Z","id":"m4.6.3","op":"close","text":"chiuso m4.6.3 Il repo diventa il plugin: la radice del repo è il plugin: hook, CLI, banda, marketplace e /ariadne:init","proof":[{"type":"commit","ref":"5bd9771"}]}
 {"at":"2026-11-15T16:14Z","id":"m4.6.4","op":"start","text":"iniziato m4.6.4 Skill per l'agente in inglese"}
 {"at":"2026-11-15T16:14Z","id":"m4.6.7","op":"add","text":"deviazione m4.6.7 Primo nodo in un progetto nuovo, rientra in m4.6.4"}
-{"at":"2026-11-15T16:15Z","id":"m4.6.7","op":"close","text":"chiuso m4.6.7 Primo nodo in un progetto nuovo: dopo init add e plan creano il grafo","proof":[{"type":"commit","ref":"b98a21e"}]}
-{"at":"2026-11-15T16:18Z","id":"m4.6.4","op":"close","text":"chiuso m4.6.4 Skill per l'agente in inglese: skill ariadne in inglese, provata su due scenari contro una base senza skill","proof":[{"type":"commit","ref":"7d948ff"}]}
+{"at":"2026-11-15T16:15Z","id":"m4.6.7","op":"close","text":"chiuso m4.6.7 Primo nodo in un progetto nuovo: dopo init add e plan creano il grafo","proof":[{"type":"commit","ref":"9026a71"}]}
+{"at":"2026-11-15T16:18Z","id":"m4.6.4","op":"close","text":"chiuso m4.6.4 Skill per l'agente in inglese: skill ariadne in inglese, provata su due scenari contro una base senza skill","proof":[{"type":"commit","ref":"a7bff98"}]}
 {"at":"2026-11-15T16:18Z","id":"m4.6.5","op":"start","text":"iniziato m4.6.5 README pubblico in inglese"}
-{"at":"2026-11-15T16:18Z","id":"m4.6.5","op":"close","text":"chiuso m4.6.5 README pubblico in inglese: README pubblico in inglese con installazione in due comandi","proof":[{"type":"commit","ref":"d2df32b"}]}
+{"at":"2026-11-15T16:18Z","id":"m4.6.5","op":"close","text":"chiuso m4.6.5 README pubblico in inglese: README pubblico in inglese con installazione in due comandi","proof":[{"type":"commit","ref":"2dae7aa"}]}
 {"at":"2026-11-15T16:18Z","id":"m4.6.6","op":"start","text":"iniziato m4.6.6 Prova d'installazione da zero"}
 {"at":"2026-11-15T16:21Z","id":"m4.6.6","op":"close","text":"chiuso m4.6.6 Prova d'installazione da zero: installato da un clone pulito in una config temporanea; in un progetto vuoto /ariadne:init, piano, commit con Thread e chiusura del passo funzionano; 251 test verdi nel clone; riemerso m4.5","proof":[{"type":"message","ref":"chat 2026-11-15: prova headless con --plugin-dir"}]}
 {"at":"2026-11-15T16:21Z","id":"m4.5","op":"start","text":"iniziato m4.5 Il corrente resta sul genitore dopo plan"}
-{"at":"2026-11-15T16:22Z","id":"m4.5","op":"close","text":"chiuso m4.5 Il corrente resta sul genitore dopo plan: plan sotto il nodo corrente avvia il primo passo nuovo","proof":[{"type":"commit","ref":"383f977"}]}
+{"at":"2026-11-15T16:22Z","id":"m4.5","op":"close","text":"chiuso m4.5 Il corrente resta sul genitore dopo plan: plan sotto il nodo corrente avvia il primo passo nuovo","proof":[{"type":"commit","ref":"e9b6d64"}]}
 {"at":"2026-11-15T16:30Z","id":"m4.6","op":"start","text":"iniziato m4.6 Pacchetto installabile e configurabile"}
 {"at":"2026-11-15T16:30Z","id":"m4.6","op":"plan","text":"piano per Pacchetto installabile e configurabile: Licenza MIT → Push su GitHub → Questo repo usa il plugin → CLI e banda in inglese"}
 {"at":"2026-11-15T16:30Z","id":"m4.6.8","op":"start","text":"iniziato m4.6.8 Licenza MIT"}
-{"at":"2026-11-15T16:30Z","id":"m4.6.8","op":"close","text":"chiuso m4.6.8 Licenza MIT: licenza MIT nel repo, nel manifest e nel README","proof":[{"type":"commit","ref":"6f54d8b"}]}
+{"at":"2026-11-15T16:30Z","id":"m4.6.8","op":"close","text":"chiuso m4.6.8 Licenza MIT: licenza MIT nel repo, nel manifest e nel README","proof":[{"type":"commit","ref":"068cdda"}]}
 {"at":"2026-11-15T16:30Z","id":"m4.6.9","op":"start","text":"iniziato m4.6.9 Push su GitHub"}
-{"at":"2026-11-15T16:37Z","id":"m4.6.9","op":"close","text":"chiuso m4.6.9 Push su GitHub: branch e main su GitHub (6f54d8b); installazione da DanieleAngioni97/ariadne-thread provata in una config temporanea; repo resta privato finché non si decide sul rapporto interno","proof":[{"type":"commit","ref":"6f54d8b"}]}
+{"at":"2026-11-15T16:37Z","id":"m4.6.9","op":"close","text":"chiuso m4.6.9 Push su GitHub: branch e main su GitHub (068cdda); installazione da DanieleAngioni97/ariadne-thread provata in una config temporanea; repo resta privato finché non si decide sul rapporto interno","proof":[{"type":"commit","ref":"068cdda"}]}
 {"at":"2026-11-15T16:37Z","id":"m4.6.10","op":"start","text":"iniziato m4.6.10 Questo repo usa il plugin"}
-{"at":"2026-11-15T16:39Z","id":"m4.6.10","op":"close","text":"chiuso m4.6.10 Questo repo usa il plugin: plugin installato dalla cartella del repo; tolti hook di progetto e link rotti in dev-mods","proof":[{"type":"commit","ref":"a70a29a"}]}
+{"at":"2026-11-15T16:39Z","id":"m4.6.10","op":"close","text":"chiuso m4.6.10 Questo repo usa il plugin: plugin installato dalla cartella del repo; tolti hook di progetto e link rotti in dev-mods","proof":[{"type":"commit","ref":"322da00"}]}
 {"at":"2026-11-15T16:39Z","id":"m4.6.11","op":"start","text":"iniziato m4.6.11 CLI e banda in inglese"}
 {"at":"2026-11-15T16:40Z","id":"m4.6.12","op":"add","text":"deviazione m4.6.12 Ripulire storia e docs dalle tracce aziendali, rientra in m4.6.11"}
+{"at":"2026-11-15T16:42Z","id":"m4.4.12.5","op":"fill","text":"prova per m4.4.12.5: commit 0fff08a","proof":[{"type":"commit","ref":"0fff08a"}]}
+{"at":"2026-11-15T16:42Z","id":"m4.6.2","op":"fill","text":"prova per m4.6.2: commit 615043f","proof":[{"type":"commit","ref":"615043f"}]}
+{"at":"2026-11-15T16:42Z","id":"m4.6.3","op":"fill","text":"prova per m4.6.3: commit 1b6731a","proof":[{"type":"commit","ref":"1b6731a"}]}
+{"at":"2026-11-15T16:42Z","id":"m4.6.3","op":"fill","text":"prova per m4.6.3: commit 0853258","proof":[{"type":"commit","ref":"0853258"}]}
+{"at":"2026-11-15T16:42Z","id":"m4.6.3","op":"fill","text":"prova per m4.6.3: commit 6e02d2e","proof":[{"type":"commit","ref":"6e02d2e"}]}
+{"at":"2026-11-15T16:42Z","id":"m4.6.3","op":"fill","text":"prova per m4.6.3: commit 5bd9771","proof":[{"type":"commit","ref":"5bd9771"}]}
+{"at":"2026-11-15T16:42Z","id":"m4.6.7","op":"fill","text":"prova per m4.6.7: commit 9026a71","proof":[{"type":"commit","ref":"9026a71"}]}
+{"at":"2026-11-15T16:42Z","id":"m4.6.4","op":"fill","text":"prova per m4.6.4: commit a7bff98","proof":[{"type":"commit","ref":"a7bff98"}]}
+{"at":"2026-11-15T16:42Z","id":"m4.6.5","op":"fill","text":"prova per m4.6.5: commit 2dae7aa","proof":[{"type":"commit","ref":"2dae7aa"}]}
+{"at":"2026-11-15T16:42Z","id":"m4.5","op":"fill","text":"prova per m4.5: commit e9b6d64","proof":[{"type":"commit","ref":"e9b6d64"}]}
+{"at":"2026-11-15T16:42Z","id":"m4.6.8","op":"fill","text":"prova per m4.6.8: commit 068cdda","proof":[{"type":"commit","ref":"068cdda"}]}
+{"at":"2026-11-15T16:42Z","id":"m4.6.10","op":"fill","text":"prova per m4.6.10: commit 322da00","proof":[{"type":"commit","ref":"322da00"}]}
+{"at":"2026-11-15T16:43Z","id":"m4.4.12.4","op":"fill","text":"completato m4.4.12.4: what"}
+{"at":"2026-11-15T16:43Z","id":"m4.4.12.3","op":"fill","text":"completato m4.4.12.3: what"}
+{"at":"2026-11-15T16:43Z","id":"m4.4.12.2","op":"fill","text":"prova per m4.4.12.2: message rapporto interno spostato fuori dal repo il 2026-11-15; il commit originale resta nel bundle di sicurezza","proof":[{"type":"message","ref":"rapporto interno spostato fuori dal repo il 2026-11-15; il commit originale resta nel bundle di sicurezza"}]}

@@ -38,7 +38,7 @@ Dove resta aperta. Il primo pilota resta in `eval/runs/pilot-haiku/` come regist
   `sort` e `git status`; in *ariadne* tutta la CLI, come nell'uso vero. Una lettura fuori dalla copia resta
   esclusa dal controllo dei percorsi.
 - Il pilota ha trovato un bug di ariadne: chiudere un passo avviava il passo rinviato nella milestone invece del
-  successivo del piano (`c73faca`). Si corregge prima della pre-registrazione, che fissa lo sha di ariadne; il
+  successivo del piano (`06c7b09`). Si corregge prima della pre-registrazione, che fissa lo sha di ariadne; il
   rapporto lo riporta tra i risultati.
 - Da riportare come osservazione sul prodotto: con una modifica in coda («Da confermare») l'agente di *ariadne*
   tende a fermarsi e chiedere la conferma invece di riprendere il lavoro.
@@ -76,7 +76,7 @@ Dove resta aperta. Il primo pilota resta in `eval/runs/pilot-haiku/` come regist
 più no; il resto della valutazione è delegato, push escluso.*
 - Prodotto: la scheda di stato all'avvio e il riassunto solo quando cambia (specifica § Riassunto per
   l'agente). Pilota 7: costo −10% su *prima*, dove il pilota 6 dava +21% (`eval/pilot.md`).
-- Generatore: dopo un rinvio il lavoro va sul nodo che lo riprende (`66c6b11`). Nei piloti 1–6 il grafo di
+- Generatore: dopo un rinvio il lavoro va sul nodo che lo riprende (`a78cafc`). Nei piloti 1–6 il grafo di
   quei passi era sbagliato a sfavore di *ariadne*.
 - **Ipotesi della versione snella** (sostituiscono H1a, H1b e H2 della § 6):
   - **H1 (co-primaria, non inferiorità):** la differenza di quota giusta, *ariadne* − *prima*, sulle sei
