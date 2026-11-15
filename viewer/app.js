@@ -11,6 +11,7 @@ import { fileRef, showRef } from '../src/refs.mjs'
 import { summarize } from '../src/summary.mjs'
 import { validate } from '../src/validate.mjs'
 import { StatusIcon } from './icons.js'
+import { dayOffset, groupOf, kindOf, lastActivity, listCounts, listRows, parseLog, searchNodes, timeline } from './views.js'
 import { lang, t } from './i18n.js'
 import {
   anomalies, cameFrom, defaultExpanded, emptyNote, fromGraph, hasChildren, holdsCurrent, labelOf, ledTo, panelRows, pathTo, threadSet,
@@ -35,10 +36,13 @@ const PANEL_WIDTH = 400
 // The repo as it is now: `ariadne view` serves .ariadne/ and tells the page where the repo lives.
 // The files are read again every RELOAD_MS; `load` swaps the graph in when they change.
 const read = path => fetch(path).then(r => (r.ok ? r.text() : null))
-const readFiles = () => Promise.all([read('.ariadne/graph.jsonl'), read('.ariadne/thread.json')])
-let data, byId, thread, problems, LIMIT, loaded, missing, errors, agentSummary
-function load([graphText, threadText]) {
-  loaded = `${graphText}\0${threadText}`
+const readFiles = () => Promise.all([read('.ariadne/graph.jsonl'), read('.ariadne/thread.json'), read('.ariadne/log.jsonl')])
+const signature = files => files.join('\0')
+let data, byId, thread, problems, LIMIT, loaded, missing, errors, agentSummary, events, lastAt
+function load([graphText, threadText, logText]) {
+  loaded = signature([graphText, threadText, logText])
+  events = parseLog(logText)
+  lastAt = lastActivity(events)
   missing = graphText == null
   errors = missing ? [] : validate(graphText)
   const nodes = parse(graphText ?? '')
@@ -59,8 +63,6 @@ const allContainers = () => new Set(data.nodes.filter(n => hasChildren(data, n.i
 /** The key of the level that holds `id`, as the window and its markers name it. */
 const levelKey = id => byId.get(id)?.parent ?? ''
 
-/** What a node is, at a glance: its look follows this, not the raw status. */
-const kindOf = node => (node.kind === 'detour' ? 'detour' : node.status === 'replaced' ? 'dropped' : node.status)
 
 /** The words at the right of a node (specifica § Viewer), else its status. */
 function labelText(node) {
@@ -303,12 +305,14 @@ function RowValue({ row, onSelect }) {
   return html`<p>${value}</p>`
 }
 
-function Panel({ node, open, expanded, focus, onSelect, onToggle, onFocus, onClose }) {
+function Panel({ node, open, expanded, focus, onSelect, onToggle, onFocus, onClose, onShowInGraph }) {
   const inside = childCount(node.id)
   const from = cameFrom(data, node.id)
   const led = ledTo(data, node.id)
   const isCurrent = node.id === data.current
   const problem = problems.get(node.id)
+  // What happened to this node, newest first; details stay in the timeline.
+  const history = events.filter(e => e.id === node.id && groupOf(e.op) !== 'detail').reverse().slice(0, 6)
   return html`
     <aside class="panel" aria-label=${t.panel.label} aria-hidden=${!open} inert=${!open || undefined}>
       <header class=${`panel-head k-${kindOf(node)}`}>
@@ -320,6 +324,7 @@ function Panel({ node, open, expanded, focus, onSelect, onToggle, onFocus, onClo
           <span>${labelText(node)}${isCurrent ? ` · ${t.here}` : ''}</span>
         </div>
         <h2><span class="nid">${node.id}</span> ${node.title}</h2>
+        ${onShowInGraph && html`<button class="link" onClick=${() => onShowInGraph(node.id)}>${t.panel.showInGraph}</button>`}
       </header>
 
       ${problem && html`<div class="warning" role="alert"><b>!</b> ${t.anomaly[problem]}</div>`}
@@ -350,6 +355,14 @@ function Panel({ node, open, expanded, focus, onSelect, onToggle, onFocus, onClo
             <div class="chips">${from.map(n => html`<${Chip} key=${n.id} node=${n} onSelect=${onSelect} />`)}</div>`}
           ${led.length > 0 && html`<div class="sub">${t.panel.ledTo}</div>
             <div class="chips">${led.map(n => html`<${Chip} key=${n.id} node=${n} onSelect=${onSelect} />`)}</div>`}
+        </section>`}
+
+      ${history.length > 0 && html`
+        <section>
+          <h3>${t.panel.history}</h3>
+          <ol class="history">
+            ${history.map((e, i) => html`<li key=${i}><span class="when">${shortDate(e.at)} ${timeOf(e.at)}</span> ${t.ops[e.op] ?? e.op}${outcomeOf(e.text) ? `: ${outcomeOf(e.text)}` : ''}</li>`)}
+          </ol>
         </section>`}
 
       ${isCurrent && agentSummary && html`
@@ -401,6 +414,161 @@ function Invalid() {
     </div>`
 }
 
+const pad2 = n => String(n).padStart(2, '0')
+/** The local day of a moment, YYYY-MM-DD: the timeline groups by the day you lived, not by UTC. */
+const localDay = at => {
+  const d = new Date(at)
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+}
+const timeOf = at => new Date(at).toLocaleTimeString(lang, { hour: '2-digit', minute: '2-digit' })
+const shortDate = at => new Date(at).toLocaleDateString(lang, { day: 'numeric', month: 'short' })
+function dayTitle(day) {
+  const back = dayOffset(day, localDay(Date.now()))
+  if (back === 0) return t.days.today
+  if (back === 1) return t.days.yesterday
+  return new Date(`${day}T12:00`).toLocaleDateString(lang, { weekday: 'long', day: 'numeric', month: 'long' })
+}
+
+/** The outcome after «: » in an event's text, the part the row does not already say. */
+const outcomeOf = text => {
+  const at = (text ?? '').indexOf(': ')
+  return at < 0 ? '' : text.slice(at + 2)
+}
+
+const TIMELINE_SHOWN = 60
+const GROUP_KEYS = ['progress', 'structure', 'detail']
+
+/** What happened, newest first, by day; chips choose which kinds of event show. */
+function Timeline({ query, selected, onSelect }) {
+  const [groups, setGroups] = useState(() => new Set(['progress', 'structure']))
+  const [all, setAll] = useState(false)
+  const flip = key => setGroups(prev => {
+    const next = new Set(prev)
+    next.has(key) ? next.delete(key) : next.add(key)
+    return next
+  })
+  const days = timeline(events, { groups, query, nodes: byId, dayOf: localDay })
+  let budget = all ? Infinity : TIMELINE_SHOWN
+  const shownDays = days.map(d => {
+    const list = d.events.slice(0, Math.max(0, budget))
+    budget -= list.length
+    return { ...d, events: list }
+  }).filter(d => d.events.length)
+  const total = days.reduce((k, d) => k + d.events.length, 0)
+  return html`
+    <section class="sheet" aria-label=${t.views.timeline}>
+      <div class="filters" role="group" aria-label=${t.filters}>
+        ${GROUP_KEYS.map(key => html`
+          <button key=${key} class="filter" aria-pressed=${groups.has(key)} onClick=${() => flip(key)}>
+            ${t.groups[key]} <span class="count">${events.filter(e => groupOf(e.op) === key).length}</span>
+          </button>`)}
+      </div>
+      ${events.length === 0 && html`<p class="empty">${t.noEvents}</p>`}
+      ${events.length > 0 && total === 0 && html`
+        <p class="empty">${t.noMatch} <button class="link" onClick=${() => setGroups(new Set(GROUP_KEYS))}>${t.resetFilters}</button></p>`}
+      ${shownDays.map(d => html`
+        <div class="day" key=${d.day}>
+          <h3 class="day-title">${dayTitle(d.day)}</h3>
+          <ul class="events">
+            ${d.events.map((e, i) => {
+              const node = byId.get(e.id)
+              const outcome = outcomeOf(e.text)
+              return html`
+                <li key=${`${e.at}${i}`}>
+                  <button class=${`event ${node && node.id === selected ? 'is-selected' : ''}`} disabled=${!node}
+                    title=${e.text} onClick=${() => node && onSelect(node.id)}>
+                    <span class="time">${timeOf(e.at)}</span>
+                    <span class=${`badge k-${node ? kindOf(node) : 'todo'}`}>${node ? html`<${StatusIcon} kind=${kindOf(node)} />` : ''}</span>
+                    <span class="op">${t.ops[e.op] ?? e.op}</span>
+                    <span class="what">
+                      ${node ? html`<span class="nid">${node.id}</span> ${node.title}` : e.text}
+                      ${node && outcome && html`<span class="outcome">${outcome}</span>`}
+                    </span>
+                  </button>
+                </li>`
+            })}
+          </ul>
+        </div>`)}
+      ${!all && total > TIMELINE_SHOWN && html`
+        <p class="more-rows"><button class="link" onClick=${() => setAll(true)}>${t.showAllEvents(total)}</button></p>`}
+    </section>`
+}
+
+const FILTERS = ['all', 'active', 'todo', 'done', 'deferred', 'detour', 'dropped']
+
+/** Every node in graph order, one chip per kind with its count. */
+function NodeList({ query, selected, onSelect }) {
+  const [filter, setFilter] = useState('all')
+  const counts = listCounts(data)
+  const rows = listRows(data, { filter, query })
+  return html`
+    <section class="sheet" aria-label=${t.views.list}>
+      <div class="filters" role="radiogroup" aria-label=${t.filters}>
+        ${FILTERS.filter(key => key === 'all' || counts[key] > 0).map(key => html`
+          <button key=${key} role="radio" class=${`filter k-${key}`} aria-checked=${filter === key} onClick=${() => setFilter(key)}>
+            ${key !== 'all' && html`<${StatusIcon} kind=${key} size=${14} />`}
+            ${key === 'all' ? t.all : t.kinds[key]} <span class="count">${counts[key]}</span>
+          </button>`)}
+      </div>
+      ${rows.length === 0 && html`<p class="empty">${t.noNodes(query)}</p>`}
+      ${rows.length > 0 && html`
+        <table class="nodes">
+          <thead><tr><th>${t.cols.title}</th><th>${t.cols.milestone}</th><th>${t.cols.last}</th></tr></thead>
+          <tbody>
+            ${rows.map(({ node, depth, milestone }) => html`
+              <tr key=${node.id} class=${`k-${kindOf(node)} ${node.id === selected ? 'is-selected' : ''} ${node.id === data.current ? 'is-current' : ''}`}>
+                <td>
+                  <button class="row-title" style=${{ paddingLeft: `${8 + (filter === 'all' && !query ? depth * 18 : 0)}px` }} onClick=${() => onSelect(node.id)}>
+                    <span class="badge"><${StatusIcon} kind=${kindOf(node)} /></span>
+                    <span><span class="nid">${node.id}</span> ${node.title}</span>
+                  </button>
+                </td>
+                <td class="muted">${milestone?.title ?? ''}</td>
+                <td class="muted nowrap">${lastAt.has(node.id) ? shortDate(lastAt.get(node.id)) : ''}</td>
+              </tr>`)}
+          </tbody>
+        </table>`}
+    </section>`
+}
+
+/** One field for every view: in the graph it lists nodes to go to, elsewhere it filters the rows. */
+function Search({ view, query, setQuery, onGo, inputRef }) {
+  const [at, setAt] = useState(0)
+  const results = view === 'graph' ? searchNodes(data, query) : []
+  const go = node => {
+    onGo(node.id)
+    setQuery('')
+    inputRef.current?.blur()
+  }
+  const onKey = e => {
+    if (e.key === 'Escape') { setQuery(''); e.currentTarget.blur() }
+    if (!results.length) return
+    if (e.key === 'ArrowDown') { e.preventDefault(); setAt(i => (i + 1) % results.length) }
+    if (e.key === 'ArrowUp') { e.preventDefault(); setAt(i => (i - 1 + results.length) % results.length) }
+    if (e.key === 'Enter') go(results[Math.min(at, results.length - 1)])
+  }
+  return html`
+    <div class="search">
+      <svg class="search-icon" width="14" height="14" viewBox="0 0 16 16" aria-hidden="true">
+        <circle cx="7" cy="7" r="4.75" fill="none" stroke="currentColor" strokeWidth="1.6" /><path d="M10.5 10.5 14 14" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      </svg>
+      <input ref=${inputRef} type="search" value=${query} placeholder=${t.search.placeholder} aria-label=${t.search.label}
+        role=${view === 'graph' ? 'combobox' : undefined} aria-expanded=${view === 'graph' ? results.length > 0 : undefined}
+        aria-controls="search-results" onInput=${e => { setQuery(e.target.value); setAt(0) }} onKeyDown=${onKey} />
+      <kbd aria-hidden="true">/</kbd>
+      ${view === 'graph' && query.trim() && html`
+        <ul class="results" id="search-results" role="listbox">
+          ${results.length === 0 && html`<li class="none">${t.noNodes(query)}</li>`}
+          ${results.map((n, i) => html`
+            <li key=${n.id} role="option" aria-selected=${i === at} class=${`k-${kindOf(n)}`}
+              onMouseDown=${e => { e.preventDefault(); go(n) }} onMouseEnter=${() => setAt(i)}>
+              <span class="badge"><${StatusIcon} kind=${kindOf(n)} size=${14} /></span>
+              <span class="nid">${n.id}</span><span class="result-title">${n.title}</span>
+            </li>`)}
+        </ul>`}
+    </div>`
+}
+
 /** Zoom out, zoom in, fit: three small buttons next to the legend. */
 function ZoomTools({ onFit }) {
   const flow = useReactFlow()
@@ -428,6 +596,10 @@ function App() {
   const [tip, setTip] = useState(null)
   // The panel slides away for a full-width graph; choosing anything brings it back.
   const [panelOpen, setPanelOpen] = useState(true)
+  // Graph, timeline or list; the search text is shared by all three.
+  const [view, setView] = useState(() => (['timeline', 'list'].includes(params.get('view')) ? params.get('view') : 'graph'))
+  const [query, setQuery] = useState('')
+  const searchRef = useRef(null)
   const tipTimer = useRef(null)
   // Where to fly after the next layout (a step chosen from the panel or the breadcrumb), and the step just reached.
   const [flyTo, setFlyTo] = useState(null)
@@ -457,7 +629,7 @@ function App() {
   useEffect(() => {
     const timer = setInterval(async () => {
       const next = await readFiles().catch(() => null)
-      if (!next || `${next[0]}\0${next[1]}` === loaded) return
+      if (!next || signature(next) === loaded) return
       const was = data.current
       load(next)
       setVersion(v => v + 1)
@@ -503,9 +675,13 @@ function App() {
     setPanelOpen(true)
   }, [])
 
-  // Esc puts the panel away.
+  // Esc puts the panel away; / goes to the search.
   useEffect(() => {
-    const onKey = e => { if (e.key === 'Escape' && !e.target.closest?.('input')) setPanelOpen(false) }
+    const onKey = e => {
+      if (e.target.closest?.('input')) return
+      if (e.key === 'Escape') setPanelOpen(false)
+      if (e.key === '/' && !e.metaKey && !e.ctrlKey) { e.preventDefault(); searchRef.current?.focus() }
+    }
     addEventListener('keydown', onKey)
     return () => removeEventListener('keydown', onKey)
   }, [])
@@ -519,6 +695,11 @@ function App() {
     const levels = [...holders, id].map(levelKey)
     reveal(byId.get(id)?.status === 'replaced' ? [...levels, `replaced:${levelKey(id)}`] : levels)
   }, [])
+
+  const showInGraph = id => {
+    setView('graph')
+    choose(id)
+  }
 
   const showLevel = name => {
     setLevel(name)
@@ -535,17 +716,24 @@ function App() {
       <div class=${`shell ${panelOpen && node ? 'panel-open' : ''}`}>
         <header class="bar">
           <div class="brand">ariadne<span>·</span></div>
+          <nav class="views" aria-label=${t.views.label}>
+            ${['graph', 'timeline', 'list'].map(key => html`
+              <button key=${key} aria-current=${view === key ? 'page' : undefined} onClick=${() => setView(key)}>${t.views[key]}</button>`)}
+          </nav>
           <nav class="where" aria-label=${t.here}>
             <span class="where-label">${t.here}</span>
             ${path.map((n, i) => html`
               ${i > 0 && html`<span class="sep" key=${`s${n.id}`}>›</span>`}
               <button key=${n.id} class=${`crumb ${i === path.length - 1 ? 'is-here' : ''}`} title=${n.title} onClick=${() => choose(n.id)}>${n.title}</button>`)}
           </nav>
+          <${Search} view=${view} query=${query} setQuery=${setQuery} onGo=${choose} inputRef=${searchRef} />
         </header>
         <main class="stage">
           ${missing && html`<p class="no-graph">${t.noGraph}</p>`}
           <div class="overlays"><${Invalid} /></div>
-          <div class="canvas-tools">
+          ${view === 'timeline' && html`<${Timeline} query=${query} selected=${selected} onSelect=${select} />`}
+          ${view === 'list' && html`<${NodeList} query=${query} selected=${selected} onSelect=${select} />`}
+          <div class="canvas-tools" hidden=${view !== 'graph'}>
             <div class="seg" role="group" aria-label=${t.detail}>
               ${['milestones', 'path', 'all'].map(key => html`
                 <button key=${key} aria-pressed=${level === key} onClick=${() => showLevel(key)}>${t.levels[key]}</button>`)}
@@ -571,12 +759,13 @@ function App() {
           >
             <${Background} gap=${24} size=${1} color="#cfd5dc" />
           <//>
-          <div class="bottom-tools">
+          <div class="bottom-tools" hidden=${view !== 'graph'}>
             ${!missing && html`<${Legend} />`}
             <${ZoomTools} onFit=${fit} />
           </div>
           ${node && html`<${Panel} node=${node} open=${panelOpen} expanded=${expanded} focus=${focus}
-            onSelect=${choose} onToggle=${toggle} onClose=${() => setPanelOpen(false)}
+            onShowInGraph=${view === 'graph' ? null : showInGraph}
+            onSelect=${view === 'graph' ? choose : select} onToggle=${toggle} onClose=${() => setPanelOpen(false)}
             onFocus=${id => { setFocus(id); setExpanded(prev => new Set([...prev, id])) }} />`}
         </main>
       </div>
