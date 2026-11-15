@@ -62,3 +62,7 @@ scripts/plugin-test.sh                                                  # plugin
 To run your working copy as the plugin, add the folder as a marketplace (`/plugin marketplace add ./`)
 and install `ariadne` from it: the plugin is then read from the folder, and `/reload-plugins` picks
 up your edits.
+
+## License
+
+[MIT](LICENSE)
