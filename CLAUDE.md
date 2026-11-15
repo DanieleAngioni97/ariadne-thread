@@ -32,7 +32,7 @@ a ogni prompt il riassunto, solo se è cambiato. Non frenare il lavoro per il gr
 
 - Verifica: `node --test src/ bin/ hooks/ scripts/ariadne/ viewer/ eval/*.test.mjs` · `node bin/ariadne.mjs validate` ·
   `scripts/plugin-test.sh` (plugin: validazione e test della mod sui soli file tracciati).
-- `docs/process-trace.md` è congelato; 25 nodi storici sono `uncertain`.
+- `docs/process-trace.md` è congelato; i nodi storici puntano alle sue sezioni e ai commit di allora.
 - Prototipi da far provare: pulsanti con nomi e una riga di guida; aprirli con `open`, non con
   `human-review`. UI del grafo nel terminale bocciata. Viewer: `ariadne view`, porta 8790
   (8765 occupata), dopo modifiche Cmd+Shift+R.
