@@ -1,0 +1,2 @@
+{"id":"pilot-01","set":"pilot","start":"2026-03-02T09:00:00Z","events":80,"domain":"a booking service for a network of shared meeting rooms","model":"claude-opus-5-5","rounds":1,"cost":0.3664096}
+{"id":"pilot-02","set":"pilot","start":"2026-03-02T09:00:00Z","events":110,"domain":"an invoicing backend for a small chain of veterinary clinics","model":"claude-opus-5-5","rounds":1,"cost":0.7602256000000001}

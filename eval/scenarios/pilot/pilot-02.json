@@ -1,0 +1,920 @@
+{
+  "id": "pilot-02",
+  "project": "vetbill",
+  "start": "2026-03-02T09:00:00Z",
+  "events": [
+    {
+      "type": "commit",
+      "message": "chore: scaffold vetbill service",
+      "files": {
+        "package.json": "{\n  \"name\": \"vetbill\",\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"build\": \"tsc\", \"test\": \"vitest run\" },\n  \"devDependencies\": { \"typescript\": \"^5.6.0\", \"vitest\": \"^3.0.0\" }\n}\n",
+        "src/index.ts": "import { createServer } from \"node:http\";\n\nconst port = Number(process.env.PORT ?? 3000);\ncreateServer((_req, res) => res.end(\"vetbill\")).listen(port);\n",
+        "README.md": "# vetbill\n\nInvoicing backend for the clinics of the chain.\n\n`npm test` runs the suite.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add tsconfig and eslint config",
+      "files": {
+        "tsconfig.json": "{\n  \"compilerOptions\": { \"target\": \"ES2022\", \"module\": \"NodeNext\", \"strict\": true, \"outDir\": \"dist\" },\n  \"include\": [\"src\"]\n}\n",
+        ".eslintrc.json": "{\n  \"root\": true,\n  \"parser\": \"@typescript-eslint/parser\",\n  \"extends\": [\"eslint:recommended\"]\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add editorconfig",
+      "files": {
+        ".editorconfig": "root = true\n\n[*]\nindent_style = space\nindent_size = 2\nend_of_line = lf\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: add domain glossary",
+      "files": {
+        "docs/glossary.md": "# Glossary\n\n- **Clinic**: one of the chain's practices.\n- **Owner**: the person who pays.\n- **Patient**: the animal treated.\n- **Visit**: one appointment, billed as one invoice.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add postgres client",
+      "files": {
+        "src/db/client.ts": "import pg from \"pg\";\n\nexport const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });\n",
+        "package.json": "{\n  \"name\": \"vetbill\",\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"build\": \"tsc\", \"test\": \"vitest run\" },\n  \"dependencies\": { \"date-fns\": \"^3.6.0\", \"pg\": \"^8.12.0\" },\n  \"devDependencies\": { \"typescript\": \"^5.6.0\", \"vitest\": \"^3.0.0\" }\n}\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m1",
+      "title": "M1 Invoice core",
+      "what": "Turn a clinic visit into a numbered, priced and taxed invoice."
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-02: invoice core plan with visits, price lists, VAT per line category, numbering and PDF",
+      "steps": [
+        {
+          "key": "visit",
+          "title": "Visit and line item model"
+        },
+        {
+          "key": "price",
+          "title": "Price list lookup per clinic"
+        },
+        {
+          "key": "vatc",
+          "title": "VAT rates for consultations"
+        },
+        {
+          "key": "vatm",
+          "title": "VAT rates for medications"
+        },
+        {
+          "key": "vatf",
+          "title": "VAT rates for pet food sales"
+        },
+        {
+          "key": "vatb",
+          "title": "VAT rates for boarding"
+        },
+        {
+          "key": "numc",
+          "title": "Invoice numbering per clinic"
+        },
+        {
+          "key": "pdf",
+          "title": "PDF invoice layout"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "visit"
+    },
+    {
+      "type": "commit",
+      "step": "visit",
+      "message": "feat(visits): add visit model",
+      "files": {
+        "src/visits/visit.ts": "export interface Visit {\n  id: string;\n  clinicId: string;\n  date: string;\n  lines: { quantity: number; unitPriceCents: number }[];\n}\n\nexport const subtotal = (v: Visit) => v.lines.reduce((s, l) => s + l.quantity * l.unitPriceCents, 0);\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "visit",
+      "message": "feat(visits): add line items with category and discount",
+      "files": {
+        "src/visits/lineItem.ts": "export type Category = \"consultation\" | \"medication\" | \"petFood\" | \"boarding\";\n\nexport interface LineItem {\n  description: string;\n  category: Category;\n  quantity: number;\n  unitPriceCents: number;\n  discountPct?: number;\n}\n",
+        "src/visits/visit.ts": "import type { LineItem } from \"./lineItem.js\";\n\nexport interface Visit {\n  id: string;\n  clinicId: string;\n  date: string;\n  lines: LineItem[];\n}\n\nexport const subtotal = (v: Visit) => v.lines.reduce((s, l) => s + l.quantity * l.unitPriceCents, 0);\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "visit",
+      "message": "feat(visits): attach patient and owner to a visit",
+      "files": {
+        "src/visits/patient.ts": "export interface Patient {\n  name: string;\n  species: string;\n  ownerId: string;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "visit",
+      "done": true,
+      "message": "test(visits): cover visit subtotal",
+      "files": {
+        "test/visits/visit.test.ts": "import { expect, test } from \"vitest\";\nimport { subtotal } from \"../../src/visits/visit.js\";\n\ntest(\"subtotal sums lines\", () => {\n  const lines = [{ description: \"Checkup\", category: \"consultation\" as const, quantity: 1, unitPriceCents: 4500 }];\n  expect(subtotal({ id: \"v1\", clinicId: \"c1\", date: \"2026-03-03\", lines })).toBe(4500);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "price",
+      "message": "feat(pricing): load clinic price list from csv",
+      "files": {
+        "src/pricing/priceList.ts": "import { readFileSync } from \"node:fs\";\n\nexport function loadPriceList(path: string): Map<string, number> {\n  const rows = readFileSync(path, \"utf8\").trim().split(\"\\n\").slice(1);\n  return new Map(rows.map((r) => { const [code, cents] = r.split(\",\"); return [code, Number(cents)]; }));\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "price",
+      "message": "feat(pricing): fall back to the chain price list",
+      "why": "Smaller clinics do not maintain their own price list, so the chain list is the default.",
+      "files": {
+        "src/pricing/lookup.ts": "export function priceFor(code: string, clinic: Map<string, number>, chain: Map<string, number>): number {\n  const cents = clinic.get(code) ?? chain.get(code);\n  if (cents === undefined) throw new Error(`no price for ${code}`);\n  return cents;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump vitest to 3.1",
+      "files": {
+        "package.json": "{\n  \"name\": \"vetbill\",\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"build\": \"tsc\", \"test\": \"vitest run\" },\n  \"dependencies\": { \"date-fns\": \"^3.6.0\", \"pg\": \"^8.12.0\" },\n  \"devDependencies\": { \"typescript\": \"^5.6.0\", \"vitest\": \"^3.1.0\" }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "price",
+      "done": true,
+      "message": "test(pricing): chain price fallback",
+      "files": {
+        "test/pricing/lookup.test.ts": "import { expect, test } from \"vitest\";\nimport { priceFor } from \"../../src/pricing/lookup.js\";\n\ntest(\"falls back to chain price\", () => {\n  expect(priceFor(\"VAX-RAB\", new Map(), new Map([[\"VAX-RAB\", 3800]]))).toBe(3800);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vatc",
+      "message": "feat(tax): standard rate for consultations",
+      "why": "Veterinary consultations for pets are not health care for people, so they take the standard 22% rate.",
+      "files": {
+        "src/tax/consultations.ts": "// Consultations for animals are not exempt health care.\nexport const CONSULTATION_RATE = 0.22;\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vatc",
+      "done": true,
+      "message": "test(tax): consultations taxed at 22%",
+      "files": {
+        "test/tax/consultations.test.ts": "import { expect, test } from \"vitest\";\nimport { CONSULTATION_RATE } from \"../../src/tax/consultations.js\";\n\ntest(\"consultations at 22%\", () => expect(CONSULTATION_RATE).toBe(0.22));\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vatm",
+      "message": "feat(tax): reduced rate for medications",
+      "why": "Veterinary medicines dispensed at the clinic fall under the reduced 10% rate.",
+      "files": {
+        "src/tax/medications.ts": "// Medicines dispensed at the clinic.\nexport const MEDICATION_RATE = 0.10;\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "round",
+      "title": "Fix rounding of discounted line totals",
+      "what": "Discounted lines came out one cent off against the clinic tills, so the medication VAT tests could not pass."
+    },
+    {
+      "type": "commit",
+      "step": "round",
+      "message": "fix(money): round discounted line totals half-up per line",
+      "why": "The clinic tills round half-up on each line, so invoices must match them line by line.",
+      "files": {
+        "src/money/round.ts": "// Half-up per line, like the clinic tills.\nexport function lineTotalCents(qty: number, unitCents: number, discountPct = 0): number {\n  return Math.round(qty * unitCents * (1 - discountPct / 100) + 1e-9);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "round",
+      "done": true,
+      "message": "test(money): half-up rounding on discounted lines",
+      "files": {
+        "test/money/round.test.ts": "import { expect, test } from \"vitest\";\nimport { lineTotalCents } from \"../../src/money/round.js\";\n\ntest(\"10% off 3 x 4.15 rounds half-up\", () => {\n  expect(lineTotalCents(3, 415, 10)).toBe(1121);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vatm",
+      "done": true,
+      "message": "test(tax): medications taxed at 10%",
+      "files": {
+        "test/tax/medications.test.ts": "import { expect, test } from \"vitest\";\nimport { MEDICATION_RATE } from \"../../src/tax/medications.js\";\n\ntest(\"medications at 10%\", () => expect(MEDICATION_RATE).toBe(0.1));\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vatf",
+      "message": "feat(tax): pet food sales at standard rate",
+      "why": "Pet food is not food for human consumption, so the reduced food rate does not apply.",
+      "files": {
+        "src/tax/petFood.ts": "// Not food for people: no reduced rate.\nexport const PET_FOOD_RATE = 0.22;\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vatf",
+      "done": true,
+      "message": "test(tax): pet food taxed at 22%",
+      "files": {
+        "test/tax/petFood.test.ts": "import { expect, test } from \"vitest\";\nimport { PET_FOOD_RATE } from \"../../src/tax/petFood.js\";\n\ntest(\"pet food at 22%\", () => expect(PET_FOOD_RATE).toBe(0.22));\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vatb",
+      "message": "feat(tax): boarding nights at standard rate",
+      "why": "Boarding is a lodging service for animals, not a hotel stay, so the reduced hospitality rate does not apply.",
+      "files": {
+        "src/tax/boarding.ts": "// Not a hotel stay: no reduced hospitality rate.\nexport const BOARDING_RATE = 0.22;\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vatb",
+      "message": "feat(tax): pick the rate from the line category",
+      "files": {
+        "src/tax/rateFor.ts": "import type { Category } from \"../visits/lineItem.js\";\nimport { CONSULTATION_RATE } from \"./consultations.js\";\nimport { MEDICATION_RATE } from \"./medications.js\";\nimport { PET_FOOD_RATE } from \"./petFood.js\";\nimport { BOARDING_RATE } from \"./boarding.js\";\n\nconst rates: Record<Category, number> = { consultation: CONSULTATION_RATE, medication: MEDICATION_RATE, petFood: PET_FOOD_RATE, boarding: BOARDING_RATE };\nexport const rateFor = (c: Category) => rates[c];\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "vatb",
+      "done": true,
+      "message": "test(tax): rate per line category",
+      "files": {
+        "test/tax/rateFor.test.ts": "import { expect, test } from \"vitest\";\nimport { rateFor } from \"../../src/tax/rateFor.js\";\n\ntest(\"boarding at 22%, medication at 10%\", () => {\n  expect(rateFor(\"boarding\")).toBe(0.22);\n  expect(rateFor(\"medication\")).toBe(0.1);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: list tax categories in README",
+      "files": {
+        "README.md": "# vetbill\n\nInvoicing backend for the clinics of the chain.\n\n`npm test` runs the suite.\n\n## Tax categories\n\n- consultation: 22%\n- medication: 10%\n- pet food: 22%\n- boarding: 22%\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "numc",
+      "message": "docs(numbering): describe per-clinic sequences",
+      "files": {
+        "docs/numbering.md": "# Invoice numbering\n\n## Per-clinic sequences\n\nEach clinic keeps its own counter, reset every 1 January.\nNumbers look like `CA-2026-0042` so front desks can tell their own invoices apart.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "numc",
+      "message": "feat(numbering): counter per clinic and year",
+      "files": {
+        "src/numbering/perClinic.ts": "import { pool } from \"../db/client.js\";\n\nexport async function nextNumber(clinicId: string, year: number): Promise<number> {\n  const { rows } = await pool.query(\"UPDATE counters SET last = last + 1 WHERE clinic_id = $1 AND year = $2 RETURNING last\", [clinicId, year]);\n  return rows[0].last;\n}\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-10: one invoice sequence for the whole chain, as the accountant asked",
+      "steps": [
+        {
+          "key": "numchain",
+          "title": "Invoice numbering shared across the chain"
+        }
+      ]
+    },
+    {
+      "type": "commit",
+      "message": "docs(numbering): rewrite after accountant review",
+      "files": {
+        "docs/numbering.md": "# Invoice numbering\n\n## Legal sequence\n\nThe whole chain invoices under a single VAT number. The accountant confirmed that the law then wants one unbroken sequence per year across all clinics: per-clinic counters would produce duplicate numbers under the same VAT number.\n\n## Display\n\nThe clinic code is only printed next to the number, it is not part of it.\n"
+      }
+    },
+    {
+      "type": "replace",
+      "step": "numc",
+      "by": "numchain"
+    },
+    {
+      "type": "start",
+      "step": "numchain"
+    },
+    {
+      "type": "commit",
+      "step": "numchain",
+      "message": "feat(numbering): single chain-wide counter reset each year",
+      "proofFiles": [
+        "docs/numbering.md#Legal sequence"
+      ],
+      "files": {
+        "src/numbering/chainCounter.ts": "import { pool } from \"../db/client.js\";\n\nexport async function nextChainNumber(year: number): Promise<number> {\n  const { rows } = await pool.query(\n    \"INSERT INTO chain_counter (year, last) VALUES ($1, 1) ON CONFLICT (year) DO UPDATE SET last = chain_counter.last + 1 RETURNING last\",\n    [year],\n  );\n  return rows[0].last;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "numchain",
+      "message": "feat(numbering): print clinic code next to the number",
+      "files": {
+        "src/numbering/format.ts": "export const displayNumber = (n: number, year: number, clinicCode: string) =>\n  `${year}/${String(n).padStart(5, \"0\")} (${clinicCode})`;\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "numchain",
+      "done": true,
+      "message": "test(numbering): clinic code is display only",
+      "files": {
+        "test/numbering/format.test.ts": "import { expect, test } from \"vitest\";\nimport { displayNumber } from \"../../src/numbering/format.js\";\n\ntest(\"clinic code is display only\", () => {\n  expect(displayNumber(42, 2026, \"CA\")).toBe(\"2026/00042 (CA)\");\n});\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "pdf"
+    },
+    {
+      "type": "commit",
+      "step": "pdf",
+      "message": "feat(pdf): invoice html template",
+      "files": {
+        "src/pdf/template.html": "<html>\n<body>\n  <header>{{letterhead}}</header>\n  <h1>{{label.invoice}} {{number}}</h1>\n  <table>{{#lines}}<tr><td>{{description}}</td><td>{{total}}</td></tr>{{/lines}}</table>\n  <footer>{{footer}}</footer>\n</body>\n</html>\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pdf",
+      "message": "feat(pdf): render with headless chromium",
+      "files": {
+        "src/pdf/render.ts": "import puppeteer from \"puppeteer\";\n\nexport async function renderPdf(html: string): Promise<Buffer> {\n  const browser = await puppeteer.launch();\n  const page = await browser.newPage();\n  await page.setContent(html);\n  const pdf = await page.pdf({ format: \"A4\" });\n  await browser.close();\n  return Buffer.from(pdf);\n}\n",
+        "package.json": "{\n  \"name\": \"vetbill\",\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"build\": \"tsc\", \"test\": \"vitest run\" },\n  \"dependencies\": { \"date-fns\": \"^3.6.0\", \"pg\": \"^8.12.0\", \"puppeteer\": \"^23.0.0\" },\n  \"devDependencies\": { \"typescript\": \"^5.6.0\", \"vitest\": \"^3.1.0\" }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: ignore generated pdfs",
+      "files": {
+        ".gitignore": "node_modules/\ndist/\nout/*.pdf\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pdf",
+      "message": "feat(pdf): Italian and English labels",
+      "files": {
+        "src/pdf/labels.ts": "export const labels = {\n  it: { invoice: \"Fattura\", total: \"Totale\", vat: \"IVA\" },\n  en: { invoice: \"Invoice\", total: \"Total\", vat: \"VAT\" },\n};\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pdf",
+      "message": "feat(pdf): clinic letterhead and footer with VAT number",
+      "files": {
+        "src/pdf/letterhead.ts": "export const footer = (clinicName: string, vatNumber: string) =>\n  `${clinicName} · P.IVA ${vatNumber}`;\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pdf",
+      "done": true,
+      "message": "test(pdf): footer carries the chain VAT number",
+      "files": {
+        "test/pdf/letterhead.test.ts": "import { expect, test } from \"vitest\";\nimport { footer } from \"../../src/pdf/letterhead.js\";\n\ntest(\"footer carries the chain VAT number\", () => {\n  expect(footer(\"Clinica Cagliari\", \"03456780921\")).toContain(\"P.IVA 03456780921\");\n});\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "milestone",
+      "key": "m2",
+      "title": "M2 Payments and reminders",
+      "what": "Record payments against invoices and chase the overdue ones."
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-23: payments, balances, credit notes and overdue reminders",
+      "steps": [
+        {
+          "key": "pay",
+          "title": "Payment recording"
+        },
+        {
+          "key": "partial",
+          "title": "Partial payments and balances"
+        },
+        {
+          "key": "refund",
+          "title": "Credit notes for refunds"
+        },
+        {
+          "key": "remsched",
+          "title": "Reminder schedule for overdue invoices"
+        },
+        {
+          "key": "rememail",
+          "title": "Reminder email for overdue invoices"
+        },
+        {
+          "key": "remsms",
+          "title": "Reminder SMS for overdue invoices"
+        },
+        {
+          "key": "export",
+          "title": "Monthly revenue export per clinic"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "pay"
+    },
+    {
+      "type": "commit",
+      "step": "pay",
+      "message": "feat(payments): payment record with method",
+      "files": {
+        "src/payments/payment.ts": "export type Method = \"cash\" | \"card\" | \"bankTransfer\";\n\nexport interface Payment {\n  invoiceId: string;\n  amountCents: number;\n  method: Method;\n  receivedAt: string;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pay",
+      "message": "feat(payments): mark invoice paid when payments cover the total",
+      "files": {
+        "src/payments/settle.ts": "import type { Payment } from \"./payment.js\";\n\nexport const isSettled = (totalCents: number, payments: Payment[]) =>\n  payments.reduce((s, p) => s + p.amountCents, 0) >= totalCents;\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pay",
+      "message": "feat(payments): reject payments on cancelled invoices",
+      "files": {
+        "src/payments/guard.ts": "export function assertPayable(status: string): void {\n  if (status === \"cancelled\") throw new Error(\"cannot pay a cancelled invoice\");\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pay",
+      "done": true,
+      "message": "test(payments): settle on full amount",
+      "files": {
+        "test/payments/settle.test.ts": "import { expect, test } from \"vitest\";\nimport { isSettled } from \"../../src/payments/settle.js\";\n\ntest(\"card payment settles the invoice\", () => {\n  expect(isSettled(4500, [{ invoiceId: \"i1\", amountCents: 4500, method: \"card\", receivedAt: \"2026-03-24\" }])).toBe(true);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(ci): run tests on push",
+      "files": {
+        ".github/workflows/ci.yml": "name: ci\non: push\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with: { node-version: 22 }\n      - run: npm ci && npm test\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "style: add prettier config",
+      "files": {
+        ".prettierrc": "{\n  \"printWidth\": 110,\n  \"singleQuote\": false\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "partial",
+      "message": "feat(balances): outstanding balance per invoice",
+      "why": "Owners of pets in long-stay boarding often pay in installments, so an invoice must stay open with a balance.",
+      "files": {
+        "src/balances/balance.ts": "import type { Payment } from \"../payments/payment.js\";\n\nexport const outstandingCents = (totalCents: number, payments: Payment[]) =>\n  Math.max(0, totalCents - payments.reduce((s, p) => s + p.amountCents, 0));\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "partial",
+      "message": "feat(balances): owner account across invoices",
+      "files": {
+        "src/balances/ownerAccount.ts": "import type { Payment } from \"../payments/payment.js\";\nimport { outstandingCents } from \"./balance.js\";\n\nexport function ownerBalance(invoices: { totalCents: number; payments: Payment[] }[]): number {\n  return invoices.reduce((s, i) => s + outstandingCents(i.totalCents, i.payments), 0);\n}\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "dupnum",
+      "title": "Fix duplicate invoice numbers after restart",
+      "what": "Two invoices got the same number after a deploy restart, and the clinics stopped issuing until it was fixed."
+    },
+    {
+      "type": "commit",
+      "step": "dupnum",
+      "message": "fix(numbering): take the number in the invoice transaction",
+      "why": "The PDF worker cached the next number at boot, so after a restart it reissued numbers already taken.",
+      "files": {
+        "src/numbering/reserve.ts": "import type { PoolClient } from \"pg\";\n\n// Number and invoice row are written in one transaction; nothing is cached across restarts.\nexport async function issueWithNumber(client: PoolClient, year: number, insert: (n: number) => Promise<void>) {\n  await client.query(\"BEGIN\");\n  const { rows } = await client.query(\"UPDATE chain_counter SET last = last + 1 WHERE year = $1 RETURNING last\", [year]);\n  await insert(rows[0].last);\n  await client.query(\"COMMIT\");\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "dupnum",
+      "done": true,
+      "message": "test(numbering): number and insert share a transaction",
+      "files": {
+        "test/numbering/restart.test.ts": "import { expect, test, vi } from \"vitest\";\nimport { issueWithNumber } from \"../../src/numbering/reserve.js\";\n\ntest(\"number and insert share a transaction\", async () => {\n  const query = vi.fn().mockResolvedValue({ rows: [{ last: 7 }] });\n  const insert = vi.fn();\n  await issueWithNumber({ query } as never, 2026, insert);\n  expect(insert).toHaveBeenCalledWith(7);\n  expect(query).toHaveBeenLastCalledWith(\"COMMIT\");\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "partial",
+      "done": true,
+      "message": "test(balances): installments leave a balance",
+      "files": {
+        "test/balances/balance.test.ts": "import { expect, test } from \"vitest\";\nimport { outstandingCents } from \"../../src/balances/balance.js\";\n\ntest(\"first installment leaves a balance\", () => {\n  expect(outstandingCents(30000, [{ invoiceId: \"i1\", amountCents: 10000, method: \"cash\", receivedAt: \"2026-03-25\" }])).toBe(20000);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "refund",
+      "message": "feat(credit-notes): credit note referencing the original invoice",
+      "why": "The e-invoicing exchange rejects invoices with negative totals, so refunds go out as credit notes that reference the original invoice.",
+      "files": {
+        "src/creditNotes/creditNote.ts": "// Sent to the exchange as document type TD04.\nexport interface CreditNote {\n  number: number;\n  originalInvoiceId: string;\n  amountCents: number;\n  reason: string;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "refund",
+      "message": "feat(credit-notes): reduce the balance by the credited amount",
+      "files": {
+        "src/creditNotes/apply.ts": "import type { CreditNote } from \"./creditNote.js\";\n\nexport const balanceAfterCredit = (outstandingCents: number, note: CreditNote) =>\n  outstandingCents - note.amountCents;\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "refund",
+      "done": true,
+      "message": "test(credit-notes): credit lowers the balance",
+      "files": {
+        "test/creditNotes/apply.test.ts": "import { expect, test } from \"vitest\";\nimport { balanceAfterCredit } from \"../../src/creditNotes/apply.js\";\n\ntest(\"credit lowers the balance\", () => {\n  expect(balanceAfterCredit(5000, { number: 3, originalInvoiceId: \"i9\", amountCents: 1200, reason: \"unused vaccine\" })).toBe(3800);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs(glossary): add balance and credit note",
+      "files": {
+        "docs/glossary.md": "# Glossary\n\n- **Clinic**: one of the chain's practices.\n- **Owner**: the person who pays.\n- **Patient**: the animal treated.\n- **Visit**: one appointment, billed as one invoice.\n- **Balance**: what is still owed on an invoice.\n- **Credit note**: the document that refunds part of an invoice.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: add front desk runbook",
+      "files": {
+        "docs/runbook.md": "# Runbook\n\n## Reissuing a PDF\n\nRun `npm run pdf -- <invoice id>`; the number never changes.\n\n## Wrong amount\n\nNever edit an issued invoice: issue a credit note and a new invoice.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump date-fns to 4.1",
+      "files": {
+        "package.json": "{\n  \"name\": \"vetbill\",\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"build\": \"tsc\", \"test\": \"vitest run\" },\n  \"dependencies\": { \"date-fns\": \"^4.1.0\", \"pg\": \"^8.12.0\", \"puppeteer\": \"^23.0.0\" },\n  \"devDependencies\": { \"typescript\": \"^5.6.0\", \"vitest\": \"^3.1.0\" }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "remsched",
+      "message": "feat(reminders): remind at 7, 21 and 45 days overdue",
+      "why": "The front desks asked for no more than three reminders before they phone the owner themselves.",
+      "files": {
+        "src/reminders/schedule.ts": "// Three reminders, then the front desk calls.\nexport const REMINDER_DAYS = [7, 21, 45];\n\nexport const dueReminder = (daysOverdue: number) =>\n  REMINDER_DAYS.filter((d) => d <= daysOverdue).length;\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "remsched",
+      "message": "feat(reminders): skip invoices with a payment plan",
+      "files": {
+        "src/reminders/skip.ts": "export const shouldSkip = (inv: { hasPaymentPlan: boolean }) => inv.hasPaymentPlan;\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "remsched",
+      "message": "feat(reminders): stop once the balance is zero",
+      "files": {
+        "src/reminders/stop.ts": "export const stopReminders = (outstandingCents: number) => outstandingCents === 0;\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "remsched",
+      "done": true,
+      "message": "test(reminders): reminder count by days overdue",
+      "files": {
+        "test/reminders/schedule.test.ts": "import { expect, test } from \"vitest\";\nimport { dueReminder } from \"../../src/reminders/schedule.js\";\n\ntest(\"second reminder at 21 days\", () => {\n  expect(dueReminder(25)).toBe(2);\n});\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m3",
+      "title": "M3 Head office reporting",
+      "what": "Give the head office revenue figures per clinic and per period."
+    },
+    {
+      "type": "defer",
+      "step": "export",
+      "to": "m3"
+    },
+    {
+      "type": "commit",
+      "step": "rememail",
+      "message": "feat(reminders/email): reminder template in Italian and English",
+      "why": "Almost every owner leaves an email address at registration, so email is the first channel for reminders.",
+      "files": {
+        "src/reminders/email/template.ts": "export function reminderSubject(lang: \"it\" | \"en\", number: string): string {\n  return lang === \"it\" ? `Promemoria fattura ${number}` : `Reminder for invoice ${number}`;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "rememail",
+      "message": "feat(reminders/email): send through the SMTP relay",
+      "files": {
+        "src/reminders/email/send.ts": "import nodemailer from \"nodemailer\";\n\nconst transport = nodemailer.createTransport({ host: process.env.SMTP_HOST, port: 587 });\n\nexport const sendReminder = (to: string, subject: string, text: string) =>\n  transport.sendMail({ from: \"amministrazione@vetbill.local\", to, subject, text });\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "rememail",
+      "done": true,
+      "message": "test(reminders/email): subject in owner language",
+      "files": {
+        "test/reminders/email.test.ts": "import { expect, test } from \"vitest\";\nimport { reminderSubject } from \"../../src/reminders/email/template.js\";\n\ntest(\"Italian subject\", () => {\n  expect(reminderSubject(\"it\", \"2026/00042\")).toBe(\"Promemoria fattura 2026/00042\");\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "remsms",
+      "message": "feat(reminders/sms): send through the SMS gateway",
+      "why": "Many owners at the rural clinics rarely read email but do answer text messages.",
+      "files": {
+        "src/reminders/sms/send.ts": "export async function sendSms(to: string, text: string): Promise<void> {\n  await fetch(process.env.SMS_GATEWAY_URL!, { method: \"POST\", body: JSON.stringify({ to, text }) });\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "remsms",
+      "message": "feat(reminders/sms): respect SMS opt-out",
+      "files": {
+        "src/reminders/sms/optOut.ts": "export const canText = (owner: { smsOptOut: boolean; mobile?: string }) =>\n  !owner.smsOptOut && Boolean(owner.mobile);\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "remsms",
+      "done": true,
+      "message": "test(reminders/sms): no text after opt-out",
+      "files": {
+        "test/reminders/sms.test.ts": "import { expect, test } from \"vitest\";\nimport { canText } from \"../../src/reminders/sms/optOut.js\";\n\ntest(\"no text after opt-out\", () => {\n  expect(canText({ smsOptOut: true, mobile: \"+393401234567\" })).toBe(false);\n});\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "plan",
+      "milestone": "m3",
+      "ref": "chat 2026-04-13: head office reports from nightly snapshots, revenue by clinic, species and vet, then a dashboard",
+      "steps": [
+        {
+          "key": "snap",
+          "title": "Nightly snapshot tables for reports"
+        },
+        {
+          "key": "revc",
+          "title": "Revenue report by clinic"
+        },
+        {
+          "key": "revs",
+          "title": "Revenue report by species"
+        },
+        {
+          "key": "revv",
+          "title": "Revenue report by veterinarian"
+        },
+        {
+          "key": "dash",
+          "title": "Head office dashboard endpoint"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "snap"
+    },
+    {
+      "type": "commit",
+      "step": "snap",
+      "message": "feat(snapshots): nightly copy of issued invoices",
+      "files": {
+        "src/snapshots/nightly.ts": "import { pool } from \"../db/client.js\";\n\n// Runs at 02:00, copies yesterday's issued invoices into the report table.\nexport const runNightly = () =>\n  pool.query(\"INSERT INTO report_invoices SELECT * FROM invoices WHERE issued_on = current_date - 1\");\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "snap",
+      "message": "feat(snapshots): report table schema",
+      "files": {
+        "src/snapshots/schema.sql": "CREATE TABLE report_invoices (LIKE invoices INCLUDING ALL);\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add docker-compose for local postgres",
+      "files": {
+        "docker-compose.yml": "services:\n  db:\n    image: postgres:16\n    environment:\n      POSTGRES_PASSWORD: vetbill\n    ports: [\"5432:5432\"]\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m3",
+      "ref": "chat 2026-04-20: drop nightly snapshots, use materialized views refreshed on issue",
+      "steps": [
+        {
+          "key": "mview",
+          "title": "Materialized views for reports"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "snap",
+      "by": "mview"
+    },
+    {
+      "type": "start",
+      "step": "mview"
+    },
+    {
+      "type": "commit",
+      "step": "mview",
+      "message": "feat(report-views): invoice lines materialized view",
+      "why": "Nightly snapshots left the head office looking at yesterday's figures during month-end close.",
+      "files": {
+        "src/reportViews/invoiceLines.sql": "CREATE MATERIALIZED VIEW invoice_lines_mv AS\nSELECT l.id AS line_id, i.clinic_id, i.issued_on, l.category, p.species, i.vet_id, l.total_cents\nFROM invoices i\nJOIN invoice_lines l ON l.invoice_id = i.id\nJOIN patients p ON p.id = i.patient_id;\nCREATE UNIQUE INDEX ON invoice_lines_mv (line_id);\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "mview",
+      "message": "feat(report-views): refresh after each invoice is issued",
+      "files": {
+        "src/reportViews/refresh.ts": "import { pool } from \"../db/client.js\";\n\nexport const refreshReportViews = () =>\n  pool.query(\"REFRESH MATERIALIZED VIEW CONCURRENTLY invoice_lines_mv\");\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "mview",
+      "done": true,
+      "message": "test(report-views): refresh runs concurrently",
+      "files": {
+        "test/reportViews/refresh.test.ts": "import { expect, test, vi } from \"vitest\";\nvi.mock(\"../../src/db/client.js\", () => ({ pool: { query: vi.fn() } }));\nimport { pool } from \"../../src/db/client.js\";\nimport { refreshReportViews } from \"../../src/reportViews/refresh.js\";\n\ntest(\"refreshes concurrently\", async () => {\n  await refreshReportViews();\n  expect(pool.query).toHaveBeenCalledWith(expect.stringContaining(\"CONCURRENTLY\"));\n});\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "revc"
+    },
+    {
+      "type": "commit",
+      "step": "revc",
+      "message": "feat(reports): revenue by clinic query",
+      "why": "The head office compares clinics month by month to decide where to hire a second vet.",
+      "files": {
+        "src/reports/byClinic/query.sql": "SELECT clinic_id, sum(total_cents) AS revenue_cents\nFROM invoice_lines_mv\nWHERE to_char(issued_on, 'YYYY-MM') = $1\nGROUP BY clinic_id\nORDER BY revenue_cents DESC;\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "tz",
+      "title": "Fix month boundaries in clinic time zone",
+      "what": "The first clinic report put late invoices from the last evening of the month into the next month."
+    },
+    {
+      "type": "commit",
+      "step": "tz",
+      "message": "fix(time): cut months in clinic local time",
+      "why": "Invoices issued after 23:00 on the last day of the month were counted in the next month because months were cut in UTC.",
+      "files": {
+        "src/time/monthBounds.ts": "export const CLINIC_TZ = \"Europe/Rome\";\n\n// SQL expression for the clinic-local month of an issue timestamp.\nexport const localMonth = (column: string) =>\n  `to_char(${column} AT TIME ZONE '${CLINIC_TZ}', 'YYYY-MM')`;\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tz",
+      "done": true,
+      "message": "test(time): local month expression",
+      "files": {
+        "test/time/monthBounds.test.ts": "import { expect, test } from \"vitest\";\nimport { localMonth } from \"../../src/time/monthBounds.js\";\n\ntest(\"uses Europe/Rome\", () => {\n  expect(localMonth(\"issued_at\")).toContain(\"AT TIME ZONE 'Europe/Rome'\");\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "revc",
+      "message": "feat(reports): revenue by clinic endpoint",
+      "files": {
+        "src/reports/byClinic/route.ts": "import { readFileSync } from \"node:fs\";\nimport { pool } from \"../../db/client.js\";\n\nconst sql = readFileSync(new URL(\"./query.sql\", import.meta.url), \"utf8\");\n\nexport async function revenueByClinic(month: string) {\n  return (await pool.query(sql, [month])).rows;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "revc",
+      "done": true,
+      "message": "test(reports): revenue by clinic passes the month",
+      "files": {
+        "test/reports/byClinic.test.ts": "import { expect, test, vi } from \"vitest\";\nvi.mock(\"../../src/db/client.js\", () => ({ pool: { query: vi.fn().mockResolvedValue({ rows: [] }) } }));\nimport { pool } from \"../../src/db/client.js\";\nimport { revenueByClinic } from \"../../src/reports/byClinic/route.js\";\n\ntest(\"passes the month\", async () => {\n  await revenueByClinic(\"2026-03\");\n  expect(pool.query).toHaveBeenCalledWith(expect.any(String), [\"2026-03\"]);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: list report endpoints in README",
+      "files": {
+        "README.md": "# vetbill\n\nInvoicing backend for the clinics of the chain.\n\n`npm test` runs the suite.\n\n## Tax categories\n\n- consultation: 22%\n- medication: 10%\n- pet food: 22%\n- boarding: 22%\n\n## Reports\n\n- GET /reports/revenue/by-clinic?month=YYYY-MM\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump pg to 8.13",
+      "files": {
+        "package.json": "{\n  \"name\": \"vetbill\",\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"build\": \"tsc\", \"test\": \"vitest run\" },\n  \"dependencies\": { \"date-fns\": \"^4.1.0\", \"pg\": \"^8.13.0\", \"puppeteer\": \"^23.0.0\" },\n  \"devDependencies\": { \"typescript\": \"^5.6.0\", \"vitest\": \"^3.1.0\" }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "revs",
+      "message": "feat(reports): revenue by species query",
+      "why": "The head office wants to know whether the exotic animal service pays for its pricier consumables.",
+      "files": {
+        "src/reports/bySpecies/query.sql": "SELECT species, sum(total_cents) AS revenue_cents\nFROM invoice_lines_mv\nWHERE to_char(issued_on, 'YYYY-MM') = $1\nGROUP BY species;\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "revs",
+      "message": "feat(reports): group non dog and cat species as exotic",
+      "files": {
+        "src/reports/bySpecies/groups.ts": "// Everything that is not a dog or a cat is billed by the exotics service.\nexport const speciesGroup = (species: string) =>\n  [\"dog\", \"cat\"].includes(species) ? species : \"exotic\";\n"
+      }
+    }
+  ],
+  "questions": [
+    {
+      "cat": "where",
+      "text": "Which head office report is being worked on right now, and which one comes after it?",
+      "current": "revs",
+      "next": "revv"
+    },
+    {
+      "cat": "why",
+      "text": "Why are medication lines taxed at 10%?",
+      "step": "vatm",
+      "reason": "Veterinary medicines dispensed at the clinic fall under the reduced 10% rate.",
+      "distractors": [
+        "Veterinary consultations for pets are not health care for people, so they take the standard 22% rate.",
+        "Pet food is not food for human consumption, so the reduced food rate does not apply.",
+        "Boarding is a lodging service for animals, not a hotel stay, so the reduced hospitality rate does not apply."
+      ]
+    },
+    {
+      "cat": "proof",
+      "text": "Which file holds the result of the PDF invoice rendering work?",
+      "step": "pdf",
+      "file": "src/pdf/render.ts"
+    },
+    {
+      "cat": "deferred",
+      "text": "Which milestone does the monthly revenue export per clinic belong to now?",
+      "step": "export",
+      "milestone": "m3"
+    },
+    {
+      "cat": "update",
+      "text": "Which decision holds today on how invoice numbers are sequenced across the clinics?",
+      "step": "numchain"
+    },
+    {
+      "cat": "abstain",
+      "text": "Which payment gateway was chosen to let pet owners pay their invoices online by card?"
+    },
+    {
+      "cat": "continue",
+      "text": "Resume the work: make the first change you would make.",
+      "next": "revs",
+      "dir": "src/reports/bySpecies/"
+    }
+  ]
+}

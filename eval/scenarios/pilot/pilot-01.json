@@ -1,0 +1,664 @@
+{
+  "id": "pilot-01",
+  "project": "roomshare-booking",
+  "start": "2026-03-02T09:00:00Z",
+  "events": [
+    {
+      "type": "commit",
+      "message": "chore: scaffold project",
+      "files": {
+        "package.json": "{\n  \"name\": \"roomshare-booking\",\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"start\": \"node src/server.js\", \"test\": \"vitest run\" },\n  \"dependencies\": { \"express\": \"^4.19.2\", \"pg\": \"^8.12.0\" },\n  \"devDependencies\": { \"vitest\": \"^2.1.4\" }\n}\n",
+        "README.md": "# roomshare-booking\n\nBooking service for the RoomShare network of shared meeting rooms.\nMembers reserve rooms at any site of the network.\n",
+        ".gitignore": "node_modules/\n.env\n*.sqlite\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add lint and test config",
+      "files": {
+        ".eslintrc.json": "{\n  \"extends\": \"eslint:recommended\",\n  \"env\": { \"node\": true, \"es2022\": true },\n  \"parserOptions\": { \"sourceType\": \"module\" }\n}\n",
+        "vitest.config.js": "import { defineConfig } from 'vitest/config';\n\nexport default defineConfig({ test: { environment: 'node' } });\n"
+      }
+    },
+    {
+      "type": "milestone",
+      "key": "m1",
+      "title": "M1 Core booking",
+      "what": "Members can list the rooms of a site and reserve a free slot without double bookings."
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-02: room catalog, booking storage in SQLite, single-room availability check, booking endpoints",
+      "steps": [
+        {
+          "key": "rooms",
+          "title": "Room catalog per site"
+        },
+        {
+          "key": "store",
+          "title": "Store bookings in SQLite"
+        },
+        {
+          "key": "avsingle",
+          "title": "Availability check for a single room"
+        },
+        {
+          "key": "api",
+          "title": "Booking endpoints"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "rooms"
+    },
+    {
+      "type": "commit",
+      "step": "rooms",
+      "message": "feat(rooms): add room model",
+      "files": {
+        "src/rooms/room.js": "export function makeRoom({ id, siteId, name, capacity, equipment = [] }) {\n  if (!id || !siteId) throw new Error('room needs id and siteId');\n  return { id, siteId, name, capacity, equipment };\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "rooms",
+      "message": "feat(rooms): load room catalog from sites.json",
+      "files": {
+        "src/rooms/catalog.js": "import sites from '../../data/sites.json' with { type: 'json' };\nimport { makeRoom } from './room.js';\n\nexport function roomsOfSite(siteId) {\n  const site = sites.find((s) => s.id === siteId);\n  return site.rooms.map((r) => makeRoom({ ...r, siteId }));\n}\n",
+        "data/sites.json": "[\n  { \"id\": \"lis\", \"name\": \"Lisbon Baixa\", \"zone\": \"Europe/Lisbon\", \"rooms\": [{ \"id\": \"lis-1\", \"name\": \"Tejo\", \"capacity\": 8 }] },\n  { \"id\": \"mil\", \"name\": \"Milano Isola\", \"zone\": \"Europe/Rome\", \"rooms\": [{ \"id\": \"mil-1\", \"name\": \"Naviglio\", \"capacity\": 6 }] },\n  { \"id\": \"demo\", \"name\": \"Demo\", \"zone\": \"UTC\" }\n]\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "rooms",
+      "message": "test(rooms): cover catalog lookups by site",
+      "done": true,
+      "files": {
+        "src/rooms/catalog.test.js": "import { expect, test } from 'vitest';\nimport { roomsOfSite } from './catalog.js';\n\ntest('lists rooms of Lisbon', () => {\n  expect(roomsOfSite('lis').map((r) => r.id)).toEqual(['lis-1']);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: describe booking storage",
+      "files": {
+        "docs/storage.md": "# Booking storage\n\n## Engine\n\nOne SQLite file per deployment (`bookings.sqlite`).\nNo server to run, backups are a file copy.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "store",
+      "message": "feat(store): open sqlite database and create bookings table",
+      "files": {
+        "src/store/sqlite.js": "import Database from 'better-sqlite3';\n\nexport const db = new Database(process.env.DB_FILE ?? 'bookings.sqlite');\ndb.exec(`CREATE TABLE IF NOT EXISTS bookings (\n  id INTEGER PRIMARY KEY, room_id TEXT, member_id TEXT, start_at TEXT, end_at TEXT\n)`);\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "store",
+      "message": "feat(store): insert and list bookings in sqlite",
+      "files": {
+        "src/store/bookings-sqlite.js": "import { db } from './sqlite.js';\n\nexport function insertBooking(b) {\n  return db.prepare('INSERT INTO bookings (room_id, member_id, start_at, end_at) VALUES (?, ?, ?, ?)')\n    .run(b.roomId, b.memberId, b.startAt, b.endAt).lastInsertRowid;\n}\n\nexport const listForRoom = (roomId) => db.prepare('SELECT * FROM bookings WHERE room_id = ?').all(roomId);\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m1",
+      "ref": "chat 2026-03-05: move booking storage to one Postgres database shared by every site",
+      "steps": [
+        {
+          "key": "pg",
+          "title": "Store bookings in Postgres"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "store",
+      "by": "pg"
+    },
+    {
+      "type": "start",
+      "step": "pg"
+    },
+    {
+      "type": "commit",
+      "step": "pg",
+      "message": "docs(store): rewrite storage notes for Postgres",
+      "why": "Every site writes to the same calendar, so a SQLite file per deployment cannot be shared between sites.",
+      "files": {
+        "docs/storage.md": "# Booking storage\n\n## Engine\n\nOne Postgres database shared by all sites (`DATABASE_URL`).\nSupersedes the SQLite file per deployment: sites must see each other's bookings.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pg",
+      "message": "feat(store): connect to postgres with a pool",
+      "files": {
+        "src/store/pg.js": "import pg from 'pg';\n\nexport const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL, max: 10 });\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pg",
+      "message": "feat(store): bookings repository on postgres",
+      "files": {
+        "src/store/bookings-pg.js": "import { pool } from './pg.js';\n\nexport async function insertBooking(b) {\n  const { rows } = await pool.query(\n    'INSERT INTO bookings (room_id, member_id, start_at, end_at) VALUES ($1, $2, $3, $4) RETURNING id',\n    [b.roomId, b.memberId, b.startAt, b.endAt]);\n  return rows[0].id;\n}\n\nexport const listForRoom = async (roomId) => (await pool.query('SELECT * FROM bookings WHERE room_id = $1', [roomId])).rows;\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "pg",
+      "message": "test(store): bookings repository against test database",
+      "done": true,
+      "files": {
+        "src/store/bookings-pg.test.js": "import { expect, test } from 'vitest';\nimport { insertBooking, listForRoom } from './bookings-pg.js';\n\ntest('inserted booking is listed for its room', async () => {\n  await insertBooking({ roomId: 'lis-1', memberId: 'm1', startAt: '2026-03-10T09:00Z', endAt: '2026-03-10T10:00Z' });\n  expect((await listForRoom('lis-1')).length).toBeGreaterThan(0);\n});\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "avsingle"
+    },
+    {
+      "type": "commit",
+      "step": "avsingle",
+      "message": "feat(availability): find overlapping bookings for a room",
+      "why": "Intervals are half-open so a booking ending at 10:00 does not block one starting at 10:00.",
+      "files": {
+        "src/availability/single.js": "// [start, end) intervals: back-to-back bookings do not overlap\nexport const overlaps = (a, b) => a.startAt < b.endAt && b.startAt < a.endAt;\n\nexport function isFree(existing, wanted) {\n  return !existing.some((b) => overlaps(b, wanted));\n}\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "hotfix",
+      "title": "Fix catalog crash on sites without rooms",
+      "what": "The demo site in sites.json has no rooms list and the catalog throws on startup."
+    },
+    {
+      "type": "commit",
+      "step": "hotfix",
+      "message": "fix(rooms): tolerate sites with an empty room list",
+      "done": true,
+      "files": {
+        "src/rooms/catalog.js": "import sites from '../../data/sites.json' with { type: 'json' };\nimport { makeRoom } from './room.js';\n\nexport function roomsOfSite(siteId) {\n  const site = sites.find((s) => s.id === siteId);\n  return (site?.rooms ?? []).map((r) => makeRoom({ ...r, siteId }));\n}\n",
+        "src/rooms/catalog-empty.test.js": "import { expect, test } from 'vitest';\nimport { roomsOfSite } from './catalog.js';\n\ntest('demo site without rooms gives an empty list', () => {\n  expect(roomsOfSite('demo')).toEqual([]);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "avsingle",
+      "message": "test(availability): edge cases at slot boundaries",
+      "done": true,
+      "files": {
+        "src/availability/single.test.js": "import { expect, test } from 'vitest';\nimport { isFree } from './single.js';\n\nconst b = { startAt: '2026-03-10T09:00Z', endAt: '2026-03-10T10:00Z' };\ntest('back-to-back is free', () => {\n  expect(isFree([b], { startAt: '2026-03-10T10:00Z', endAt: '2026-03-10T11:00Z' })).toBe(true);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "api",
+      "message": "feat(api): POST /bookings with availability check",
+      "files": {
+        "src/api/bookings.js": "import { Router } from 'express';\nimport { insertBooking, listForRoom } from '../store/bookings-pg.js';\nimport { isFree } from '../availability/single.js';\n\nexport const bookings = Router().post('/bookings', async (req, res) => {\n  if (!isFree(await listForRoom(req.body.roomId), req.body)) return res.status(409).end();\n  res.status(201).json({ id: await insertBooking(req.body) });\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "api",
+      "message": "feat(api): GET /rooms/:id/bookings",
+      "files": {
+        "src/api/rooms.js": "import { Router } from 'express';\nimport { listForRoom } from '../store/bookings-pg.js';\n\nexport const rooms = Router().get('/rooms/:id/bookings', async (req, res) => {\n  res.json(await listForRoom(req.params.id));\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump pg to 8.13.1",
+      "files": {
+        "package.json": "{\n  \"name\": \"roomshare-booking\",\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"start\": \"node src/server.js\", \"test\": \"vitest run\" },\n  \"dependencies\": { \"express\": \"^4.19.2\", \"pg\": \"^8.13.1\" },\n  \"devDependencies\": { \"vitest\": \"^2.1.4\" }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "api",
+      "message": "feat(api): return 409 with a readable error on conflicting booking",
+      "done": true,
+      "files": {
+        "src/api/errors.js": "export function conflict(res, roomId) {\n  return res.status(409).json({ error: 'room_taken', message: `Room ${roomId} is already booked for that slot.` });\n}\n"
+      }
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "milestone",
+      "key": "m2",
+      "title": "M2 Recurring and multi-site booking",
+      "what": "Members book recurring meetings and search free rooms across every site of the network."
+    },
+    {
+      "type": "milestone",
+      "key": "m3",
+      "title": "M3 Notifications",
+      "what": "Members and site managers get reminders, cancellation notices and digests by email."
+    },
+    {
+      "type": "plan",
+      "milestone": "m2",
+      "ref": "chat 2026-03-16: recurrence rules, availability for recurring bookings, UTC storage, cross-site search, reminder emails",
+      "steps": [
+        {
+          "key": "rrule",
+          "title": "Recurrence rules for bookings"
+        },
+        {
+          "key": "avrec",
+          "title": "Availability check for recurring bookings"
+        },
+        {
+          "key": "tz",
+          "title": "Store times in UTC with the site time zone"
+        },
+        {
+          "key": "avsites",
+          "title": "Availability check across sites"
+        },
+        {
+          "key": "remind",
+          "title": "Reminder email before a booking"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "rrule"
+    },
+    {
+      "type": "commit",
+      "message": "docs: add time zone notes",
+      "files": {
+        "docs/timezones.md": "# Time zones\n\n## Why UTC storage\n\nLisbon and Milan sites share recurring meetings across a one-hour offset.\nLocal times stored as-is shift by an hour on DST changes, so we store UTC\nand keep the site zone only for display.\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "rrule",
+      "message": "feat(recurrence): weekly and daily rules",
+      "files": {
+        "src/recurrence/rules.js": "export const FREQS = ['daily', 'weekly'];\n\nexport function makeRule({ freq, interval = 1, until }) {\n  if (!FREQS.includes(freq)) throw new Error(`unsupported frequency ${freq}`);\n  return { freq, interval, until };\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "rrule",
+      "message": "feat(recurrence): expand a rule into occurrences",
+      "why": "Expansion is capped at 52 occurrences so an open-ended rule cannot flood the calendar.",
+      "files": {
+        "src/recurrence/expand.js": "const MAX = 52;\nconst DAY = 86400000;\n\nexport function expand(first, rule) {\n  const step = (rule.freq === 'weekly' ? 7 : 1) * rule.interval * DAY;\n  const out = [];\n  for (let t = Date.parse(first); out.length < MAX && (!rule.until || t <= Date.parse(rule.until)); t += step) out.push(new Date(t));\n  return out;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "rrule",
+      "message": "test(recurrence): expansion around month ends",
+      "done": true,
+      "files": {
+        "src/recurrence/expand.test.js": "import { expect, test } from 'vitest';\nimport { expand } from './expand.js';\n\ntest('weekly rule crosses into April', () => {\n  const dates = expand('2026-03-27T09:00Z', { freq: 'weekly', interval: 1, until: '2026-04-10T09:00Z' });\n  expect(dates).toHaveLength(3);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "avrec",
+      "message": "feat(availability): check every occurrence of a recurring booking",
+      "why": "A recurring booking is rejected as a whole if any occurrence conflicts, so members never end up with a half-booked series.",
+      "files": {
+        "src/availability/recurring.js": "import { isFree } from './single.js';\n\n// all-or-nothing: one clash rejects the whole series\nexport function seriesIsFree(existing, occurrences) {\n  return occurrences.every((o) => isFree(existing, o));\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "avrec",
+      "message": "feat(availability): list conflicting dates of a series",
+      "files": {
+        "src/availability/conflicts.js": "import { isFree } from './single.js';\n\nexport function conflictingDates(existing, occurrences) {\n  return occurrences.filter((o) => !isFree(existing, o)).map((o) => o.startAt);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "avrec",
+      "message": "test(availability): recurring series with one clash",
+      "done": true,
+      "files": {
+        "src/availability/recurring.test.js": "import { expect, test } from 'vitest';\nimport { seriesIsFree } from './recurring.js';\n\ntest('one clash rejects the series', () => {\n  const taken = [{ startAt: '2026-03-17T09:00Z', endAt: '2026-03-17T10:00Z' }];\n  const series = [{ startAt: '2026-03-10T09:00Z', endAt: '2026-03-10T10:00Z' }, taken[0]];\n  expect(seriesIsFree(taken, series)).toBe(false);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tz",
+      "message": "refactor(time): store booking start and end in UTC",
+      "proofFiles": [
+        "docs/timezones.md#Why UTC storage"
+      ],
+      "files": {
+        "src/time/utc.js": "export function toUtc(localIso, zone) {\n  const asUtc = new Date(localIso + 'Z');\n  const inZone = new Date(asUtc.toLocaleString('en-US', { timeZone: zone }));\n  const offset = inZone.getTime() - new Date(asUtc.toLocaleString('en-US', { timeZone: 'UTC' })).getTime();\n  return new Date(asUtc.getTime() - offset).toISOString();\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tz",
+      "message": "feat(time): render booking times in the site zone",
+      "files": {
+        "src/time/display.js": "export function displayTime(utcIso, zone) {\n  return new Intl.DateTimeFormat('en-GB', { timeZone: zone, dateStyle: 'medium', timeStyle: 'short' })\n    .format(new Date(utcIso));\n}\n"
+      }
+    },
+    {
+      "type": "detour",
+      "key": "dst",
+      "title": "Fix duplicate occurrence on DST change",
+      "what": "A weekly series created in Lisbon produced two occurrences on the last Sunday of March."
+    },
+    {
+      "type": "commit",
+      "step": "dst",
+      "message": "fix(recurrence): expand occurrences in site zone before converting to UTC",
+      "done": true,
+      "files": {
+        "src/recurrence/dst.js": "import { expand } from './expand.js';\nimport { toUtc } from '../time/utc.js';\n\nexport function expandInZone(firstLocal, rule, zone) {\n  return expand(firstLocal + 'Z', rule).map((d) => toUtc(d.toISOString().slice(0, 19), zone));\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "tz",
+      "message": "test(time): round trip between site zone and UTC",
+      "done": true,
+      "files": {
+        "src/time/utc.test.js": "import { expect, test } from 'vitest';\nimport { toUtc } from './utc.js';\n\ntest('Lisbon summer time is UTC+1', () => {\n  expect(toUtc('2026-04-01T10:00:00', 'Europe/Lisbon')).toBe('2026-04-01T09:00:00.000Z');\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore: add seed script for demo sites",
+      "files": {
+        "scripts/seed.js": "import { insertBooking } from '../src/store/bookings-pg.js';\n\nawait insertBooking({ roomId: 'lis-1', memberId: 'demo', startAt: '2026-03-20T09:00Z', endAt: '2026-03-20T10:00Z' });\nawait insertBooking({ roomId: 'mil-1', memberId: 'demo', startAt: '2026-03-20T14:00Z', endAt: '2026-03-20T15:00Z' });\nprocess.exit(0);\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "avsites",
+      "message": "feat(availability): search free rooms across all sites",
+      "why": "Search runs one query per site in parallel because each site keeps its own opening hours.",
+      "files": {
+        "src/availability/sites.js": "import { freeRoomsAtSite } from './site-hours.js';\n\nexport async function freeRoomsEverywhere(siteIds, slot) {\n  const perSite = await Promise.all(siteIds.map((id) => freeRoomsAtSite(id, slot)));\n  return perSite.flat();\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "avsites",
+      "message": "feat(availability): respect site opening hours",
+      "files": {
+        "src/availability/site-hours.js": "import { roomsOfSite } from '../rooms/catalog.js';\nimport { listForRoom } from '../store/bookings-pg.js';\nimport { isFree } from './single.js';\n\nexport async function freeRoomsAtSite(siteId, slot) {\n  const rooms = roomsOfSite(siteId);\n  const checks = await Promise.all(rooms.map(async (r) => isFree(await listForRoom(r.id), slot)));\n  return rooms.filter((_, i) => checks[i]);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "avsites",
+      "message": "feat(availability): filter by capacity and equipment",
+      "files": {
+        "src/availability/filters.js": "export function matches(room, { minCapacity = 0, equipment = [] }) {\n  return room.capacity >= minCapacity && equipment.every((e) => room.equipment.includes(e));\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "avsites",
+      "message": "feat(api): GET /availability endpoint",
+      "done": true,
+      "files": {
+        "src/api/availability.js": "import { Router } from 'express';\nimport { freeRoomsEverywhere } from '../availability/sites.js';\nimport { matches } from '../availability/filters.js';\n\nexport const availability = Router().get('/availability', async (req, res) => {\n  const rooms = await freeRoomsEverywhere(req.query.sites.split(','), req.query);\n  res.json(rooms.filter((r) => matches(r, req.query)));\n});\n"
+      }
+    },
+    {
+      "type": "defer",
+      "step": "remind",
+      "to": "m3"
+    },
+    {
+      "type": "handoff"
+    },
+    {
+      "type": "plan",
+      "milestone": "m3",
+      "ref": "chat 2026-03-30: email over the SMTP relay, cancellation emails, daily digest for site managers, member email preferences",
+      "steps": [
+        {
+          "key": "smtp",
+          "title": "Email via SMTP relay"
+        },
+        {
+          "key": "cancel",
+          "title": "Cancellation email to attendees"
+        },
+        {
+          "key": "digest",
+          "title": "Daily digest email for site managers"
+        },
+        {
+          "key": "prefs",
+          "title": "Email preferences per member"
+        }
+      ]
+    },
+    {
+      "type": "start",
+      "step": "smtp"
+    },
+    {
+      "type": "commit",
+      "step": "smtp",
+      "message": "feat(mail): nodemailer transport over SMTP relay",
+      "files": {
+        "src/mail/smtp.js": "import nodemailer from 'nodemailer';\n\nexport const transport = nodemailer.createTransport({\n  host: process.env.SMTP_HOST, port: 587, secure: false,\n  auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: email setup",
+      "files": {
+        "docs/email.md": "# Email\n\n## SMTP relay\n\nSet `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`. The relay listens on port 587.\n"
+      }
+    },
+    {
+      "type": "plan",
+      "milestone": "m3",
+      "ref": "chat 2026-04-01: send email through the provider HTTP API instead of the SMTP relay",
+      "steps": [
+        {
+          "key": "provmail",
+          "title": "Email via provider HTTP API"
+        }
+      ]
+    },
+    {
+      "type": "replace",
+      "step": "smtp",
+      "by": "provmail"
+    },
+    {
+      "type": "start",
+      "step": "provmail"
+    },
+    {
+      "type": "commit",
+      "step": "provmail",
+      "message": "feat(mail): send through provider HTTP API",
+      "why": "The office network at two sites blocks outbound port 587, while HTTPS is always open.",
+      "files": {
+        "src/mail/provider.js": "export async function send({ to, subject, html }) {\n  const res = await fetch(process.env.MAIL_API_URL, {\n    method: 'POST',\n    headers: { authorization: `Bearer ${process.env.MAIL_API_KEY}`, 'content-type': 'application/json' },\n    body: JSON.stringify({ to, subject, html }),\n  });\n  if (!res.ok) throw new Error(`mail provider answered ${res.status}`);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "provmail",
+      "message": "feat(mail): templates with site branding",
+      "files": {
+        "src/mail/templates.js": "export function layout(site, body) {\n  return `<h2>RoomShare ${site.name}</h2>${body}<p>Manage your bookings at roomshare.example</p>`;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "provmail",
+      "message": "test(mail): provider client fails loudly on error status",
+      "done": true,
+      "files": {
+        "src/mail/provider.test.js": "import { expect, test, vi } from 'vitest';\nimport { send } from './provider.js';\n\ntest('throws on 429', async () => {\n  vi.stubGlobal('fetch', async () => ({ ok: false, status: 429 }));\n  await expect(send({ to: 'a@b.c', subject: 's', html: '' })).rejects.toThrow('429');\n});\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "remind"
+    },
+    {
+      "type": "commit",
+      "step": "remind",
+      "message": "feat(reminders): schedule reminder 30 minutes before start",
+      "files": {
+        "src/reminders/schedule.js": "const LEAD_MS = 30 * 60 * 1000;\n\nexport function reminderAt(booking) {\n  return new Date(Date.parse(booking.startAt) - LEAD_MS).toISOString();\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "remind",
+      "message": "feat(reminders): worker that sends due reminders",
+      "files": {
+        "src/reminders/worker.js": "import { send } from '../mail/provider.js';\nimport { reminderAt } from './schedule.js';\n\nexport async function sendDue(bookings, now = new Date()) {\n  const due = bookings.filter((b) => !b.cancelledAt && !b.remindedAt && reminderAt(b) <= now.toISOString());\n  for (const b of due) await send({ to: b.memberEmail, subject: 'Your meeting starts soon', html: `Room ${b.roomId}` });\n  return due.map((b) => b.id);\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "chore(deps): bump vitest to 2.1.8",
+      "files": {
+        "package.json": "{\n  \"name\": \"roomshare-booking\",\n  \"version\": \"0.1.0\",\n  \"type\": \"module\",\n  \"scripts\": { \"start\": \"node src/server.js\", \"test\": \"vitest run\" },\n  \"dependencies\": { \"express\": \"^4.19.2\", \"pg\": \"^8.13.1\" },\n  \"devDependencies\": { \"vitest\": \"^2.1.8\" }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "remind",
+      "message": "test(reminders): no reminder for cancelled bookings",
+      "done": true,
+      "files": {
+        "src/reminders/worker.test.js": "import { expect, test, vi } from 'vitest';\nvi.mock('../mail/provider.js', () => ({ send: vi.fn() }));\nimport { sendDue } from './worker.js';\n\ntest('skips cancelled booking', async () => {\n  const b = { id: 1, startAt: '2026-04-02T09:00Z', cancelledAt: '2026-04-01T08:00Z' };\n  expect(await sendDue([b], new Date('2026-04-02T08:45Z'))).toEqual([]);\n});\n"
+      }
+    },
+    {
+      "type": "start",
+      "step": "cancel"
+    },
+    {
+      "type": "commit",
+      "step": "cancel",
+      "message": "feat(cancellations): DELETE /bookings/:id marks booking cancelled",
+      "files": {
+        "src/cancellations/cancel.js": "import { pool } from '../store/pg.js';\n\nexport async function cancelBooking(id, memberId) {\n  const { rows } = await pool.query(\n    'UPDATE bookings SET cancelled_at = now() WHERE id = $1 AND member_id = $2 RETURNING *', [id, memberId]);\n  return rows[0] ?? null;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cancel",
+      "message": "feat(cancellations): email attendees on cancellation",
+      "files": {
+        "src/cancellations/notify.js": "import { send } from '../mail/provider.js';\n\nexport async function notifyAttendees(booking) {\n  for (const to of booking.attendees ?? []) {\n    await send({ to, subject: 'Meeting cancelled', html: `The booking of room ${booking.room_id} was cancelled.` });\n  }\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "cancel",
+      "message": "test(cancellations): cancelled slot becomes bookable again",
+      "done": true,
+      "files": {
+        "src/cancellations/cancel.test.js": "import { expect, test } from 'vitest';\nimport { isFree } from '../availability/single.js';\n\ntest('cancelled bookings are ignored by availability', () => {\n  const active = [{ startAt: '2026-04-03T09:00Z', endAt: '2026-04-03T10:00Z', cancelled_at: 'x' }].filter((b) => !b.cancelled_at);\n  expect(isFree(active, { startAt: '2026-04-03T09:00Z', endAt: '2026-04-03T10:00Z' })).toBe(true);\n});\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "digest",
+      "message": "feat(digest): collect next-day bookings per site",
+      "files": {
+        "src/digest/collect.js": "import { pool } from '../store/pg.js';\n\nexport async function tomorrowBySite(siteId, day) {\n  const { rows } = await pool.query(\n    `SELECT * FROM bookings WHERE site_id = $1 AND cancelled_at IS NULL AND start_at::date = $2 ORDER BY start_at`, [siteId, day]);\n  return rows;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "docs: document GET /availability in README",
+      "files": {
+        "README.md": "# roomshare-booking\n\nBooking service for the RoomShare network of shared meeting rooms.\nMembers reserve rooms at any site of the network.\n\n## Finding a room\n\n`GET /availability?sites=lis,mil&startAt=...&endAt=...&minCapacity=6`\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "digest",
+      "message": "feat(digest): render digest table for site managers",
+      "files": {
+        "src/digest/render.js": "import { displayTime } from '../time/display.js';\n\nexport function renderDigest(site, bookings) {\n  const rows = bookings.map((b) => `<tr><td>${displayTime(b.start_at, site.zone)}</td><td>${b.room_id}</td><td>${b.member_id}</td></tr>`);\n  return `<h3>Tomorrow at ${site.name}</h3><table>${rows.join('')}</table>`;\n}\n"
+      }
+    },
+    {
+      "type": "commit",
+      "message": "ci: run tests on push",
+      "files": {
+        ".github/workflows/test.yml": "name: test\non: [push]\njobs:\n  test:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with: { node-version: 22 }\n      - run: npm ci && npm test\n"
+      }
+    },
+    {
+      "type": "commit",
+      "step": "digest",
+      "message": "feat(digest): skip sites closed tomorrow",
+      "files": {
+        "src/digest/closed-days.js": "export function isClosed(site, day) {\n  const weekday = new Date(day + 'T12:00:00Z').getUTCDay();\n  return (site.closedWeekdays ?? [0]).includes(weekday) || (site.holidays ?? []).includes(day);\n}\n"
+      }
+    }
+  ],
+  "questions": [
+    {
+      "cat": "where",
+      "text": "Which part of the notification work is in progress right now, and what comes after it?",
+      "current": "digest",
+      "next": "prefs"
+    },
+    {
+      "cat": "why",
+      "text": "Why does the availability check for recurring bookings work the way it does?",
+      "step": "avrec",
+      "reason": "A recurring booking is rejected as a whole if any occurrence conflicts, so members never end up with a half-booked series.",
+      "distractors": [
+        "Intervals are half-open so a booking ending at 10:00 does not block one starting at 10:00.",
+        "Search runs one query per site in parallel because each site keeps its own opening hours.",
+        "Local times stored as-is shift by an hour on DST changes, so we store UTC and keep the site zone only for display."
+      ]
+    },
+    {
+      "cat": "proof",
+      "text": "Which file holds the result of the availability check across sites?",
+      "step": "avsites",
+      "file": "src/availability/sites.js"
+    },
+    {
+      "cat": "deferred",
+      "text": "The reminder email before a booking was planned with recurring and multi-site booking. Where did it end up?",
+      "step": "remind",
+      "milestone": "m3"
+    },
+    {
+      "cat": "update",
+      "text": "Which decision holds today on how the service sends email?",
+      "step": "provmail"
+    },
+    {
+      "cat": "abstain",
+      "text": "Why did the team choose Stripe to charge members for room bookings?"
+    },
+    {
+      "cat": "continue",
+      "text": "Resume the work: make the first change you would make.",
+      "next": "digest",
+      "dir": "src/digest/"
+    }
+  ]
+}
