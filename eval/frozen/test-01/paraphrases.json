@@ -1,0 +1,9 @@
+[
+  "What is the current status of the partner integrations work: what is in progress at the moment, and what is scheduled to follow?",
+  "What is the reasoning behind the way the cache for the depot list behaves?",
+  "In which file is the output of the cache for the depot list stored?",
+  "The webhook signature check was originally scoped alongside the recipient notifications. Which milestone does it currently belong to?",
+  "What decision is currently in force regarding how recipients get notified that their parcel is out for delivery?",
+  "Which map provider was selected for rendering the courier's delivery route on the tracking page?",
+  null
+]

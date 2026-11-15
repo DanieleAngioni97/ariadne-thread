@@ -1,0 +1,9 @@
+[
+  "In the exam booking portal, what is currently in progress, and what is scheduled to come next?",
+  "What is the reason session listings are cached?",
+  "In which file can the outcome of the gateway webhook handler work be found?",
+  "The candidate profiles cache was originally scheduled alongside sessions and booking; to which milestone was it relocated?",
+  "What decision is currently in force regarding how seats get locked while booking?",
+  "Which SMS provider was selected for sending the reminders on exam day?",
+  null
+]
