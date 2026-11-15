@@ -49,6 +49,17 @@ test('plan adds todo steps in a chain, signed by you, with the approval as proof
   assert.equal(r.log[0].text, 'piano per M2: Write → Ship')
 })
 
+test('a plan under the current node starts its first step; under another node it moves nothing', () => {
+  const here = ok([{ op: 'plan', parent: 'm1', titles: ['More', 'Again'], ref: 'chat: ok' }], { thread: { ...THREAD, current: 'm1' } })
+  assert.equal(here.thread.current, 'm1.1')
+  assert.equal(here.get('m1.1').status, 'active')
+  assert.equal(here.get('m1.2').status, 'todo')
+  assert.deepEqual(here.log.map(l => l.text), ['piano per M1: More → Again', 'iniziato m1.1 More'])
+  const elsewhere = ok([{ op: 'plan', parent: 'm2', titles: ['Write'], ref: 'chat: ok' }])
+  assert.equal(elsewhere.thread.current, 'b')
+  assert.equal(elsewhere.get('m2.1').status, 'todo')
+})
+
 test('close records the result and its proof, then starts the next step', () => {
   const r = ok([{ op: 'close', id: 'b', what: 'B is done.', proof: [{ type: 'commit', ref: 'abc1234' }] }])
   assert.equal(r.get('b').status, 'done')

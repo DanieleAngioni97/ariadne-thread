@@ -73,6 +73,8 @@ export function apply({ text, thread, ops, at, by = 'agent' }) {
         return n
       })
       log(parent ?? '', 'plan', `piano per ${parent ? get(parent).title : 'il progetto'}: ${made.map(n => n.title).join(' → ')}`)
+      // Planned under where you are, the work goes on with the plan's first step.
+      if (made.length && parent === state.thread.current) start(made[0])
     },
 
     start({ id }) { start(get(id)) },
