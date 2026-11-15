@@ -387,3 +387,5 @@
 {"at":"2026-11-15T21:25Z","id":"m4.4.12.13","op":"confirm","text":"confermato m4.4.12.13 Dettagli tecnici nel README"}
 {"at":"2026-11-15T21:25Z","id":"m5.3","op":"close","text":"chiuso m5.3 Togliere le tracce private dal grafo e dalla storia del branch: storia del branch senza tracce aziendali né percorsi locali (0 in tutti i branch), prove rimappate; 38e73d4 era già una prova rotta prima","proof":[{"type":"file","ref":"~/ariadne-report/ariadne-thread-before-cleanup-2.bundle"},{"type":"message","ref":"chat 2026-11-15: pulizia approvata dall'utente, force-push autorizzato"}]}
 {"at":"2026-11-15T21:25Z","id":"m5.4","op":"start","text":"iniziato m5.4 README tecnico"}
+{"at":"2026-11-15T21:29Z","id":"m5.4","op":"close","text":"chiuso m5.4 README tecnico: README con logo, funzionamento tecnico e risultati con i limiti","proof":[{"type":"commit","ref":"68bc342"}]}
+{"at":"2026-11-15T21:29Z","id":"m5.5","op":"start","text":"iniziato m5.5 Unire il branch in main"}
