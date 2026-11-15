@@ -373,3 +373,5 @@
 {"at":"2026-11-15T20:28Z","id":"m4.4.12.13","op":"pause","text":"rimesso tra i da fare m4.4.12.13 Dettagli tecnici nel README"}
 {"at":"2026-11-15T20:28Z","id":"m4.4.12","op":"plan","text":"piano per Rapporto: Slide: ritocchi dell'utente → Rivedere rapporto.html sulla narrazione delle slide"}
 {"at":"2026-11-15T20:28Z","id":"m4.4.12.18","op":"start","text":"iniziato m4.4.12.18 Slide: ritocchi dell'utente"}
+{"at":"2026-11-15T20:36Z","id":"m4.4.12.18","op":"close","text":"chiuso m4.4.12.18 Slide: ritocchi dell'utente: slide 8 diventa la guida 6/6 (decisioni in chat registrate nello stesso turno, controllo a fine turno), filo legato al gomitolo passo passo, tema con banda del titolo ed etichette di sezione","proof":[{"type":"file","ref":"~/ariadne-report/slide-v2.html"}]}
+{"at":"2026-11-15T20:36Z","id":"m4.4.12.19","op":"start","text":"iniziato m4.4.12.19 Rivedere rapporto.html sulla narrazione delle slide"}
