@@ -17,6 +17,7 @@ import { card, view } from '../src/card.mjs'
 import { parse } from '../src/graph.mjs'
 import { show, why } from '../src/inspect.mjs'
 import { openViewer } from '../src/open.mjs'
+import { keepOut, savePort, viewerPort } from '../src/port.mjs'
 import { brokenRefs } from '../src/refs.mjs'
 import { summarize } from '../src/summary.mjs'
 import { serve } from '../src/serve.mjs'
@@ -29,7 +30,6 @@ const LOG = '.ariadne/log.jsonl'
 const VIEW = '.ariadne/STATE.md'
 const HISTORY = 2000
 const RECENT_COMMITS = 20
-const VIEW_PORT = 8790
 const USAGE = `uso: ariadne <comando>
   card [--hook] · summary [--hook] · show <id> · why <id> · log [n] · validate [file]
   plan <parent> "<passo>"… --ref "<approvazione>"
@@ -84,7 +84,7 @@ function commitFiles() {
 /** Rewrites .ariadne/STATE.md, the view for Read and grep; a .gitignore keeps it out of git. */
 function writeView(nodes, thread) {
   writeFileSync(VIEW, view(nodes, thread, commitFiles()) + '\n')
-  if (!existsSync('.ariadne/.gitignore')) writeFileSync('.ariadne/.gitignore', 'STATE.md\n')
+  keepOut(process.cwd(), 'STATE.md')
 }
 
 /** What a hook already told this session, by session id; kept outside the repository. */
@@ -138,7 +138,7 @@ function bandJson(review) {
   const thread = text == null ? null : readThread(parse(text))
   const log = existsSync(LOG) ? readFileSync(LOG, 'utf8').trimEnd().split('\n').filter(Boolean).map(l => JSON.parse(l)) : []
   const index = review === undefined ? null : Number(review)
-  console.log(JSON.stringify({ viewer: VIEW_PORT, rows: band({ text, thread, log, review: Number.isInteger(index) ? index : null }) }))
+  console.log(JSON.stringify({ viewer: viewerPort(process.cwd()), rows: band({ text, thread, log, review: Number.isInteger(index) ? index : null }) }))
 }
 
 const NO_GRAPH = "ariadne: nessun grafo in .ariadne/ · l'agente lo crea con il primo piano"
@@ -305,7 +305,7 @@ else if (command === 'band') {
   try {
     bandJson(values.review)
   } catch (error) {
-    console.log(JSON.stringify({ viewer: VIEW_PORT, rows: [{ kind: 'error', text: `⚠ ariadne: banda non disponibile (${error.message})`, actions: [] }] }))
+    console.log(JSON.stringify({ viewer: viewerPort(process.cwd()), rows: [{ kind: 'error', text: `⚠ ariadne: banda non disponibile (${error.message})`, actions: [] }] }))
   }
 }
 else if (command === 'sync') {
@@ -320,21 +320,31 @@ else if (command === 'why' && args[0]) inspect(why, args[0])
 else if (command === 'validate') check(args[0])
 else if (command === 'log') showLog(Number(args[0]) || undefined)
 else if (command === 'view') {
-  const port = Number(values.port) || VIEW_PORT
-  serve(process.cwd(), port)
-    .on('listening', () => console.log(`ariadne: viewer su http://127.0.0.1:${port}/ (Ctrl+C per chiudere)`))
+  const root = process.cwd()
+  const fixed = Boolean(values.port)
+  const listen = port => serve(root, port)
+    .on('listening', function () {
+      const actual = this.address().port
+      if (actual !== port) savePort(root, actual)
+      console.log(`ariadne: viewer su http://127.0.0.1:${actual}/ (Ctrl+C per chiudere)`)
+    })
     .on('error', error => {
+      // The project's port held by another server: the system picks a free one, saved for band and open.
+      if (error.code === 'EADDRINUSE' && !fixed && port !== 0) return listen(0)
       console.error(`ariadne: viewer non avviato (${error.code === 'EADDRINUSE' ? `porta ${port} occupata, prova --port` : error.message})`)
       process.exitCode = 1
     })
+  listen(Number(values.port) || viewerPort(root))
 }
 else if (command === 'open') {
-  const port = Number(values.port) || VIEW_PORT
-  const probe = () => fetch(`http://127.0.0.1:${port}/root`).then(r => r.text(), () => null)
+  const root = process.cwd()
+  const fixed = Boolean(values.port)
+  const port = () => Number(values.port) || viewerPort(root)
+  const probe = p => fetch(`http://127.0.0.1:${p}/root`).then(r => r.text(), () => null)
   // The viewer outlives this command: detached, like an `ariadne view` started by hand.
-  const start = () => spawn(process.execPath, [fileURLToPath(import.meta.url), 'view', '--port', String(port)], { detached: true, stdio: 'ignore' }).unref()
+  const start = () => spawn(process.execPath, [fileURLToPath(import.meta.url), 'view', ...(fixed ? ['--port', values.port] : [])], { detached: true, stdio: 'ignore' }).unref()
   const launch = url => spawnSync('open', [url])
-  openViewer({ root: process.cwd(), port, id: args[0], probe, start, launch })
+  openViewer({ root, port, id: args[0], probe, start, launch, fixed })
     .then(url => console.log(`ariadne: viewer su ${url}`))
     .catch(error => {
       console.error(`ariadne: ${error.message}`)

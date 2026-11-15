@@ -1,11 +1,13 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawn, spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+
+import { derivedPort } from '../src/port.mjs'
 
 const CLI = fileURLToPath(new URL('./ariadne.mjs', import.meta.url))
 const AT = '2026-11-11'
@@ -187,10 +189,11 @@ test('saving the graph after a commit leaves the tree clean', () => {
 })
 
 test('band prints the band rows as JSON, with the viewer port, and exits 0 even without a graph', () => {
-  const r = run(project({ graph: [...GOOD, n('c', { status: 'todo', after: ['b'], review: 'confirm' })], thread: { current: 'b' } }), 'band', '--review', '0')
+  const dir = project({ graph: [...GOOD, n('c', { status: 'todo', after: ['b'], review: 'confirm' })], thread: { current: 'b' } })
+  const r = run(dir, 'band', '--review', '0')
   assert.equal(r.status, 0)
   const out = JSON.parse(r.stdout)
-  assert.equal(out.viewer, 8790)
+  assert.equal(out.viewer, derivedPort(realpathSync(dir)))
   assert.deepEqual(out.rows.map(row => row.kind), ['where', 'queue'])
   assert.match(out.rows[1].text, /^⏎ Da confermare 1\/1: c Title c$/)
   const empty = run(project(), 'band')
@@ -198,7 +201,7 @@ test('band prints the band rows as JSON, with the viewer port, and exits 0 even 
   assert.equal(JSON.parse(empty.stdout).rows[0].kind, 'empty')
 })
 
-test('open on a port held by another server says so, exits 1 and opens nothing', async () => {
+test('open on a port fixed by hand and held by another server says so, exits 1 and opens nothing', async () => {
   const other = createServer((_, res) => res.end('not found')).listen(0, '127.0.0.1')
   await new Promise(resolve => other.on('listening', resolve))
   const child = spawn(process.execPath, [CLI, 'open', '--port', String(other.address().port)], { cwd: project({ graph: GOOD }) })
@@ -208,6 +211,23 @@ test('open on a port held by another server says so, exits 1 and opens nothing',
   other.close()
   assert.equal(status, 1)
   assert.match(stderr, /occupata da un altro server/)
+})
+
+test('view on a project port held by another server takes a free one and saves it for band and open', async () => {
+  const dir = realpathSync(project({ graph: GOOD }))
+  const other = createServer((_, res) => res.end('not found')).listen(derivedPort(dir), '127.0.0.1')
+  await new Promise(resolve => other.on('listening', resolve))
+  const child = spawn(process.execPath, [CLI, 'view'], { cwd: dir })
+  const line = await new Promise(resolve => {
+    child.stdout.on('data', chunk => resolve(String(chunk)))
+    child.on('close', () => resolve(''))
+  })
+  child.kill()
+  other.close()
+  const { port } = JSON.parse(readFileSync(join(dir, '.ariadne', 'local.json'), 'utf8'))
+  assert.notEqual(port, derivedPort(dir))
+  assert.match(line, new RegExp(`127\\.0\\.0\\.1:${port}/`))
+  assert.equal(JSON.parse(run(dir, 'band').stdout).viewer, port)
 })
 
 test('close with only a chat message as proof warns that no file holds the result', () => {
