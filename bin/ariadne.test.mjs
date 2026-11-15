@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawn, spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -33,6 +33,27 @@ test('summary without a graph explains it and exits 0, so a hook never blocks th
   const r = run(project(), 'summary')
   assert.equal(r.status, 0)
   assert.equal(r.stdout, "ariadne: nessun grafo in .ariadne/ · l'agente lo crea con il primo piano\n")
+})
+
+test('outside an ariadne project the hooks and the band say nothing, so the plugin is quiet everywhere else', () => {
+  const dir = project()
+  const hook = (...args) => spawnSync(process.execPath, [CLI, ...args, '--hook'], { cwd: dir, encoding: 'utf8', input: '{}' })
+  assert.equal(hook('card').stdout, '')
+  assert.equal(hook('summary').stdout, '')
+  assert.equal(hook('sync').stdout, '')
+  assert.deepEqual(JSON.parse(run(dir, 'band').stdout).rows, [])
+  assert.equal(existsSync(join(dir, '.ariadne')), false)
+})
+
+test('init makes the project an ariadne project, says what comes next, and can run again', () => {
+  const dir = project()
+  const first = run(dir, 'init')
+  assert.equal(first.status, 0, first.stderr)
+  assert.match(first.stdout, /ariadne/)
+  assert.equal(readFileSync(join(dir, '.ariadne', '.gitignore'), 'utf8'), 'STATE.md\nlocal.json\n')
+  assert.equal(run(dir, 'init').status, 0)
+  assert.equal(readFileSync(join(dir, '.ariadne', '.gitignore'), 'utf8'), 'STATE.md\nlocal.json\n')
+  assert.match(run(dir, 'card', '--hook').stdout, /nessun grafo/)
 })
 
 test('summary on an invalid graph summarizes what it can read and warns, exit 0', () => {
@@ -188,7 +209,7 @@ test('saving the graph after a commit leaves the tree clean', () => {
   assert.doesNotMatch(run(dir, 'summary').stdout, /commit senza Thread/)
 })
 
-test('band prints the band rows as JSON, with the viewer port, and exits 0 even without a graph', () => {
+test('band prints the band rows as JSON, with the viewer port, and exits 0 even before the first plan', () => {
   const dir = project({ graph: [...GOOD, n('c', { status: 'todo', after: ['b'], review: 'confirm' })], thread: { current: 'b' } })
   const r = run(dir, 'band', '--review', '0')
   assert.equal(r.status, 0)
@@ -196,7 +217,9 @@ test('band prints the band rows as JSON, with the viewer port, and exits 0 even 
   assert.equal(out.viewer, derivedPort(realpathSync(dir)))
   assert.deepEqual(out.rows.map(row => row.kind), ['where', 'queue'])
   assert.match(out.rows[1].text, /^⏎ Da confermare 1\/1: c Title c$/)
-  const empty = run(project(), 'band')
+  const bare = project()
+  mkdirSync(join(bare, '.ariadne'))
+  const empty = run(bare, 'band')
   assert.equal(empty.status, 0)
   assert.equal(JSON.parse(empty.stdout).rows[0].kind, 'empty')
 })

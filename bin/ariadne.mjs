@@ -31,7 +31,7 @@ const VIEW = '.ariadne/STATE.md'
 const HISTORY = 2000
 const RECENT_COMMITS = 20
 const USAGE = `uso: ariadne <comando>
-  card [--hook] · summary [--hook] · show <id> · why <id> · log [n] · validate [file]
+  init · card [--hook] · summary [--hook] · show <id> · why <id> · log [n] · validate [file]
   plan <parent> "<passo>"… --ref "<approvazione>"
   start <id> · close <id> "<esito>" (--commit sha | --file path | --message testo)
   add <kind> "<titolo>" --what "…" [--under id] [--after a,b] [--why …] [--detail …] [--reentry id] [--id x] [--start | --done]
@@ -139,6 +139,13 @@ function bandJson(review) {
   const log = existsSync(LOG) ? readFileSync(LOG, 'utf8').trimEnd().split('\n').filter(Boolean).map(l => JSON.parse(l)) : []
   const index = review === undefined ? null : Number(review)
   console.log(JSON.stringify({ viewer: viewerPort(process.cwd()), rows: band({ text, thread, log, review: Number.isInteger(index) ? index : null }) }))
+}
+
+/** Makes the current directory an ariadne project; running it again changes nothing. */
+function init() {
+  mkdirSync('.ariadne', { recursive: true })
+  for (const name of ['STATE.md', 'local.json']) keepOut(process.cwd(), name)
+  console.log(`ariadne: progetto pronto in .ariadne/ · chiedi all'agente di tracciare il lavoro: il grafo nasce con il primo piano`)
 }
 
 const NO_GRAPH = "ariadne: nessun grafo in .ariadne/ · l'agente lo crea con il primo piano"
@@ -286,8 +293,13 @@ try {
   usage()
 }
 const { positionals: [command, ...args], values } = parsed
+// Installed once for every project, the hooks and the band speak only where `ariadne init` ran.
+const quiet = !existsSync('.ariadne') && (values.hook || command === 'band')
 
-if (command === 'summary') {
+if (quiet && command === 'band') console.log(JSON.stringify({ viewer: viewerPort(process.cwd()), rows: [] }))
+else if (quiet) {}
+else if (command === 'init') init()
+else if (command === 'summary') {
   try {
     summary(values.hook)
   } catch (error) {
