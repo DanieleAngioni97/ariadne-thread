@@ -230,3 +230,19 @@
 {"at":"2026-11-15T16:07Z","id":"m4.6.1","op":"fill","text":"prova per m4.6.1: commit f47f89b","proof":[{"type":"commit","ref":"f47f89b"}]}
 {"at":"2026-11-15T16:07Z","id":"m4.6.1","op":"close","text":"chiuso m4.6.1 Porta del viewer per progetto: porta del viewer per progetto in .ariadne/local.json; il viewer serve pagina e logica dal pacchetto","proof":[{"type":"commit","ref":"31f8e43"}]}
 {"at":"2026-11-15T16:07Z","id":"m4.6.2","op":"start","text":"iniziato m4.6.2 Hook silenziosi fuori da un progetto e ariadne init"}
+{"at":"2026-11-15T16:09Z","id":"m4.6.2","op":"close","text":"chiuso m4.6.2 Hook silenziosi fuori da un progetto e ariadne init: hook e banda muti fuori da un progetto; ariadne init crea .ariadne/","proof":[{"type":"commit","ref":"15500ad"}]}
+{"at":"2026-11-15T16:09Z","id":"m4.6.3","op":"start","text":"iniziato m4.6.3 Il repo diventa il plugin"}
+{"at":"2026-11-15T16:11Z","id":"m4.6.3","op":"fill","text":"prova per m4.6.3: commit bc16cf8","proof":[{"type":"commit","ref":"bc16cf8"}]}
+{"at":"2026-11-15T16:12Z","id":"m4.6.3","op":"fill","text":"prova per m4.6.3: commit 13a5803","proof":[{"type":"commit","ref":"13a5803"}]}
+{"at":"2026-11-15T16:14Z","id":"m4.6.3","op":"fill","text":"prova per m4.6.3: commit 0c1b4da","proof":[{"type":"commit","ref":"0c1b4da"}]}
+{"at":"2026-11-15T16:14Z","id":"m4.6.3","op":"close","text":"chiuso m4.6.3 Il repo diventa il plugin: la radice del repo è il plugin: hook, CLI, banda, marketplace e /ariadne:init","proof":[{"type":"commit","ref":"7d4a31e"}]}
+{"at":"2026-11-15T16:14Z","id":"m4.6.4","op":"start","text":"iniziato m4.6.4 Skill per l'agente in inglese"}
+{"at":"2026-11-15T16:14Z","id":"m4.6.7","op":"add","text":"deviazione m4.6.7 Primo nodo in un progetto nuovo, rientra in m4.6.4"}
+{"at":"2026-11-15T16:15Z","id":"m4.6.7","op":"close","text":"chiuso m4.6.7 Primo nodo in un progetto nuovo: dopo init add e plan creano il grafo","proof":[{"type":"commit","ref":"b98a21e"}]}
+{"at":"2026-11-15T16:18Z","id":"m4.6.4","op":"close","text":"chiuso m4.6.4 Skill per l'agente in inglese: skill ariadne in inglese, provata su due scenari contro una base senza skill","proof":[{"type":"commit","ref":"7d948ff"}]}
+{"at":"2026-11-15T16:18Z","id":"m4.6.5","op":"start","text":"iniziato m4.6.5 README pubblico in inglese"}
+{"at":"2026-11-15T16:18Z","id":"m4.6.5","op":"close","text":"chiuso m4.6.5 README pubblico in inglese: README pubblico in inglese con installazione in due comandi","proof":[{"type":"commit","ref":"d2df32b"}]}
+{"at":"2026-11-15T16:18Z","id":"m4.6.6","op":"start","text":"iniziato m4.6.6 Prova d'installazione da zero"}
+{"at":"2026-11-15T16:21Z","id":"m4.6.6","op":"close","text":"chiuso m4.6.6 Prova d'installazione da zero: installato da un clone pulito in una config temporanea; in un progetto vuoto /ariadne:init, piano, commit con Thread e chiusura del passo funzionano; 251 test verdi nel clone; riemerso m4.5","proof":[{"type":"message","ref":"chat 2026-11-15: prova headless con --plugin-dir"}]}
+{"at":"2026-11-15T16:21Z","id":"m4.5","op":"start","text":"iniziato m4.5 Il corrente resta sul genitore dopo plan"}
+{"at":"2026-11-15T16:22Z","id":"m4.5","op":"close","text":"chiuso m4.5 Il corrente resta sul genitore dopo plan: plan sotto il nodo corrente avvia il primo passo nuovo","proof":[{"type":"commit","ref":"383f977"}]}
