@@ -1,0 +1,849 @@
+{
+  "graded": [
+    {
+      "scenario": "test-01",
+      "index": 8,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-01",
+      "index": 14,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-01",
+      "index": 30,
+      "found": {
+        "F1": false,
+        "F2": true,
+        "F3": false,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": true,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-01",
+      "index": 48,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-02",
+      "index": 7,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": false,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-02",
+      "index": 25,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-02",
+      "index": 51,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-02",
+      "index": 71,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-03",
+      "index": 11,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": false,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-03",
+      "index": 42,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-03",
+      "index": 53,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": false,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-03",
+      "index": 74,
+      "found": {
+        "F1": true,
+        "F2": false,
+        "F3": false,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": true
+    },
+    {
+      "scenario": "test-04",
+      "index": 23,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-04",
+      "index": 55,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-04",
+      "index": 71,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-04",
+      "index": 98,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": false,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-05",
+      "index": 8,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-05",
+      "index": 25,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-05",
+      "index": 46,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-05",
+      "index": 54,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-06",
+      "index": 17,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-06",
+      "index": 42,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-06",
+      "index": 58,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": false,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-06",
+      "index": 69,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-07",
+      "index": 15,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-07",
+      "index": 43,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-07",
+      "index": 54,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-07",
+      "index": 80,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-08",
+      "index": 6,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-08",
+      "index": 14,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-08",
+      "index": 39,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": false,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": true
+    },
+    {
+      "scenario": "test-08",
+      "index": 57,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-09",
+      "index": 12,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": false,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-09",
+      "index": 40,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-09",
+      "index": 46,
+      "found": {
+        "F1": false,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": true,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-09",
+      "index": 78,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-10",
+      "index": 10,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": false,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-10",
+      "index": 18,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-10",
+      "index": 50,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-10",
+      "index": 65,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": false,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-11",
+      "index": 10,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-11",
+      "index": 18,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-11",
+      "index": 41,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-11",
+      "index": 52,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-12",
+      "index": 12,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-12",
+      "index": 27,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-12",
+      "index": 49,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    },
+    {
+      "scenario": "test-12",
+      "index": 57,
+      "found": {
+        "F1": true,
+        "F2": true,
+        "F3": true,
+        "F4": true
+      },
+      "rightStepWrongType": {
+        "F1": false,
+        "F2": false,
+        "F3": false,
+        "F4": false
+      },
+      "falseAlarm": false
+    }
+  ],
+  "summary": {
+    "checkpoints": 48,
+    "scenarios": 12,
+    "recall": {
+      "value": 0.9270833333333334,
+      "ci": [
+        0.8802083333333334,
+        0.9635416666666666
+      ],
+      "byType": {
+        "done-not-done": 0.9583333333333334,
+        "missing-work": 0.9791666666666666,
+        "unrecorded-detour": 0.7708333333333334,
+        "wrong-current": 1
+      }
+    },
+    "rightStepWrongType": 2,
+    "falseAlarms": {
+      "value": 0.041666666666666664,
+      "ci": [
+        0,
+        0.10416666666666667
+      ]
+    },
+    "passes": true,
+    "cost": 0.4552349200000001,
+    "costNorm": 0.7519697200000002,
+    "unparsed": 0
+  }
+}
