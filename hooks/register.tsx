@@ -91,17 +91,23 @@ export const register: Register = on => {
       )
     }
 
-    // A rule in the theme's subtle color sets the band apart from the chat on any background; it
-    // takes a row, so it shows only when the band would not scroll for it.
-    const label = '── ariadne '
-    const rule = current.rows.length < e.props.maxRows && (
-      <Text color="subtle" wrap="truncate-end">{label + '─'.repeat(Math.max(0, e.props.bodyColumns - label.length))}</Text>
+    // A rule in the theme's subtle color sets the band apart from the chat on any background. The
+    // last outcome has no buttons, so it rides on the rule and the two take one row; a bare rule
+    // shows only when the band would not scroll for it.
+    const outcome = current.rows.find(row => row.kind === 'outcome' && row.actions.length === 0)
+    const rows = current.rows.filter(row => row !== outcome)
+    const label = outcome ? `── ariadne · ${outcome.text} ` : '── ariadne '
+    const fill = '─'.repeat(Math.max(0, e.props.bodyColumns - label.length))
+    const rule = (outcome || rows.length < e.props.maxRows) && (
+      <Text color="subtle" wrap="truncate-end">
+        {outcome ? ['── ariadne · ', <Text key="outcome" color="success">{outcome.text}</Text>, ' ' + fill] : label + fill}
+      </Text>
     )
 
     return (
       <Box flexDirection="column">
         {rule}
-        {current.rows.map(line)}
+        {rows.map(line)}
       </Box>
     )
   })

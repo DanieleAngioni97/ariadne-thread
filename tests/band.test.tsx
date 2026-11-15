@@ -107,16 +107,31 @@ describe('ariadne band', () => {
   test('a rule in the theme subtle color sets the band apart from the chat, when a row is free for it', async ($, on) => {
     host(on, [], [])
     await $.session.start(start)
-    const roomy = await $.ui.mount({ plugin: 'ariadne', surface: 'terminal', ...BAND, props: { ...BAND.props, maxRows: 5 } })
+    const roomy = await $.ui.mount({ plugin: 'ariadne', surface: 'terminal', ...BAND })
+    await roomy.press({ key: 'queue-Rivedi una per una' })
     const rule = await roomy.find({ type: 'Text', text: /^── ariadne ─+$/ })
     expect(rule).toBeDefined()
     expect(rule?.props.color).toBe('subtle')
     expect(rule?.text.length).toBe(BAND.props.bodyColumns)
     await roomy.unmount()
 
-    const full = await $.ui.mount({ plugin: 'ariadne', surface: 'terminal', ...BAND })
+    // Still one by one: two rows and no outcome, which fill a band of two.
+    const full = await $.ui.mount({ plugin: 'ariadne', surface: 'terminal', ...BAND, props: { ...BAND.props, maxRows: 2 } })
+    expect(await full.find({ type: 'Text', text: /Da confermare 1\/2/ })).toBeDefined()
     expect(await full.find({ type: 'Text', text: /── ariadne/ })).toBeUndefined()
     await full.unmount()
+  })
+
+  test('the last outcome rides on the rule, so it takes no row of its own', async ($, on) => {
+    host(on, [], [])
+    await $.session.start(start)
+    const band = await $.ui.mount({ plugin: 'ariadne', surface: 'terminal', ...BAND })
+    const rule = await band.find({ type: 'Text', text: /^── ariadne · ↺ chiuso m3\.2 Viewer ─+$/ })
+    expect(rule).toBeDefined()
+    expect(rule?.text.length).toBe(BAND.props.bodyColumns)
+    // The band's column and one row each for where, the detour and the queue: none for the outcome.
+    expect(await band.findAll({ type: 'Box' })).toHaveLength(4)
+    await band.unmount()
   })
 
   test('outside an ariadne project the band leaves the engine its own', async ($, on) => {
