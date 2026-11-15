@@ -14,7 +14,7 @@ const BRIEF = fileURLToPath(new URL('./brief.md', import.meta.url))
 const ROUNDS = 3
 
 function problems(scenario, spec) {
-  const errors = check(scenario, { test: spec.set === 'test' })
+  const errors = check(scenario, { test: ['test', 'pilot'].includes(spec.set) })
   const n = scenario.events?.length ?? 0
   if (Math.abs(n - spec.events) > spec.events * 0.1) errors.push(`events: ${n}, asked for ${spec.events} ±10%`)
   if (scenario.id !== spec.id) errors.push(`id: ${scenario.id}, asked for ${spec.id}`)
@@ -59,7 +59,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     start: { type: 'string', default: '2026-03-02T09:00:00Z' }, model: { type: 'string' },
   } })
   if (!values.id || !values.set || !values.events || !values.domain || !values.model) {
-    console.error('uso: node eval/draft.mjs --id <id> --set dev|test|e3 --events <n> --domain "<dominio>" --model <id>')
+    console.error('uso: node eval/draft.mjs --id <id> --set dev|pilot|test|e3 --events <n> --domain "<dominio>" --model <id>')
     process.exit(2)
   }
   const spec = { id: values.id, set: values.set, start: values.start, events: Number(values.events), domain: values.domain }
