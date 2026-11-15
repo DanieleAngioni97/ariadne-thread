@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ariadne">
+  <title>ariadne</title>
+  <style>.t{stroke:#c0313b}.d{fill:#c0313b}@media (prefers-color-scheme:dark){.t{stroke:#ec5a63}.d{fill:#ec5a63}}</style>
+  <path class="t" d="M12 14 H40 a8 8 0 0 1 0 16 H37 c-4 0 -7 -3 -7 -7 a4.5 4.5 0 0 1 9 0 c0 4 -3 7 -7 7 H24 a8 8 0 0 0 0 16 H44" fill="none" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle class="d" cx="12" cy="14" r="4"/>
+  <circle class="d" cx="48" cy="46" r="8" opacity="0.2"/>
+  <circle class="d" cx="48" cy="46" r="4.5"/>
+</svg>
