@@ -153,3 +153,4 @@
 {"at":"2026-11-15T12:08Z","id":"m4.4.13","op":"fill","text":"prova per m4.4.13: commit f045280","proof":[{"type":"commit","ref":"f045280"}]}
 {"at":"2026-11-15T12:08Z","id":"m4.4.13","op":"fill","text":"prova per m4.4.13: commit 48ae9c4","proof":[{"type":"commit","ref":"48ae9c4"}]}
 {"at":"2026-11-15T12:25Z","id":"m4.4.13","op":"close","text":"chiuso m4.4.13 Scheda di stato a costo pari a prima: scheda di stato: ariadne -10% in costo su prima (era +21%), correttezza 0,96 contro 0,94","proof":[{"type":"commit","ref":"a586bed"}]}
+{"at":"2026-11-15T12:29Z","id":"m4.4.5","op":"fill","text":"prova per m4.4.5: commit d63ece9","proof":[{"type":"commit","ref":"d63ece9"}]}

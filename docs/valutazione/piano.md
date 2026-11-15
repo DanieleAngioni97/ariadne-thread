@@ -72,6 +72,34 @@ Dove resta aperta. Il primo pilota resta in `eval/runs/pilot-haiku/` come regist
   passo aperto nel riassunto, e l'autonomia (fermate per chiedere, handoff e aggiornamenti chiesti dall'utente,
   filo rimasto indietro) come risultato descrittivo e limite: il piano non la misura come ipotesi.
 
+*Dopo il settimo pilota (2026-11-15). Decisioni dell'utente: la parità di correttezza va bene, il costo in
+più no; il resto della valutazione è delegato, push escluso.*
+- Prodotto: la scheda di stato all'avvio e il riassunto solo quando cambia (specifica § Riassunto per
+  l'agente). Pilota 7: costo −10% su *prima*, dove il pilota 6 dava +21% (`eval/pilot.md`).
+- Generatore: dopo un rinvio il lavoro va sul nodo che lo riprende (`66c6b11`). Nei piloti 1–6 il grafo di
+  quei passi era sbagliato a sfavore di *ariadne*.
+- **Ipotesi della versione snella** (sostituiscono H1a, H1b e H2 della § 6):
+  - **H1 (co-primaria, non inferiorità):** la differenza di quota giusta, *ariadne* − *prima*, sulle sei
+    categorie a domanda ha il limite inferiore dell'intervallo unilaterale al 97,5% sopra −10 punti.
+    Analisi: il GEE della § 6 (`bias_reduced`, t con scenari − 1 gradi di libertà).
+  - **H2 (co-primaria):** il costo normalizzato per prova differisce tra le condizioni, a due code.
+    Costo normalizzato (`eval/cost.mjs`): prezzi di listino, con le letture dalla cache della prima chiamata
+    pagate come scrittura, così l'ordine delle prove non conta. Statistica: per scenario, il log del rapporto
+    tra le medie delle due condizioni; Wilcoxon esatto con segno sui 12 rapporti. Si riporta la media
+    geometrica dei rapporti con intervallo bootstrap per scenario. Media e non mediana: la spesa sta nelle
+    prove lunghe (Continua, ricerche), che la mediana ignora. Sul pilota 7 la mediana dava −2%, la media −9%.
+  - Holm su {H1, H2}.
+  - *Secondarie, senza significatività:* pass^2, Continua (H3), token non in cache (la vecchia metrica di H2,
+    che pesava le letture dalla cache dieci volte il loro prezzo), costo fatturato.
+  - **Autonomia (descrittiva, richiesta dell'utente):** le fermate per chiedere su Continua (`asked`: nessun
+    file cambiato e risposta che finisce con una domanda), per condizione; da E4, le richieste di handoff o di
+    aggiornamento dello stato fatte dall'utente per sessione, prima e dopo ariadne; i commit senza `Thread:`.
+- **Potenza** (`eval/power.mjs` sul pilota 7, 4 scenari, α = 0,025): con 12 scenari × 2 ripetizioni, 0,93
+  sull'effetto stimato (−9%) e 0,45 se la variabilità tra scenari fosse al limite alto del suo intervallo
+  all'80%; non inferiorità 0,88. Con 16 scenari 0,98, 0,65 e 0,95, ma il costo supera il tetto: si resta a 12.
+- Soggetto: Sonnet 5.5; Opus su 2 scenari come controllo se resta quota.
+- Tetto di spesa a prezzi di listino per bozze, *prima*, E1 ed E2: 30 $ (stima 26 $).
+
 *Ripresa:* il runner salta le prove già registrate, così una prova interrotta dal limite d'uso si rifà nella
 finestra successiva invece di andare persa.
 
