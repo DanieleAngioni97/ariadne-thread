@@ -47,8 +47,14 @@ Il filo si aggiorna da solo, senza handoff:
   3500 caratteri con dove sei, cosa resta da fare del passo aperto, il prossimo passo e le decisioni
   sostituite. A ogni prompt successivo arriva un riassunto solo se lo stato è cambiato.
 
-Per la persona c'è un **viewer**: una pagina web locale, in sola lettura, che disegna il filo con stati,
-rami e il «perché» di ogni nodo al passaggio del mouse.
+Per la persona ci sono una **barra** sopra il prompt (il passo corrente, il prossimo, l'ultima cosa
+successa) e una **mappa** (il viewer): una pagina web locale, in sola lettura, con il grafo, la cronologia
+e un elenco da cercare; un clic su un nodo mostra il suo «perché», da cosa dipende e la prova.
+
+Quello che si decide in chat (un piano approvato, un'indicazione, un file salvato fuori dal repo) non passa
+dai commit: la skill chiede all'agente di registrarlo nello stesso turno, e un hook a fine turno
+(`ariadne check --hook`) lo ferma una volta se trova un «sì» o una risposta senza registrazione, un file
+esterno che nessun nodo cita o un commit senza `Thread:`.
 
 ## 3. Le ricerche alla base
 
@@ -200,7 +206,7 @@ La valutazione ha cambiato il prodotto prima di misurarlo:
 | Perché e prove | per ogni nodo, verificate | nel testo delle note, se qualcuno le scrive |
 | Decisioni sostituite e rinvii | nodi con il successore | righe nel LOG |
 | Da imparare | una CLI e la regola `Thread:` nei commit | niente |
-| Dipende da | l'agente che scrive `Thread:`; hook installati | l'utente che ricorda l'handoff |
+| Dipende da | l'agente che scrive `Thread:` e registra le decisioni prese in chat; hook installati | l'utente che ricorda l'handoff |
 | Ecosistema | solo Claude Code, un autore | qualunque agente |
 
 ## 9. Limiti
@@ -214,6 +220,11 @@ La valutazione ha cambiato il prodotto prima di misurarlo:
   skill. Nella pratica l'handoff si dimentica: il vantaggio logistico di ariadne non entra nei numeri.
 - **Autonomia.** Le richieste di handoff vengono da un filtro automatico sui prompt, di precisione non
   verificata; con ariadne ci sono solo 3 sessioni, troppe poche per un confronto.
+- **Le decisioni prese in chat.** Scrivendo il rapporto interno, le approvazioni e le indicazioni date in
+  chat non sono state registrate: prima di chiudere la sessione è servito un riassunto a mano, proprio
+  l'handoff che ariadne vuole evitare. Ora la skill chiede di registrarle subito (provata su 2 scenari
+  scritti da noi: la skill nuova li fa giusti, la vecchia no) e il controllo a fine turno segnala quelle
+  rimaste indietro. Il controllo riconosce il «sì» con regole semplici e non è ancora misurato.
 - **Confronto con i concorrenti leggero.** Da documentazione pubblica, senza giudici ciechi.
 - **Vista.** Gli id dei passi seguono l'ordine di creazione, non quello delle milestone: un agente che legge
   gli id e non i titoli può confondersi.
@@ -222,7 +233,8 @@ La valutazione ha cambiato il prodotto prima di misurarlo:
 
 1. **Prova con la persona:** 8 sessioni alternate a caso tra le due condizioni, con 4 compiti di comprensione ciascuna; tempo, facilità percepita (SEQ) e carico mentale.
 2. **Scribe:** trasformare la nota dell'agente in operazioni validate, per i casi che i commit non coprono.
-3. **Osservatore nel prodotto:** la valutazione lo adotta; va collegato agli hook per segnalare quando il filo resta indietro.
+3. **Osservatore nel prodotto:** la valutazione lo adotta. Oggi a fine turno gira un controllo a regole
+   (`src/check.mjs`); il passo successivo è misurarlo e affiancargli, o sostituirgli, il modello piccolo.
 4. **Uso da parte di altri:** il plugin si installa già con `/plugin install ariadne --marketplace DanieleAngioni97/ariadne-thread` e `/ariadne:init`; serve qualcuno che lo provi su un progetto vero.
 
 ## Fonti e materiali
