@@ -1,4 +1,4 @@
-// Interface words in the user's language: ?lang=xx, else the browser's, else English.
+// Interface words: ?lang=xx, else the project's `lang` in .ariadne/config.json, else English.
 // Node content is not translated here: the agent writes it in the language of the chat.
 // Italian follows specifica.md § Testi word for word.
 
@@ -177,6 +177,15 @@ const STRINGS = {
   },
 }
 
-const wanted = new URLSearchParams(globalThis.location?.search ?? '').get('lang') ?? globalThis.navigator?.language ?? 'en'
-export const lang = STRINGS[wanted.slice(0, 2)] ? wanted.slice(0, 2) : 'en'
+/** ?lang= first, then `lang` in the project's .ariadne/config.json, else English, like the command line. */
+export function pickLang(param, configured) {
+  const wanted = (param ?? configured ?? 'en').slice(0, 2)
+  return STRINGS[wanted] ? wanted : 'en'
+}
+
+// In the page the project's config comes from the viewer's server; under node there is none.
+const configured = globalThis.location
+  ? await fetch('/.ariadne/config.json').then(r => (r.ok ? r.json() : {}), () => ({})).then(c => c.lang, () => undefined)
+  : undefined
+export const lang = pickLang(new URLSearchParams(globalThis.location?.search ?? '').get('lang'), configured)
 export const t = STRINGS[lang]

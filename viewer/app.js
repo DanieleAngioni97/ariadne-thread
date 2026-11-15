@@ -64,6 +64,8 @@ const [files, ROOT] = await Promise.all([readFiles(), read('root')])
 load(files)
 
 document.documentElement.lang = lang
+// The summary from src/ speaks the interface's language.
+globalThis.ARIADNE_LANG = lang
 
 const childCount = id => data.nodes.filter(n => n.parent === id).length
 const allContainers = () => new Set(data.nodes.filter(n => hasChildren(data, n.id)).map(n => n.id))

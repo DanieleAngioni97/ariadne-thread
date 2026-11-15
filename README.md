@@ -50,8 +50,8 @@ machine-local `local.json` stay out of git.
 
 Early. The band uses Claude Code's mods API, which is in early access.
 
-ariadne speaks English. For Italian, put `{ "lang": "it" }` in `.ariadne/config.json`; the viewer
-follows your browser's language.
+ariadne speaks English. For Italian, put `{ "lang": "it" }` in `.ariadne/config.json`: the command
+line, the band and the viewer follow it.
 
 ## Develop
 

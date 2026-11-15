@@ -25,3 +25,12 @@ test('English unless ARIADNE_LANG asks for Italian; a missing Italian word falls
     else process.env.ARIADNE_LANG = before
   }
 })
+
+test('in the browser, where there is no process, the viewer sets the language on globalThis', async () => {
+  const { runInNewContext } = await import('node:vm')
+  const { readFileSync } = await import('node:fs')
+  const source = readFileSync(new URL('./i18n.mjs', import.meta.url), 'utf8').replace(/^export /gm, '')
+  const table = { en: { hello: 'hello' }, it: { hello: 'ciao' } }
+  assert.equal(runInNewContext(`${source}; words(table)('hello')`, { table }), 'hello')
+  assert.equal(runInNewContext(`${source}; globalThis.ARIADNE_LANG = 'it'; words(table)('hello')`, { table }), 'ciao')
+})
