@@ -1,0 +1,12 @@
+{
+  "index": 27,
+  "step": "Cache for parsed front matter",
+  "next": "Watch files with polling",
+  "turn": "The front matter cache is now wired in: `loadFrontMatter` in `src/cache/front/load.js` passes the content through `remember` from the memo module, so identical content is parsed with gray-matter only once and later calls reuse the stored `data`. The change is small. The function used to call `matter(content).data` directly, and it now hands that same call to the memo as the compute step. I checked it by reading the memo's `remember` signature to confirm the arguments and return value match what the loader expects. I also ran the loader twice on the same content and confirmed the second call returned the cached result without re-parsing. In the same commit I made one unplanned fix. While I was in the cache folder, I noticed that an import in a neighbouring file used a path that only resolved on case-insensitive filesystems, so I corrected its casing to match the real filename. Next I will start \"Watch files with polling\".",
+  "sidefix": {
+    "title": "Fix import path casing mismatch",
+    "what": "Corrected the casing of an import path in a neighbouring cache file so it matches the real filename and resolves on case-sensitive filesystems."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0077282
+}

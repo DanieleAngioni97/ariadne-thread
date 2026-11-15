@@ -1,0 +1,12 @@
+{
+  "index": 12,
+  "step": "Sliding window per IP",
+  "next": "Rate limit response headers",
+  "turn": "The sliding window per IP is done and committed as \"feat(window): roll window and enforce limit\". In `src/window/allow.go`, `Allow` now rolls the window when a full window size has passed since the start. It moves the current count into the previous one, resets the current count, and aligns the start to the window boundary. It then rejects the request if the weighted count from `Count` has reached `Limit`, and otherwise increments the current count and allows it. I haven't included any test output here, so I can't say how it was checked. The behaviour described is from reading the code, not from a test run. In the same commit I also made one small unplanned fix. While I was in the package I found that a trailing-whitespace and import-ordering slip in the window package didn't match the surrounding files, and I tidied it. It doesn't change behaviour. Next I'll start \"Rate limit response headers\".",
+  "sidefix": {
+    "title": "Tidy window package import ordering",
+    "what": "Fixed import ordering and stray trailing whitespace in the window package so it matches the surrounding files, with no behaviour change."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.007830199999999999
+}

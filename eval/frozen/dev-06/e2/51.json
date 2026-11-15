@@ -1,0 +1,12 @@
+{
+  "index": 51,
+  "step": "Outlier filter for CO2 levels",
+  "next": "Gap filling for missing readings",
+  "turn": "I finished the outlier filter step for CO2 levels by adding a test for the drift correction in tests/clean/test_co2.py. The test calls correct(900, nightly_min=470) and expects 850, which confirms that the drift estimated from the nightly minimum is subtracted from the raw reading. I haven't run the test suite in this message, so that one assertion is the only check I'm describing. In the same commit I also made a small unplanned fix. While I was in the test module I found an unused import left over from an earlier refactor and removed it, which doesn't change any behavior. Next I'll start on \"Gap filling for missing readings\".",
+  "sidefix": {
+    "title": "Remove unused import in CO2 tests",
+    "what": "Deleted a leftover unused import from the CO2 test module that an earlier refactor had left behind."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0067502000000000005
+}

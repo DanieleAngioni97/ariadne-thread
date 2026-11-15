@@ -1,0 +1,12 @@
+{
+  "index": 7,
+  "step": "Markdown rendering pipeline",
+  "next": "Sidebar navigation from folders",
+  "turn": "I added syntax highlighting for fenced code blocks in the Markdown pipeline. The new `src/markdown/highlight.js` uses highlight.js. It uses the language named on the fence when highlight.js recognizes it, and otherwise falls back to auto-detection. I haven't run the code or any tests in this session, so none of this has been checked by running it. All I did was read the module to confirm the fallback logic. In the same commit I made one small unplanned fix. I stopped the pipeline from treating an empty info string on a fence as a language name, so a bare fence now takes the auto-detect path instead of a failed lookup. Next I'll start on \"Sidebar navigation from folders\".",
+  "sidefix": {
+    "title": "Handle empty fence info strings",
+    "what": "Code fences with an empty info string are no longer treated as a language name, so they fall back to auto-detection."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0100508
+}

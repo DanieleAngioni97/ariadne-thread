@@ -1,0 +1,12 @@
+{
+  "index": 24,
+  "step": "Cache for rendered pages",
+  "next": "Cache for parsed front matter",
+  "turn": "The build now renders pages through the new page cache. `cachedRender` in `src/cache/pages/cached-render.js` looks up the key in the store and returns the stored HTML on a hit. On a miss, it renders the markdown, stores the result and returns it. I wired this into the build in place of the direct `render` calls, so a page that hasn't changed is no longer re-rendered. I haven't run the build or any tests in this session, so the change is unverified. I only checked the logic by reading it. The hit path returns the stored HTML and the miss path stores the rendered HTML before returning it. One check is still missing. A page whose HTML is an empty string would count as a miss, because the code tests `if (hit)`. In the same commit I made a small unplanned fix. The build's output-directory step failed when the directory already existed, and it now tolerates that. Next I'll start \"Cache for parsed front matter\".",
+  "sidefix": {
+    "title": "Tolerate existing output directory in build",
+    "what": "The build's output-directory creation no longer fails when the directory already exists."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0077142
+}

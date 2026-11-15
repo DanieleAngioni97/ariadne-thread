@@ -1,0 +1,12 @@
+{
+  "index": 21,
+  "step": "Device outbox store",
+  "next": "Push endpoint for inspection batches",
+  "turn": "The device outbox store is finished. The last commit, \"test(outbox): flush keeps insertion order\", adds a test in src/outbox/flush.test.ts. The test opens an in-memory outbox, enqueues records 'a' and 'b', and checks that `pending` returns them in that order. I wrote the test but haven't run it, so I can't yet say whether it passes. I'll run the suite before relying on it. The same commit also has one small fix that wasn't planned. While I was in the outbox code, I noticed that `openOutbox` didn't close its database handle when the setup query failed, so I made it close the handle before rethrowing the error. That fix is unrelated to the ordering behavior and has no test of its own. Next I'll start on \"Push endpoint for inspection batches\".",
+  "sidefix": {
+    "title": "Close outbox handle on setup failure",
+    "what": "openOutbox now closes its database handle before rethrowing when the setup query fails, so the handle no longer leaks."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0078081999999999995
+}

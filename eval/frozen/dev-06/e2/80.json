@@ -1,0 +1,12 @@
+{
+  "index": 80,
+  "step": "Vapour pressure deficit per zone",
+  "next": "Daily light integral per bed",
+  "turn": "I finished the vapour pressure deficit per zone step by adding a test that checks VPD at typical day conditions. It asserts that vpd_kpa(24.0, 70.0) comes out between 0.4 and 1.2 kPa, which is the normal range for a healthy greenhouse. By hand, saturation pressure at 24 °C is about 2.99 kPa, so at 70% humidity the deficit is about 0.9 kPa and sits inside that range. I haven't run the test suite in this session, so the check is that hand calculation and not a passing run. In the same commit I made one small unplanned fix. The rollup test module had an unused import, and I removed it so the file only imports what it uses. Next I will start \"Daily light integral per bed\".",
+  "sidefix": {
+    "title": "Remove unused import in rollup tests",
+    "what": "Removed an unused import from the rollup test module so it imports only what it uses."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0071542
+}

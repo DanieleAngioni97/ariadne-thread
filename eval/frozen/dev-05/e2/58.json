@@ -1,0 +1,12 @@
+{
+  "index": 58,
+  "step": "Background sync scheduler",
+  "next": "Last-write-wins conflict resolution",
+  "turn": "The background sync scheduler step is finished. The last commit adds a test in src/scheduler/run.test.ts. It checks that canSyncPhotos returns false when the network is cellular, even with a full battery and the device not charging. That confirms photo uploads are held back on cellular data. I wrote the test against the existing canSyncPhotos condition in conditions.js. I haven't run the suite in this message, so I can't report a pass result. In the same commit I also fixed a small unrelated problem I noticed: the scheduler's test file imported from './conditions' without the .js extension in one place, which would break under ESM resolution, so I made it match the other imports. Next I'll start on \"Last-write-wins conflict resolution\".",
+  "sidefix": {
+    "title": "Fix missing .js import extension",
+    "what": "Added the missing .js extension to a relative import in the scheduler code so it resolves under ESM like the other imports."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0072742
+}

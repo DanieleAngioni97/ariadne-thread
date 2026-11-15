@@ -1,0 +1,12 @@
+{
+  "index": 6,
+  "step": "Token bucket per API key",
+  "next": "Key extraction from requests",
+  "turn": "I finished the token bucket per API key by adding a test, TestBurstThenRefill, in src/bucket/bucket_test.go. It builds a bucket with a capacity of 2 and a refill rate of 1 token per second. It checks that two requests at the same instant are allowed and a third is rejected. It then checks that one second later a request is allowed again because a token has refilled. I wrote the test to match the Bucket behavior, but I haven't run it, so it hasn't passed yet. In the same commit I made one small unrelated fix: I corrected a misleading comment in the bucket package that said the refill rate was per millisecond when it is per second. Next I'll start on Key extraction from requests.",
+  "sidefix": {
+    "title": "Correct refill rate comment units",
+    "what": "Changed a bucket package comment that described the refill rate as per millisecond to say per second, matching the code."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0074442
+}

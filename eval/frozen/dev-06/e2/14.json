@@ -1,0 +1,12 @@
+{
+  "index": 14,
+  "step": "Reading schema with units",
+  "next": "Store readings in SQLite",
+  "turn": "I finished the \"Reading schema with units\" step by adding unit-conversion tests in tests/schema/test_units.py. One test checks that to_celsius(68, 'F') rounds to 20.0, and the other checks that a Celsius value of 20 passes through unchanged. I haven't run the tests in this session, so I can't tell you they pass. In the same commit I made a small unplanned fix. The README's setup section had a wrong path for the sample config file, and I corrected it. Next I'll start \"Store readings in SQLite\".",
+  "sidefix": {
+    "title": "Fix sample config path in README",
+    "what": "Corrected the sample config file path in the README setup section so it points to the file that actually exists."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.0065162
+}

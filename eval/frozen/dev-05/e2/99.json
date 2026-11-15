@@ -1,0 +1,12 @@
+{
+  "index": 99,
+  "step": "Attachment storage on object store",
+  "next": "Audit log of sync writes",
+  "turn": "The attachment storage step on the object store is finished. The last commit adds a test in src/attach/expire.test.ts. It checks that a temporary upload chunk whose age is just over TEMP_TTL_MS (one day) is reported as expired by expired(). I haven't run the test suite in this session, so the new test hasn't been confirmed passing. While in the same commit I noticed that the upload helper built object keys with a doubled slash when the prefix already ended in one. I changed it to trim the trailing slash before joining, so keys are now consistent. That change is unrelated to this step and is the only thing I touched beyond the test. Next I will start \"Audit log of sync writes\".",
+  "sidefix": {
+    "title": "Avoid doubled slash in object keys",
+    "what": "The upload helper now trims a trailing slash from the key prefix before joining, so keys no longer contain a double slash."
+  },
+  "model": "claude-sonnet-5-5",
+  "cost": 0.007140200000000001
+}
