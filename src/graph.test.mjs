@@ -94,6 +94,11 @@ test('next follows the plan before a deferred step that landed earlier in the mi
   assert.equal(makeGraph(nodes.slice(0, 3)).next('m3.2'), 'm3.1')
 })
 
+test('next from a container with work left inside is its first ready child, as after a pause', () => {
+  const nodes = [n('m1', { kind: 'milestone', status: 'active' }), n('p', { parent: 'm1', status: 'todo' }), n('q', { parent: 'm1', status: 'todo', after: ['p'] })]
+  assert.equal(makeGraph(nodes).next('m1'), 'p')
+})
+
 test('next climbs a level when the container has nothing ready', () => {
   const g = makeGraph(NODES.map(x => (x.id === 'f' ? { ...x, status: 'done' } : x.id === 'e' ? { ...x, status: 'active' } : x)))
   assert.equal(g.next('e'), 'm3')
