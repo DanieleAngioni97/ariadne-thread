@@ -397,3 +397,5 @@
 {"at":"2026-11-16T09:31Z","id":"m5.8","op":"start","text":"started m5.8 Test dell'hook di fine turno su Linux"}
 {"at":"2026-11-16T09:31Z","id":"m5.8","op":"close","text":"closed m5.8 Test dell'hook di fine turno su Linux: il test dell'hook di fine turno passa anche su Linux, suite verde con TMPDIR=/tmp","proof":[{"type":"commit","ref":"59d7ecb"}]}
 {"at":"2026-11-16T09:31Z","id":"m5.9","op":"start","text":"started m5.9 Salvare .ariadne/ dopo ogni passo chiuso"}
+{"at":"2026-11-16T09:33Z","id":"m5.9","op":"close","text":"closed m5.9 Salvare .ariadne/ dopo ogni passo chiuso: dopo ogni commit registrato l'hook chiede di committare subito .ariadne/ (chore(ariadne)), e la skill lo spiega","proof":[{"type":"commit","ref":"409199c"}]}
+{"at":"2026-11-16T09:33Z","id":"m5.10","op":"start","text":"started m5.10 Banda: segnalare il flag early access"}
