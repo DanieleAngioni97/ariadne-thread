@@ -400,6 +400,18 @@ try {
   usage()
 }
 const { positionals: [command, ...args], values } = parsed
+
+/** The folder with .ariadne/, from `start` up to the root of its git repository; null if none. */
+function projectRoot(start) {
+  for (let dir = start; ; dir = dirname(dir)) {
+    if (existsSync(join(dir, '.ariadne'))) return dir
+    if (existsSync(join(dir, '.git')) || dirname(dir) === dir) return null
+  }
+}
+// Run from a subfolder, every path (.ariadne/…, the viewer's root) is the project's.
+const root = projectRoot(process.cwd())
+if (root) process.chdir(root)
+
 // Installed once for every project, the hooks and the band speak only where `ariadne init` ran.
 const quiet = !existsSync('.ariadne') && (values.hook || command === 'band')
 
