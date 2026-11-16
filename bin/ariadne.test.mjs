@@ -210,6 +210,8 @@ test('the commit hook reports to the agent only after a git commit', () => {
   const out = JSON.parse(hook('git commit -m x').stdout)
   assert.equal(out.hookSpecificOutput.hookEventName, 'PostToolUse')
   assert.match(out.hookSpecificOutput.additionalContext, /prova per a: commit/)
+  // The graph changed after the commit: the agent saves it at once, so .ariadne/ in git is never behind.
+  assert.match(out.hookSpecificOutput.additionalContext, /git add \.ariadne && git commit -m "chore\(ariadne\): .*Thread: a/s)
 })
 
 test('the end-of-turn hook hands the agent back what the thread missed, once per turn', () => {

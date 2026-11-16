@@ -40,6 +40,10 @@ command it names, or say in one line why there is nothing to record.
   a step carries `Thread: <id> done: <outcome in one line>`. A hook records the commit as proof, closes
   the step and starts the next one. Git reads trailers only in the message's last paragraph, so put
   `Thread:` there, next to any `Co-Authored-By:`, with no blank line between them.
+- **`.ariadne/` goes into git with the work.** Stage it with every commit. Recording the proof changes
+  the graph after the commit, so the hook then asks you to save it: commit `.ariadne/` at once, on its
+  own (`chore(ariadne): …` with the `Thread:` the hook names). Otherwise teammates and the next session
+  read a thread behind the code. That commit touches only `.ariadne/`, so it is no proof and asks nothing more.
 - **Decided in chat, recorded at once,** in the same turn the user says it:
   - next steps the user agrees to: `ariadne plan <id> "<step>"… --ref "chat <date>: …"`, even in the
     middle of a step (they become its sub-steps). `plan` under the current step starts the first new
