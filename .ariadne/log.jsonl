@@ -391,3 +391,5 @@
 {"at":"2026-11-15T21:29Z","id":"m5.5","op":"start","text":"iniziato m5.5 Unire il branch in main"}
 {"at":"2026-11-15T21:30Z","id":"m5.5","op":"close","text":"chiuso m5.5 Unire il branch in main: main avanzato in fast-forward a 3855778 e pushato; test 277 verdi","proof":[{"type":"commit","ref":"3855778"}]}
 {"at":"2026-11-15T21:30Z","id":"m5.6","op":"start","text":"iniziato m5.6 Rendere pubblico il repo"}
+{"at":"2026-11-16T09:29Z","id":"m5","op":"plan","text":"plan for M5 Pubblicazione: ariadne open su Linux e Windows → Test dell'hook di fine turno su Linux → Salvare .ariadne/ dopo ogni passo chiuso → Banda: segnalare il flag early access → Comando dei test e descrizione del marketplace → Prova da utente nuovo"}
+{"at":"2026-11-16T09:29Z","id":"m5.7","op":"start","text":"started m5.7 ariadne open su Linux e Windows"}
