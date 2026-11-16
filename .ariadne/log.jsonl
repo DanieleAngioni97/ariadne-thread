@@ -406,3 +406,5 @@
 {"at":"2026-11-16T09:36Z","id":"m5.12","op":"start","text":"started m5.12 Prova da utente nuovo"}
 {"at":"2026-11-16T09:39Z","id":"m5.12","op":"close","text":"closed m5.12 Prova da utente nuovo: prova da utente nuovo su Linux verde: init segnala il flag, piano e commit con .ariadne/ committato da Claude e tree pulito, ripresa corretta, open usa xdg-open; versione 0.1.1","proof":[{"type":"commit","ref":"387b81f"}]}
 {"at":"2026-11-16T09:39Z","id":"m5.1","op":"start","text":"started m5.1 Segnalibri nella chat"}
+{"at":"2026-11-16T09:39Z","id":"m5.1","op":"pause","text":"back among the todo steps m5.1 Segnalibri nella chat"}
+{"at":"2026-11-16T09:39Z","id":"m5.6","op":"start","text":"started m5.6 Rendere pubblico il repo"}
