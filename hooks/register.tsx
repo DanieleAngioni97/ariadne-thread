@@ -4,7 +4,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
-import type { Action, Band, Row } from '../types'
+import type { Action, Band, Row, TextRow } from '../types'
 
 /** The CLI shipped in this plugin, run in the session's folder: the project the band is about. */
 const cli = ($: EngineInterface, args: readonly string[]) => $.process.run(['node', `${$.plugin.root}/bin/ariadne.mjs`, ...args])
@@ -94,7 +94,7 @@ export const register: Register = on => {
     // A rule in the theme's subtle color sets the band apart from the chat on any background. The
     // last outcome has no buttons, so it rides on the rule and the two take one row; a bare rule
     // shows only when the band would not scroll for it.
-    const outcome = current.rows.find(row => row.kind === 'outcome' && row.actions.length === 0)
+    const outcome = current.rows.find((row): row is TextRow => row.kind === 'outcome' && row.actions.length === 0)
     const rows = current.rows.filter(row => row !== outcome)
     const label = outcome ? `── ariadne · ${outcome.text} ` : '── ariadne '
     const fill = '─'.repeat(Math.max(0, e.props.bodyColumns - label.length))
