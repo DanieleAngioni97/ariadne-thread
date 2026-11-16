@@ -1,6 +1,7 @@
 {
   "name": "ariadne-thread",
   "owner": { "name": "DanieleAngioni97" },
+  "description": "ariadne: a thread through long work with Claude Code, so every session knows where you are, where you came from and what comes next",
   "plugins": [
     {
       "name": "ariadne",

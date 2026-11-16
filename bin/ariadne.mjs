@@ -18,7 +18,7 @@ import { behind } from '../src/check.mjs'
 import { parse } from '../src/graph.mjs'
 import { systemLang, words } from '../src/i18n.mjs'
 import { show, why } from '../src/inspect.mjs'
-import { openViewer } from '../src/open.mjs'
+import { browserCommand, openViewer } from '../src/open.mjs'
 import { keepOut, savePort, viewerPort } from '../src/port.mjs'
 import { brokenRefs } from '../src/refs.mjs'
 import { summarize } from '../src/summary.mjs'
@@ -53,10 +53,12 @@ const say = words({
   --by user: the action comes from you (move, undo, confirm and reject always do)`,
     noFile: id => `ariadne: ⚠ ${id} closes with no file or commit: where does the result live? ariadne fill ${id} --file <path>[#section]`,
     ready: 'ariadne: project ready in .ariadne/ · ask the agent to keep the thread: the graph starts with the first plan',
+    bandOff: 'ariadne: the band above the prompt needs hooks modules, in early access: add "env": { "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1" } to ~/.claude/settings.json and restart Claude Code. Everything else works without it.',
     noGraph: 'ariadne: no graph in .ariadne/ yet · the agent starts it with the first plan',
     invalid: (line, id, rule, message, more) => `⚠ invalid graph: line ${line}${id ? ` ${id}` : ''} [${rule}] ${message}${more}`,
     untracked: k => `⚠ ${k} commits without Thread: since the graph last changed`,
     notRecorded: (id, error) => `⚠ Thread: ${id} not recorded: ${error}`,
+    saveGraph: id => `save the graph now, in a commit of its own: git add .ariadne && git commit -m "chore(ariadne): <what changed>" with the trailer Thread: ${id}`,
     unknown: id => `ariadne: node ${id} not found`,
     noSummary: error => `ariadne: summary unavailable (${error})`,
     noCard: error => `ariadne: card unavailable (${error})`,
@@ -66,6 +68,7 @@ const say = words({
     taken: port => `port ${port} is taken, try --port`,
     notStarted: why => `ariadne: viewer not started (${why})`,
     opened: url => `ariadne: viewer at ${url}`,
+    openByHand: url => `ariadne: viewer at ${url}: no browser could be opened, open it by hand`,
   },
   it: {
     usage: `uso: ariadne <comando>
@@ -80,10 +83,12 @@ const say = words({
   --by user: l'azione viene da te (move, undo, confirm e reject lo sono sempre)`,
     noFile: id => `ariadne: ⚠ ${id} si chiude senza file né commit: dove sta il risultato? ariadne fill ${id} --file <percorso>[#sezione]`,
     ready: "ariadne: progetto pronto in .ariadne/ · chiedi all'agente di tracciare il lavoro: il grafo nasce con il primo piano",
+    bandOff: 'ariadne: la banda sopra il prompt richiede gli hooks modules, in early access: aggiungi "env": { "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1" } a ~/.claude/settings.json e riavvia Claude Code. Tutto il resto funziona anche senza.',
     noGraph: "ariadne: nessun grafo in .ariadne/ · l'agente lo crea con il primo piano",
     invalid: (line, id, rule, message, more) => `⚠ grafo non valido: riga ${line}${id ? ` ${id}` : ''} [${rule}] ${message}${more}`,
     untracked: k => `⚠ ${k} commit senza Thread: dall'ultimo aggiornamento del grafo`,
     notRecorded: (id, error) => `⚠ Thread: ${id} non registrato: ${error}`,
+    saveGraph: id => `salva subito il grafo, in un commit a parte: git add .ariadne && git commit -m "chore(ariadne): <cosa è cambiato>" con il trailer Thread: ${id}`,
     unknown: id => `ariadne: nodo ${id} non trovato`,
     noSummary: error => `ariadne: riassunto non disponibile (${error})`,
     noCard: error => `ariadne: scheda non disponibile (${error})`,
@@ -93,6 +98,7 @@ const say = words({
     taken: port => `porta ${port} occupata, prova --port`,
     notStarted: why => `ariadne: viewer non avviato (${why})`,
     opened: url => `ariadne: viewer su ${url}`,
+    openByHand: url => `ariadne: viewer su ${url}: non si è aperto nessun browser, aprilo a mano`,
   },
 })
 
@@ -202,6 +208,8 @@ function init() {
   mkdirSync('.ariadne', { recursive: true })
   for (const name of ['STATE.md', 'local.json']) keepOut(process.cwd(), name)
   console.log(say('ready'))
+  // Claude Code loads the band only with this flag in its environment, which its Bash inherits.
+  if (process.env.CLAUDE_CODE_ENABLE_FUNCTION_HOOKS !== '1') console.log(say('bandOff'))
 }
 
 /** The card at the start of a session; with `hook`, the session remembers the summary it stands for. */
@@ -263,6 +271,9 @@ function sync(hook) {
   }
   if (lines.length === 0) return
   if (!hook) return console.log(lines.join('\n'))
+  // The proof is written after the commit, so .ariadne/ is left changed: the agent commits it at once.
+  const current = readThread(parse(readFileSync(GRAPH, 'utf8'))).current
+  if (current) lines.push(say('saveGraph', current))
   console.log(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: `ariadne:\n${lines.join('\n')}` } }))
 }
 
@@ -441,9 +452,14 @@ else if (command === 'open') {
   const probe = p => fetch(`http://127.0.0.1:${p}/root`).then(r => r.text(), () => null)
   // The viewer outlives this command: detached, like an `ariadne view` started by hand.
   const start = () => spawn(process.execPath, [fileURLToPath(import.meta.url), 'view', ...(fixed ? ['--port', values.port] : [])], { detached: true, stdio: 'ignore' }).unref()
-  const launch = url => spawnSync('open', [url])
+  let launched = true
+  const launch = url => {
+    const [cmd, cmdArgs] = browserCommand(process.platform, url)
+    const r = spawnSync(cmd, cmdArgs, { stdio: 'ignore' })
+    launched = !r.error && r.status === 0
+  }
   openViewer({ root, port, id: args[0], probe, start, launch, fixed })
-    .then(url => console.log(say('opened', url)))
+    .then(url => console.log(say(launched ? 'opened' : 'openByHand', url)))
     .catch(error => {
       console.error(`ariadne: ${error.message}`)
       process.exitCode = 1
