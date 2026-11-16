@@ -52,3 +52,8 @@ test('untracked skips merges, commits already recorded as proof, and commits fro
   ]
   assert.equal(untracked(commits, { since }), 1)
 })
+
+test('a commit in the same minute the thread began is from before it: the log keeps only minutes', () => {
+  assert.equal(untracked([{ sha: 'o', thread: [], at: '2026-11-16T14:30:40Z' }], { since: '2026-11-16T14:30Z' }), 0)
+  assert.equal(untracked([{ sha: 'n', thread: [], at: '2026-11-16T14:31:05Z' }], { since: '2026-11-16T14:30Z' }), 1)
+})

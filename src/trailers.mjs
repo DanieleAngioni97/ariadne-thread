@@ -28,9 +28,13 @@ export function opsFromCommits(commits, recorded) {
  * when the thread began (`at`, the committer date): history from before `ariadne init` is no one's debt.
  */
 export function untracked(commits, { recorded = new Set(), since } = {}) {
-  const start = since ? Date.parse(since) : NaN
-  const before = c => c.at && Date.parse(c.at) < start
-  const latest = commits.filter(c => !graphOnly(c) && !(c.merge && c.thread.length === 0) && !before(c))
+  const latest = commits.filter(c => !graphOnly(c) && !(c.merge && c.thread.length === 0))
   const k = latest.findIndex(c => c.thread.length > 0 || recorded.has(c.sha))
-  return k === -1 ? latest.length : k
+  if (k !== -1) return k
+  // No tracked commit yet, as right after init: the date tells history from the thread's own commits.
+  // The log keeps minutes, so a commit in the minute the thread began counts as before it.
+  const MINUTE = 60_000
+  const start = since ? Date.parse(since) : NaN
+  const before = c => c.at && Math.floor(Date.parse(c.at) / MINUTE) * MINUTE <= start
+  return latest.filter(c => !before(c)).length
 }
