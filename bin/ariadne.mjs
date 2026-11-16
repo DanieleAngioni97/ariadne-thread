@@ -15,6 +15,7 @@ import { apply } from '../src/apply.mjs'
 import { band } from '../src/band.mjs'
 import { card, view } from '../src/card.mjs'
 import { behind } from '../src/check.mjs'
+import { findConflicts, report } from '../src/doctor.mjs'
 import { parse } from '../src/graph.mjs'
 import { systemLang, words } from '../src/i18n.mjs'
 import { show, why } from '../src/inspect.mjs'
@@ -42,7 +43,7 @@ if (!process.env.ARIADNE_LANG) {
 const say = words({
   en: {
     usage: `usage: ariadne <command>
-  init · card [--hook] · summary [--hook] · show <id> · why <id> · log [n] · validate [file]
+  init · card [--hook] · summary [--hook] · show <id> · why <id> · log [n] · validate [file] · doctor
   plan <parent> "<step>"… [--what "<detail>"]… --ref "<approval>"
   start <id> · pause <id> · close <id> "<outcome>" (--commit sha | --file path | --message text)
   add <kind> "<title>" --what "…" [--under id] [--after a,b] [--why …] [--detail …] [--reentry id] [--id x] [--start | --done]
@@ -72,7 +73,7 @@ const say = words({
   },
   it: {
     usage: `uso: ariadne <comando>
-  init · card [--hook] · summary [--hook] · show <id> · why <id> · log [n] · validate [file]
+  init · card [--hook] · summary [--hook] · show <id> · why <id> · log [n] · validate [file] · doctor
   plan <parent> "<passo>"… [--what "<dettaglio>"]… --ref "<approvazione>"
   start <id> · pause <id> · close <id> "<esito>" (--commit sha | --file path | --message testo)
   add <kind> "<titolo>" --what "…" [--under id] [--after a,b] [--why …] [--detail …] [--reentry id] [--id x] [--start | --done]
@@ -454,6 +455,11 @@ else if (command === 'check') {
 else if (command === 'show' && args[0]) inspect(show, args[0])
 else if (command === 'why' && args[0]) inspect(why, args[0])
 else if (command === 'validate') check(args[0])
+else if (command === 'doctor') {
+  // Claude Code reads its configuration from CLAUDE_CONFIG_DIR when set; ~/.claude is read too.
+  const configDirs = [process.env.CLAUDE_CONFIG_DIR, join(homedir(), '.claude')].filter(Boolean)
+  console.log(report(findConflicts({ project: process.cwd(), configDirs, home: homedir() })))
+}
 else if (command === 'log') showLog(Number(args[0]) || undefined)
 else if (command === 'view') {
   const root = process.cwd()

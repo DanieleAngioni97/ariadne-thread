@@ -435,3 +435,18 @@ test('from a subfolder ariadne works on the project root, and never climbs out o
   git(inner, 'init', '-q')
   assert.equal(spawnSync(process.execPath, [CLI, 'summary', '--hook'], { cwd: inner, encoding: 'utf8', input: '{}' }).stdout, '')
 })
+
+test('doctor reads the Claude Code configuration of CLAUDE_CONFIG_DIR and ~/.claude, and exits 0', () => {
+  const home = mkdtempSync(join(tmpdir(), 'ariadne-'))
+  mkdirSync(join(home, 'profile', 'skills', 'handoff'), { recursive: true })
+  writeFileSync(join(home, 'profile', 'skills', 'handoff', 'SKILL.md'), 'Rewrite STATE.md.\n')
+  mkdirSync(join(home, '.claude'), { recursive: true })
+  writeFileSync(join(home, '.claude', 'CLAUDE.md'), 'Next lives in STATE.md.\n')
+  const dir = project({ graph: GOOD, thread: { current: 'b' } })
+  const env = { ...process.env, HOME: home, CLAUDE_CONFIG_DIR: join(home, 'profile') }
+  const r = spawnSync(process.execPath, [CLI, 'doctor'], { cwd: dir, encoding: 'utf8', env })
+  assert.equal(r.status, 0, r.stderr)
+  assert.match(r.stdout, /^ariadne doctor: 2 righe in 2 file/)
+  assert.match(r.stdout, /\n- ~\/profile\/skills\/handoff\/SKILL\.md:1 Rewrite STATE\.md\.\n/)
+  assert.match(r.stdout, /\n- ~\/\.claude\/CLAUDE\.md:1 Next lives in STATE\.md\.\n/)
+})
