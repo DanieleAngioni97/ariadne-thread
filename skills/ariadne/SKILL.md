@@ -11,7 +11,9 @@ when it changed. Your job is to record the work you already do, as you do it, wi
 command. Tracking must never slow the work down: one command at the moment something happens, no more.
 
 Every `ariadne add` prints the id it gave the new node: use that id, don't guess one.
-Write titles, `--what` and outcomes in the language the user speaks with you: the graph is theirs to read.
+Write titles, `--what` and outcomes in the language the project sets for its docs or notes in CLAUDE.md
+or AGENTS.md: the graph lives in git, and teammates read it like the rest of the repo. When the project
+sets none, use the language the user speaks with you: the graph is theirs to read.
 A title is a few words, in that same language, like a box label: the graph and the card
 show titles side by side, hovering a node shows its `--what`, and clicking it shows `--detail` and the
 proofs. Put the explanation in `--what`, never in the title; `ariadne` refuses titles over 80 characters.
