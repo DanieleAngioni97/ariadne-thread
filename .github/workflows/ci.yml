@@ -1,0 +1,65 @@
+# Keeps ariadne installable and working for a new user, on every change and every week
+# (Claude Code moves fast: the weekly run catches a new release that breaks the install).
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: tests · ${{ matrix.os }} · node ${{ matrix.node }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # macOS minutes cost ten times Linux ones on a private repo: pull requests run on Linux only.
+        os: ${{ github.event_name == 'pull_request' && fromJSON('["ubuntu-latest"]') || fromJSON('["ubuntu-latest", "macos-latest"]') }}
+        node: ['20', 'latest']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: CLI, hooks, viewer and evaluation tests
+        run: node --test src/*.test.mjs bin/*.test.mjs hooks/*.test.mjs scripts/ariadne/*.test.mjs viewer/*.test.mjs eval/*.test.mjs
+
+  install:
+    name: install from scratch · ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # macOS minutes cost ten times Linux ones on a private repo: pull requests run on Linux only.
+        os: ${{ github.event_name == 'pull_request' && fromJSON('["ubuntu-latest"]') || fromJSON('["ubuntu-latest", "macos-latest"]') }}
+    runs-on: ${{ matrix.os }}
+    env:
+      # An empty Claude Code configuration, as on a new user's machine; no account is needed.
+      CLAUDE_CONFIG_DIR: ${{ runner.temp }}/claude
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+      - name: Validate the plugin and its marketplace
+        run: claude plugin validate .
+      - name: Add the marketplace and install the plugin, as the README says
+        run: |
+          claude plugin marketplace add "$GITHUB_WORKSPACE"
+          claude plugin install ariadne@ariadne-thread
+          claude plugin details ariadne@ariadne-thread | tee details.txt
+          grep -q 'Skills (2)' details.txt
+          grep -q 'Hooks (4)' details.txt
+      - name: Run the first run and the CLI from the installed copy
+        run: |
+          cd "$CLAUDE_CONFIG_DIR"/plugins/cache/ariadne-thread/ariadne/*/
+          node --test hooks/*.test.mjs bin/*.test.mjs
+      - name: Band tests with hooks modules on
+        run: sh scripts/plugin-test.sh
+        env:
+          CLAUDE_CODE_ENABLE_FUNCTION_HOOKS: '1'
