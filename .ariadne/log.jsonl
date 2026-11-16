@@ -461,3 +461,8 @@
 {"at":"2026-11-16T16:05Z","id":"m6.11","op":"start","text":"started m6.11 Lancio da una sottocartella"}
 {"at":"2026-11-16T16:06Z","id":"m6.11","op":"close","text":"closed m6.11 Lancio da una sottocartella: da una sottocartella ariadne trova .ariadne/ risalendo fino alla root del repo git, senza uscirne","proof":[{"type":"commit","ref":"4043b8f"}]}
 {"at":"2026-11-16T16:06Z","id":"m6.10","op":"start","text":"started m6.10 Lingua del grafo"}
+{"at":"2026-11-16T16:08Z","id":"m6.10","op":"fill","text":"proof for m6.10: message chat 2026-11-16: vince la lingua che il repo dichiara in CLAUDE.md o AGENTS.md; altrimenti la lingua della chat","proof":[{"type":"message","ref":"chat 2026-11-16: vince la lingua che il repo dichiara in CLAUDE.md o AGENTS.md; altrimenti la lingua della chat"}]}
+{"at":"2026-11-16T16:08Z","id":"m6.6","op":"fill","text":"proof for m6.6: message chat 2026-11-16: dopo i tre difetti piccoli, versione 0.1.3 e PR subito","proof":[{"type":"message","ref":"chat 2026-11-16: dopo i tre difetti piccoli, versione 0.1.3 e PR subito"}]}
+{"at":"2026-11-16T16:08Z","id":"m6","op":"fill","text":"proof for m6: message chat 2026-11-16: dopo i tre difetti piccoli, versione 0.1.3 e PR subito","proof":[{"type":"message","ref":"chat 2026-11-16: dopo i tre difetti piccoli, versione 0.1.3 e PR subito"}]}
+{"at":"2026-11-16T16:09Z","id":"m6.10","op":"close","text":"closed m6.10 Lingua del grafo: la lingua del grafo è quella che il progetto dichiara in CLAUDE.md o AGENTS.md, altrimenti quella della chat","proof":[{"type":"commit","ref":"91403ce"}]}
+{"at":"2026-11-16T16:09Z","id":"m6.5","op":"start","text":"started m6.5 ariadne doctor"}
