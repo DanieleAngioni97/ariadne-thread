@@ -23,7 +23,7 @@ import { browserCommand, openViewer } from '../src/open.mjs'
 import { keepOut, savePort, viewerPort } from '../src/port.mjs'
 import { brokenRefs } from '../src/refs.mjs'
 import { summarize } from '../src/summary.mjs'
-import { serve } from '../src/serve.mjs'
+import { PACKAGE, serve } from '../src/serve.mjs'
 import { opsFromCommits, untracked } from '../src/trailers.mjs'
 import { validate } from '../src/validate.mjs'
 
@@ -491,7 +491,10 @@ else if (command === 'open') {
     const r = spawnSync(cmd, cmdArgs, { stdio: 'ignore' })
     launched = !r.error && r.status === 0
   }
-  openViewer({ root, port, id: args[0], probe, start, launch, fixed })
+  // A viewer left from another installed copy (before `claude plugin update`) is closed, then replaced.
+  const packageOf = p => fetch(`http://127.0.0.1:${p}/package`).then(r => (r.ok ? r.text() : null), () => null)
+  const quit = p => fetch(`http://127.0.0.1:${p}/quit`, { method: 'POST', headers: { 'x-ariadne-quit': '1' } }).then(() => {}, () => {})
+  openViewer({ root, port, id: args[0], probe, start, launch, fixed, own: PACKAGE, packageOf, quit })
     .then(url => console.log(say(launched ? 'opened' : 'openByHand', url)))
     .catch(error => {
       console.error(`ariadne: ${error.message}`)

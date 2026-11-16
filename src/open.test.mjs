@@ -63,3 +63,30 @@ test('the browser opens with the command of each system: open on macOS, start on
   assert.deepEqual(browserCommand('linux', url), ['xdg-open', [url]])
   assert.deepEqual(browserCommand('freebsd', url), ['xdg-open', [url]])
 })
+
+test('a viewer of this project run by another package, as after an update, is closed and started anew from this one', async () => {
+  const p = port([ROOT])
+  let running = '/cache/ariadne/0.1.2/'
+  let quits = 0
+  p.start = () => { p.calls.starts++; running = '/cache/ariadne/0.1.3/' }
+  await openViewer({
+    root: ROOT, port: () => 8790, wait: 0, ...p, start: p.start,
+    own: '/cache/ariadne/0.1.3/', packageOf: async () => running, quit: async () => { quits++ },
+  })
+  assert.equal(quits, 1)
+  assert.equal(p.calls.starts, 1)
+  assert.deepEqual(p.calls.opened, ['http://127.0.0.1:8790/'])
+})
+
+test('an older viewer that cannot close itself keeps its port: the new one starts on a port of its own', async () => {
+  const p = port([ROOT])
+  let current = 8790
+  p.start = () => { p.calls.starts++; current = 8811 }
+  const packages = { 8790: null, 8811: '/cache/ariadne/0.1.3/' }
+  await openViewer({
+    root: ROOT, port: () => current, wait: 0, ...p, start: p.start,
+    own: '/cache/ariadne/0.1.3/', packageOf: async at => packages[at], quit: async () => {},
+  })
+  assert.equal(p.calls.starts, 1)
+  assert.deepEqual(p.calls.opened, ['http://127.0.0.1:8811/'])
+})

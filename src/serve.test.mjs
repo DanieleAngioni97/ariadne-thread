@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { resolvePath, serve } from './serve.mjs'
+import { PACKAGE, resolvePath, serve } from './serve.mjs'
 
 test('the page and its scripts come from viewer/, the logic from src/, the data from .ariadne/', () => {
   assert.equal(resolvePath('/'), 'viewer/index.html')
@@ -36,4 +36,19 @@ test('in any project the page and the logic come from the package, the data from
   } finally {
     server.close()
   }
+})
+
+test('the viewer says which package runs it, and closes on a quit that only ariadne sends', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'ariadne-serve-'))
+  const server = serve(dir, 0)
+  await new Promise(resolve => server.on('listening', resolve))
+  const at = `http://127.0.0.1:${server.address().port}`
+  const closed = new Promise(resolve => server.on('close', resolve))
+  assert.equal(await fetch(`${at}/package`).then(r => r.text()), PACKAGE)
+  // A page from another site can send a plain POST, never this header without the server's consent.
+  assert.equal((await fetch(`${at}/quit`, { method: 'POST' })).status, 404)
+  assert.equal(server.listening, true)
+  assert.equal((await fetch(`${at}/quit`, { method: 'POST', headers: { 'x-ariadne-quit': '1' } })).status, 200)
+  await closed
+  assert.equal(server.listening, false)
 })

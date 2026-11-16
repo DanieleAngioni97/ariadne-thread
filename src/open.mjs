@@ -26,18 +26,31 @@ export function browserCommand(platform, url) {
  * on every try because a viewer started elsewhere may save another one; `probe(port)` answers what
  * /root says (null when nothing listens), `start()` launches the viewer, `launch(url)` opens the browser.
  * A port `fixed` by hand is never swapped: another server on it is an error.
+ * `own` is the package this command runs from; `packageOf(port)` what /package says (null before 0.1.3),
+ * `quit(port)` asks that viewer to close. A viewer of this project run by another package, as after
+ * `claude plugin update`, would serve the old code: it is closed and started anew from `own`.
  */
-export async function openViewer({ root, port, id, probe, start, launch, fixed = false, wait = 100, tries = 30 }) {
-  let answer = await probe(port())
+export async function openViewer({
+  root, port, id, probe, start, launch, fixed = false, wait = 100, tries = 30,
+  own, packageOf = async () => own, quit = async () => {},
+}) {
+  const ours = async () => {
+    const at = port()
+    return (await probe(at)) === root && (await packageOf(at)) === own
+  }
+  const answer = await probe(port())
   if (fixed && answer !== null && answer !== root) throw new Error(say('taken', port()))
-  if (answer !== root) {
-    // Nothing there, or another project's server: the viewer finds a port of its own.
+  const current = answer === root && (await packageOf(port())) === own
+  if (answer === root && !current) await quit(port())
+  if (!current) {
+    // Nothing there, another project's server or an old viewer that would not close: the viewer finds a port of its own.
     start()
-    for (let i = 0; i < tries && answer !== root; i++) {
+    let up = false
+    for (let i = 0; i < tries && !up; i++) {
       await new Promise(resolve => setTimeout(resolve, wait))
-      answer = await probe(port())
+      up = await ours()
     }
-    if (answer !== root) throw new Error(say('down', port()))
+    if (!up) throw new Error(say('down', port()))
   }
   const url = `http://127.0.0.1:${port()}/${id ? `?select=${encodeURIComponent(id)}` : ''}`
   launch(url)

@@ -13,7 +13,7 @@ const TYPES = {
 }
 const FOLDERS = ['src', '.ariadne']
 const FILE = /^[\w.-]+$/
-const PACKAGE = fileURLToPath(new URL('..', import.meta.url))
+export const PACKAGE = fileURLToPath(new URL('..', import.meta.url))
 
 /** The repo-relative file for a URL path, or null when it falls outside what the viewer may read. */
 export function resolvePath(url) {
@@ -31,10 +31,21 @@ export function resolvePath(url) {
   return null
 }
 
-/** Serves the viewer for the repo in `root` (its path at /root, for links to files); `no-store` so a reload always reads the graph as it is now. */
+/**
+ * Serves the viewer for the repo in `root` (its path at /root, for links to files); `no-store` so a reload always reads the graph as it is now.
+ * /package says which installed copy runs it, so `ariadne open` can replace a viewer left from an older version;
+ * POST /quit closes it, only with the x-ariadne-quit header, which a page from another site cannot add.
+ */
 export function serve(root, port) {
-  return createServer(async (req, res) => {
+  const server = createServer(async (req, res) => {
     if (req.url === '/root') return res.end(root)
+    if (req.url === '/package') return res.end(PACKAGE)
+    if (req.url === '/quit' && req.method === 'POST' && req.headers['x-ariadne-quit'] === '1') {
+      res.end('closing')
+      server.close()
+      server.closeAllConnections()
+      return
+    }
     const file = resolvePath(req.url)
     try {
       if (!file) throw new Error('outside')
@@ -45,5 +56,6 @@ export function serve(root, port) {
       res.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' })
       res.end('not found')
     }
-  }).listen(port, '127.0.0.1')
+  })
+  return server.listen(port, '127.0.0.1')
 }
