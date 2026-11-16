@@ -424,3 +424,16 @@
 {"at":"2026-11-16T15:41Z","id":"m6","op":"plan","text":"plan for Sostituire STATE.md e LOG.md in sicurezza: Lanciato da una sottocartella del progetto, ariadne risponde 'node not found': cercare .ariadne/ risalendo fino alla root del repo"}
 {"at":"2026-11-16T15:51Z","id":"","op":"confirm","text":"confirmed 1 changes"}
 {"at":"2026-11-16T15:51Z","id":"m5.6.2","op":"fill","text":"proof for m5.6.2: commit ea2c7bc","proof":[{"type":"commit","ref":"ea2c7bc"}]}
+{"at":"2026-11-16T15:52Z","id":"m6.8","op":"move","text":"moved m6.8 under m5 (your correction)"}
+{"at":"2026-11-16T15:52Z","id":"m6.8","op":"move","text":"moved m6.8 under m6 (your correction)"}
+{"at":"2026-11-16T15:52Z","id":"m6.11","op":"move","text":"moved m6.11 under m6 (your correction)"}
+{"at":"2026-11-16T15:52Z","id":"m6.10","op":"move","text":"moved m6.10 under m6 (your correction)"}
+{"at":"2026-11-16T15:52Z","id":"m6.5","op":"move","text":"moved m6.5 under m6 (your correction)"}
+{"at":"2026-11-16T15:52Z","id":"m6.3","op":"move","text":"moved m6.3 under m6 (your correction)"}
+{"at":"2026-11-16T15:52Z","id":"m6.1","op":"move","text":"moved m6.1 under m6 (your correction)"}
+{"at":"2026-11-16T15:52Z","id":"m6.4","op":"move","text":"moved m6.4 under m6 (your correction)"}
+{"at":"2026-11-16T15:52Z","id":"m6.7","op":"move","text":"moved m6.7 under m6 (your correction)"}
+{"at":"2026-11-16T15:52Z","id":"m6.6","op":"move","text":"moved m6.6 under m6 (your correction)"}
+{"at":"2026-11-16T15:52Z","id":"m6.9","op":"fill","text":"filled m6.9: title"}
+{"at":"2026-11-16T15:52Z","id":"m6.12","op":"add","text":"added step m6.12 Prova della migrazione su un repo di lavoro under m6, from m6.6"}
+{"at":"2026-11-16T15:52Z","id":"m6.8","op":"start","text":"started m6.8 Scheda dopo init: niente 'You are in: undefined' quando nessun nodo è attivo"}
