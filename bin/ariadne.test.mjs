@@ -60,6 +60,12 @@ test('init makes the project an ariadne project, says what comes next, and can r
   assert.match(run(dir, 'card', '--hook').stdout, /nessun grafo/)
 })
 
+test('init says how to turn the band on when Claude Code does not load hooks modules yet', () => {
+  const init = flag => spawnSync(process.execPath, [CLI, 'init'], { cwd: project(), encoding: 'utf8', env: { ...process.env, CLAUDE_CODE_ENABLE_FUNCTION_HOOKS: flag } })
+  assert.match(init('').stdout, /banda.*"env": \{ "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1" \}.*settings\.json/s)
+  assert.doesNotMatch(init('1').stdout, /CLAUDE_CODE_ENABLE_FUNCTION_HOOKS/)
+})
+
 test('bin/ariadne runs the CLI by name, as the plugin puts it on the PATH of Claude\'s Bash', () => {
   const dir = project()
   const r = spawnSync('ariadne', ['init'], { cwd: dir, encoding: 'utf8', env: { ...process.env, PATH: `${join(CLI, '..')}:${process.env.PATH}` } })

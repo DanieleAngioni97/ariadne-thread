@@ -26,6 +26,16 @@ Answer `y` to add the marketplace, pick a scope, then, in each project you want 
 
 That's all. The plugin stays silent in projects without `ariadne init`.
 
+**The band** above the prompt runs on Claude Code's hooks modules, still in early access and off by
+default. To turn them on, add this to `~/.claude/settings.json` and restart Claude Code:
+
+```json
+"env": { "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1" }
+```
+
+Without it, the state card, the summaries, the commit hook and the viewer work all the same;
+`/ariadne:init` reminds you when the flag is missing.
+
 ## Use it
 
 Work as usual. When you approve a plan, Claude records its steps; when it commits, the step's
@@ -89,7 +99,7 @@ and full results are in [`docs/valutazione/`](docs/valutazione/) (in Italian).
 
 ## Status
 
-Early. The band uses Claude Code's mods API, which is in early access.
+Early. The band uses Claude Code's mods API, which is in early access (see [Install](#install) to turn it on).
 
 ariadne speaks your language: English or Italian, from your system's locale (and your browser's, for
 the viewer); anything else falls back to English. To pin a language for a project, put

@@ -53,6 +53,7 @@ const say = words({
   --by user: the action comes from you (move, undo, confirm and reject always do)`,
     noFile: id => `ariadne: ⚠ ${id} closes with no file or commit: where does the result live? ariadne fill ${id} --file <path>[#section]`,
     ready: 'ariadne: project ready in .ariadne/ · ask the agent to keep the thread: the graph starts with the first plan',
+    bandOff: 'ariadne: the band above the prompt needs hooks modules, in early access: add "env": { "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1" } to ~/.claude/settings.json and restart Claude Code. Everything else works without it.',
     noGraph: 'ariadne: no graph in .ariadne/ yet · the agent starts it with the first plan',
     invalid: (line, id, rule, message, more) => `⚠ invalid graph: line ${line}${id ? ` ${id}` : ''} [${rule}] ${message}${more}`,
     untracked: k => `⚠ ${k} commits without Thread: since the graph last changed`,
@@ -82,6 +83,7 @@ const say = words({
   --by user: l'azione viene da te (move, undo, confirm e reject lo sono sempre)`,
     noFile: id => `ariadne: ⚠ ${id} si chiude senza file né commit: dove sta il risultato? ariadne fill ${id} --file <percorso>[#sezione]`,
     ready: "ariadne: progetto pronto in .ariadne/ · chiedi all'agente di tracciare il lavoro: il grafo nasce con il primo piano",
+    bandOff: 'ariadne: la banda sopra il prompt richiede gli hooks modules, in early access: aggiungi "env": { "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1" } a ~/.claude/settings.json e riavvia Claude Code. Tutto il resto funziona anche senza.',
     noGraph: "ariadne: nessun grafo in .ariadne/ · l'agente lo crea con il primo piano",
     invalid: (line, id, rule, message, more) => `⚠ grafo non valido: riga ${line}${id ? ` ${id}` : ''} [${rule}] ${message}${more}`,
     untracked: k => `⚠ ${k} commit senza Thread: dall'ultimo aggiornamento del grafo`,
@@ -206,6 +208,8 @@ function init() {
   mkdirSync('.ariadne', { recursive: true })
   for (const name of ['STATE.md', 'local.json']) keepOut(process.cwd(), name)
   console.log(say('ready'))
+  // Claude Code loads the band only with this flag in its environment, which its Bash inherits.
+  if (process.env.CLAUDE_CODE_ENABLE_FUNCTION_HOOKS !== '1') console.log(say('bandOff'))
 }
 
 /** The card at the start of a session; with `hook`, the session remembers the summary it stands for. */
