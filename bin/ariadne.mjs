@@ -57,6 +57,7 @@ const say = words({
     invalid: (line, id, rule, message, more) => `⚠ invalid graph: line ${line}${id ? ` ${id}` : ''} [${rule}] ${message}${more}`,
     untracked: k => `⚠ ${k} commits without Thread: since the graph last changed`,
     notRecorded: (id, error) => `⚠ Thread: ${id} not recorded: ${error}`,
+    saveGraph: id => `save the graph now, in a commit of its own: git add .ariadne && git commit -m "chore(ariadne): <what changed>" with the trailer Thread: ${id}`,
     unknown: id => `ariadne: node ${id} not found`,
     noSummary: error => `ariadne: summary unavailable (${error})`,
     noCard: error => `ariadne: card unavailable (${error})`,
@@ -85,6 +86,7 @@ const say = words({
     invalid: (line, id, rule, message, more) => `⚠ grafo non valido: riga ${line}${id ? ` ${id}` : ''} [${rule}] ${message}${more}`,
     untracked: k => `⚠ ${k} commit senza Thread: dall'ultimo aggiornamento del grafo`,
     notRecorded: (id, error) => `⚠ Thread: ${id} non registrato: ${error}`,
+    saveGraph: id => `salva subito il grafo, in un commit a parte: git add .ariadne && git commit -m "chore(ariadne): <cosa è cambiato>" con il trailer Thread: ${id}`,
     unknown: id => `ariadne: nodo ${id} non trovato`,
     noSummary: error => `ariadne: riassunto non disponibile (${error})`,
     noCard: error => `ariadne: scheda non disponibile (${error})`,
@@ -265,6 +267,9 @@ function sync(hook) {
   }
   if (lines.length === 0) return
   if (!hook) return console.log(lines.join('\n'))
+  // The proof is written after the commit, so .ariadne/ is left changed: the agent commits it at once.
+  const current = readThread(parse(readFileSync(GRAPH, 'utf8'))).current
+  if (current) lines.push(say('saveGraph', current))
   console.log(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PostToolUse', additionalContext: `ariadne:\n${lines.join('\n')}` } }))
 }
 
