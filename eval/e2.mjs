@@ -188,7 +188,10 @@ export function bootstrap(groups, value, { runs = 4000, seed = 1 } = {}) {
 
 /** Recall per type and overall, false alarms on F0, both with their intervals; the decision rule of § 7. */
 export function summarize(graded) {
-  const byScenario = Object.values(Object.groupBy(graded, g => g.scenario))
+  // Object.groupBy, by hand: it needs Node 21, and ariadne runs on Node 20.
+  const groups = Object.create(null)
+  for (const g of graded) (groups[g.scenario] ??= []).push(g)
+  const byScenario = Object.values(groups)
   const types = Object.fromEntries(['F1', 'F2', 'F3', 'F4'].map(f => [TYPES[['F1', 'F2', 'F3', 'F4'].indexOf(f)], graded.filter(g => g.found[f]).length / graded.length]))
   const found = gs => [gs.reduce((a, g) => a + Object.values(g.found).filter(Boolean).length, 0), gs.length * 4]
   const alarms = gs => [gs.filter(g => g.falseAlarm).length, gs.length]

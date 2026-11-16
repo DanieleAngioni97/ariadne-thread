@@ -5,7 +5,7 @@ import type { Band, WhereRow } from '../types'
 
 const BAND = {
   component: 'AbovePrompt',
-  props: { hasSurvey: false, isWorking: false, maxRows: 4, bodyColumns: 100, scroll: { offset: 0, bodyRows: 4 }, view: {} },
+  props: { hasSurvey: false, isCollapsed: false, isWorking: false, maxRows: 4, bodyColumns: 100, scroll: { offset: 0, bodyRows: 4 }, view: {} },
 } as const
 
 const where: WhereRow = { kind: 'where', before: 'M3 Implementazione › ', current: 'Banda nella mod', after: '', actions: [{ label: 'Apri il grafo', run: ['open'] }] }
@@ -129,8 +129,11 @@ describe('ariadne band', () => {
     const rule = await band.find({ type: 'Text', text: /^── ariadne · ↺ chiuso m3\.2 Viewer ─+$/ })
     expect(rule).toBeDefined()
     expect(rule?.text.length).toBe(BAND.props.bodyColumns)
-    // The band's column and one row each for where, the detour and the queue: none for the outcome.
-    expect(await band.findAll({ type: 'Box' })).toHaveLength(4)
+    // One row each for where, the detour and the queue: none for the outcome. Rows, not every Box:
+    // the engine wraps the band in a column of its own (2.1.325, for the collapse mark).
+    const rows = (await band.findAll({ type: 'Box' })).filter(box => box.props.flexDirection === 'row')
+    expect(rows).toHaveLength(3)
+    expect(rows.some(row => /chiuso m3\.2/.test(row.text))).toBe(false)
     await band.unmount()
   })
 

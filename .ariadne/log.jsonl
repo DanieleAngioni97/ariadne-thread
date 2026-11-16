@@ -408,3 +408,8 @@
 {"at":"2026-11-16T09:39Z","id":"m5.1","op":"start","text":"started m5.1 Segnalibri nella chat"}
 {"at":"2026-11-16T09:39Z","id":"m5.1","op":"pause","text":"back among the todo steps m5.1 Segnalibri nella chat"}
 {"at":"2026-11-16T09:39Z","id":"m5.6","op":"start","text":"started m5.6 Rendere pubblico il repo"}
+{"at":"2026-11-16T10:26Z","id":"m5.6","op":"plan","text":"plan for Rendere pubblico il repo: Test di primo uso dagli hook dichiarati → CI su Linux e macOS con installazione da zero"}
+{"at":"2026-11-16T10:26Z","id":"m5.6.1","op":"start","text":"started m5.6.1 Test di primo uso dagli hook dichiarati"}
+{"at":"2026-11-16T10:27Z","id":"m5.6.1","op":"close","text":"closed m5.6.1 Test di primo uso dagli hook dichiarati: test del primo uso dagli hook di hooks.json; fallisce sulla versione precedente alle correzioni, passa ora","proof":[{"type":"commit","ref":"731803c"}]}
+{"at":"2026-11-16T10:27Z","id":"m5.6.2","op":"start","text":"started m5.6.2 CI su Linux e macOS con installazione da zero"}
+{"at":"2026-11-16T10:53Z","id":"m5.6.2","op":"close","text":"closed m5.6.2 CI su Linux e macOS con installazione da zero: CI verde su Linux: test su Node 20 e latest, installazione da zero senza account, primo uso dalla copia installata, banda su Claude Code 2.1.325; corretti Node 20, eval legata a ~/.claude e banda 2.1.325; versione 0.1.2","proof":[{"type":"commit","ref":"5cadae8"}]}

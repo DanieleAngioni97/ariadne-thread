@@ -96,8 +96,8 @@ function ask(bin, prompt, cwd, model, extra, env) {
 const read = dir => Object.fromEntries(FILES.map(f => [f, existsSync(join(dir, f)) ? readFileSync(join(dir, f), 'utf8') : null]))
 
 /** Runs the handoffs and the fact-checks of one scenario and writes the files into `out`. */
-export function buildPrima(scenario, { model, checker, bin = 'claude', out, env = {} }) {
-  const skill = readFileSync(SKILL, 'utf8')
+export function buildPrima(scenario, { model, checker, bin = 'claude', out, env = {}, skillFile = SKILL }) {
+  const skill = readFileSync(skillFile, 'utf8')
   const events = scenario.events
   const points = events.flatMap((e, i) => (e.type === 'handoff' ? [i] : []))
   if (events.at(-1)?.type !== 'handoff') points.push(events.length)
