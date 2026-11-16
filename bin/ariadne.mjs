@@ -43,7 +43,7 @@ const say = words({
   en: {
     usage: `usage: ariadne <command>
   init · card [--hook] · summary [--hook] · show <id> · why <id> · log [n] · validate [file]
-  plan <parent> "<step>"… --ref "<approval>"
+  plan <parent> "<step>"… [--what "<detail>"]… --ref "<approval>"
   start <id> · pause <id> · close <id> "<outcome>" (--commit sha | --file path | --message text)
   add <kind> "<title>" --what "…" [--under id] [--after a,b] [--why …] [--detail …] [--reentry id] [--id x] [--start | --done]
   fill <id> [--what|--why|--detail|--title …] [--commit|--file|--message …]
@@ -73,7 +73,7 @@ const say = words({
   it: {
     usage: `uso: ariadne <comando>
   init · card [--hook] · summary [--hook] · show <id> · why <id> · log [n] · validate [file]
-  plan <parent> "<passo>"… --ref "<approvazione>"
+  plan <parent> "<passo>"… [--what "<dettaglio>"]… --ref "<approvazione>"
   start <id> · pause <id> · close <id> "<esito>" (--commit sha | --file path | --message testo)
   add <kind> "<titolo>" --what "…" [--under id] [--after a,b] [--why …] [--detail …] [--reentry id] [--id x] [--start | --done]
   fill <id> [--what|--why|--detail|--title …] [--commit|--file|--message …]
@@ -103,7 +103,7 @@ const say = words({
 })
 
 const FLAGS = {
-  ref: { type: 'string' }, what: { type: 'string' }, why: { type: 'string' }, detail: { type: 'string' },
+  ref: { type: 'string' }, what: { type: 'string', multiple: true }, why: { type: 'string' }, detail: { type: 'string' },
   title: { type: 'string' }, under: { type: 'string' }, after: { type: 'string' }, reentry: { type: 'string' },
   id: { type: 'string' }, start: { type: 'boolean' }, done: { type: 'boolean' }, all: { type: 'boolean' }, hook: { type: 'boolean' }, port: { type: 'string' }, review: { type: 'string' },
   by: { type: 'string' }, commit: { type: 'string', multiple: true }, file: { type: 'string', multiple: true },
@@ -352,14 +352,20 @@ const proofs = v => [
 function operation(command, args, v) {
   const [a, b] = args
   switch (command) {
-    case 'plan': return a && args.length > 1 ? { op: 'plan', parent: a, titles: args.slice(1), ref: v.ref } : null
+    // One --what per step, in order: the short title stays short and the detail goes in what.
+    case 'plan': {
+      const titles = args.slice(1)
+      const whats = v.what ?? []
+      if (!a || titles.length === 0 || whats.length > titles.length) return null
+      return { op: 'plan', parent: a, titles: titles.map((title, i) => (whats[i] ? { title, what: whats[i] } : title)), ref: v.ref }
+    }
     case 'start': return a ? { op: 'start', id: a } : null
     case 'pause': return a ? { op: 'pause', id: a } : null
     case 'close': return a ? { op: 'close', id: a, what: b, proof: proofs(v) } : null
-    case 'fill': return a ? { op: 'fill', id: a, what: v.what, why: v.why, detail: v.detail, title: v.title, proof: proofs(v) } : null
+    case 'fill': return a ? { op: 'fill', id: a, what: v.what?.at(-1), why: v.why, detail: v.detail, title: v.title, proof: proofs(v) } : null
     case 'add': {
       if (!a || !b) return null
-      const node = { kind: a, title: b, what: v.what, why: v.why, detail: v.detail, after: list(v.after), reentry: v.reentry, id: v.id, start: v.start, status: v.done ? 'done' : undefined }
+      const node = { kind: a, title: b, what: v.what?.at(-1), why: v.why, detail: v.detail, after: list(v.after), reentry: v.reentry, id: v.id, start: v.start, status: v.done ? 'done' : undefined }
       if (v.under) node.parent = v.under
       const p = proofs(v)
       if (p.length) node.proof = p

@@ -8,6 +8,8 @@ const PROOF_TYPES = ['commit', 'file', 'message']
 const AUTHORS = ['agent', 'user']
 const REFERENCES = ['parent', 'reentry', 'deferred_to', 'continues', 'replaced_by']
 const DATE = /^\d{4}-\d{2}-\d{2}/
+// A title is read in a graph box and in the card: a few words; the details go in what, shown on hover.
+export const TITLE_LIMIT = 80
 
 const isStructural = n => n.kind === 'milestone' || n.kind === 'detour' || n.status === 'deferred' || n.status === 'replaced'
 const isOpen = n => n.status === 'active' || n.status === 'todo'
@@ -42,6 +44,7 @@ export function validate(text) {
     if (!KINDS.includes(n.kind)) fail(n, 'kind', `kind must be one of ${KINDS.join(', ')}`)
     if (!STATUSES.includes(n.status)) fail(n, 'status', `status must be one of ${STATUSES.join(', ')}`)
     if (typeof n.what !== 'string' || n.what.trim() === '') fail(n, 'what', 'R5: say the decision or result')
+    if (typeof n.title === 'string' && n.title.length > TITLE_LIMIT) fail(n, 'title', `a few words, at most ${TITLE_LIMIT} characters: the details go in what`)
     if (!AUTHORS.includes(n.by)) fail(n, 'by', `R16: by must be one of ${AUTHORS.join(', ')}`)
     if (typeof n.at !== 'string' || !DATE.test(n.at)) fail(n, 'at', 'R16: at must be a date (YYYY-MM-DD…)')
 

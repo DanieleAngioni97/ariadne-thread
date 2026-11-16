@@ -86,3 +86,8 @@ test('R15: a replaced node points to its successor; a deferred one to the task t
   ])
   assert.deepEqual(rules(resumed), [])
 })
+
+test('a title longer than 80 characters is flagged: the details go in what', () => {
+  assert.deepEqual(rules(jsonl([node({ title: 'x'.repeat(81) })])), ['title'])
+  assert.deepEqual(rules(jsonl([node({ title: 'x'.repeat(80) })])), [])
+})
