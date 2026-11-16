@@ -109,8 +109,8 @@ the viewer); anything else falls back to English. To pin a language for a projec
 
 ```sh
 git clone https://github.com/DanieleAngioni97/ariadne-thread && cd ariadne-thread
-node --test src/ bin/ hooks/ scripts/ariadne/ viewer/ eval/*.test.mjs   # CLI, hooks and viewer
-scripts/plugin-test.sh                                                  # plugin validation and band tests
+node --test src/*.test.mjs bin/*.test.mjs hooks/*.test.mjs scripts/ariadne/*.test.mjs viewer/*.test.mjs eval/*.test.mjs   # CLI, hooks and viewer
+scripts/plugin-test.sh   # plugin validation and band tests
 ```
 
 To run your working copy as the plugin, add the folder as a marketplace (`/plugin marketplace add ./`)
