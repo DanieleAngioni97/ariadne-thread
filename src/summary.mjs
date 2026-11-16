@@ -8,6 +8,7 @@ import { showRef } from './refs.mjs'
 const say = words({
   en: {
     where: (path, status) => `You are in: ${path} (${status})`, lost: id => `You are in: ${id} (node not found in the graph)`,
+    idle: 'You are in: no step started (ariadne start <id>)',
     uncertain: 'uncertain', waiting: 'Returns waiting:', back: 'returns to', noWaiting: 'Returns waiting: none',
     next: 'Next', none: 'none in the plan', files: 'Useful files', more: 'To dig deeper: ariadne show <id> · ariadne why <id>',
     cut: (k, id) => `- (${k} cut to stay within the limit: ariadne why ${id})`, start: '- (start of the branch)',
@@ -15,6 +16,7 @@ const say = words({
   },
   it: {
     where: (path, status) => `Sei in: ${path} (${status})`, lost: id => `Sei in: ${id} (nodo non trovato nel grafo)`,
+    idle: 'Sei in: nessun passo avviato (ariadne start <id>)',
     uncertain: 'incerto', waiting: 'Rientri in sospeso:', back: 'rientra in', noWaiting: 'Rientri in sospeso: nessuno',
     next: 'Prossimo', none: 'nessuno nel piano', files: 'File utili', more: 'Per approfondire: ariadne show <id> · ariadne why <id>',
     cut: (k, id) => `- (${k} tagliate per stare nel limite: ariadne why ${id})`, start: '- (inizio del ramo)',
@@ -45,7 +47,7 @@ export function summarize(nodes, thread) {
   const current = g.get(thread.current)
   const where = current
     ? say('where', [...g.containers(current.id)].reverse().map(id => g.get(id).title).concat(current.title).join(' › '), current.status)
-    : say('lost', thread.current)
+    : thread.current ? say('lost', thread.current) : say('idle')
 
   const behind = current
     ? g.dependencies(current.id).map(g.get).filter(n => n.status === 'done').slice(0, MAX_DEPENDENCIES)
@@ -59,7 +61,7 @@ export function summarize(nodes, thread) {
 
   const files = current ? usefulFiles(g, current.id) : []
 
-  const nextId = current && g.next(current.id)
+  const nextId = current ? g.next(current.id) : thread.current ? null : g.first()
   const tail = [
     ...reentries,
     `${say('next')}: ${nextId ? `${nextId} ${g.get(nextId).title}` : say('none')}`,
