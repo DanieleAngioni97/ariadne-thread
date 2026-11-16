@@ -395,3 +395,5 @@
 {"at":"2026-11-16T09:29Z","id":"m5.7","op":"start","text":"started m5.7 ariadne open su Linux e Windows"}
 {"at":"2026-11-16T09:31Z","id":"m5.7","op":"close","text":"closed m5.7 ariadne open su Linux e Windows: ariadne open usa open, start o xdg-open e, se il browser non parte, dice di aprire l'indirizzo a mano","proof":[{"type":"commit","ref":"abd5371"}]}
 {"at":"2026-11-16T09:31Z","id":"m5.8","op":"start","text":"started m5.8 Test dell'hook di fine turno su Linux"}
+{"at":"2026-11-16T09:31Z","id":"m5.8","op":"close","text":"closed m5.8 Test dell'hook di fine turno su Linux: il test dell'hook di fine turno passa anche su Linux, suite verde con TMPDIR=/tmp","proof":[{"type":"commit","ref":"59d7ecb"}]}
+{"at":"2026-11-16T09:31Z","id":"m5.9","op":"start","text":"started m5.9 Salvare .ariadne/ dopo ogni passo chiuso"}
