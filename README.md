@@ -43,7 +43,7 @@ evidence is recorded and the thread moves on. Things you can say:
 
 | You say | Claude runs |
 | --- | --- |
-| "ok, go with that plan" | `ariadne plan <parent> "<step>"… --ref "chat <date>: …"` |
+| "ok, go with that plan" | `ariadne plan <parent> "<step>"… --what "<detail>"… --ref "chat <date>: …"` (short titles, one detail per step) |
 | "fix CI first" | `ariadne add detour "…" --start` (it returns where you were) |
 | "not that one yet, it comes later" | `ariadne pause <id>` (a step started too early goes back to todo) |
 | "move X under Y", "undo", "approve all" | `ariadne move X Y`, `ariadne undo`, `ariadne confirm --all` |

@@ -12,6 +12,9 @@ command. Tracking must never slow the work down: one command at the moment somet
 
 Every `ariadne add` prints the id it gave the new node: use that id, don't guess one.
 Write titles, `--what` and outcomes in the language the user speaks with you: the graph is theirs to read.
+A title is a few words, in that same language, like a box label: the graph and the card
+show titles side by side, hovering a node shows its `--what`, and clicking it shows `--detail` and the
+proofs. Put the explanation in `--what`, never in the title; `ariadne` refuses titles over 80 characters.
 Change `.ariadne/` only through `ariadne`: it validates every change and keeps the log, the generated
 `.ariadne/STATE.md` and the band in step. A hand edit can break the graph silently.
 
@@ -34,8 +37,9 @@ happened: record it now, and next time earlier. At the end of a turn a hook may 
 thread missed (an approval, a file outside the project, a commit without `Thread:`): record it with the
 command it names, or say in one line why there is nothing to record.
 
-- **A plan the user approved:** `ariadne plan <parent> "<step>" "<step>"… --ref "chat <date>: <what was approved>"`.
-  The `--ref` is the evidence that the user agreed; without an approval, don't plan.
+- **A plan the user approved:** `ariadne plan <parent> "<step>" "<step>"… --what "<detail of the first>"
+  --what "<detail of the second>"… --ref "chat <date>: <what was approved>"`. Each `--what` goes to the
+  step in the same position. The `--ref` is the evidence that the user agreed; without an approval, don't plan.
 - **Commits:** every commit message carries `Thread: <id>` for the node you work on; the last commit of
   a step carries `Thread: <id> done: <outcome in one line>`. A hook records the commit as proof, closes
   the step and starts the next one. Git reads trailers only in the message's last paragraph, so put

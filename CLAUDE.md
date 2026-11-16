@@ -18,7 +18,8 @@ a ogni prompt il riassunto, solo se è cambiato. Non frenare il lavoro per il gr
   per nodo, generata), poi `node bin/ariadne.mjs why <id>` solo sui nodi che servono.
 - **Commit:** ogni messaggio porta `Thread: <id>` del nodo su cui lavori; l'ultimo di un passo
   `Thread: <id> done: <esito in una riga>`. Un hook registra la prova e passa al passo successivo.
-- **Piano approvato:** `ariadne plan <parent> "<passo>"… --ref "chat <data>: <cosa hai approvato>"`.
+- **Piano approvato:** `ariadne plan <parent> "<passo>"… --what "<dettaglio>"… --ref "chat <data>: <cosa hai approvato>"`.
+  Titoli di poche parole (oltre 80 caratteri `ariadne` li rifiuta): la spiegazione va in `--what`, uno per passo, nello stesso ordine.
 - **Fuori piano** (deviazione, cosa temporanea, rinvio): `ariadne add detour "<titolo>" --what "…"
   --start` (rientra da solo dove eri; chiudila con `close`), `defer <id> <milestone>`,
   `replace <id> <successore>`, `pause <id>` (un passo avviato troppo presto torna da fare). Entrano subito; la persona le conferma quando vuole.
