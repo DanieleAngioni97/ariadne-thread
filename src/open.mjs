@@ -14,6 +14,13 @@ const say = words({
   },
 })
 
+/** The command that opens `url` in the default browser: `open` on macOS, `start` on Windows, `xdg-open` elsewhere. */
+export function browserCommand(platform, url) {
+  if (platform === 'darwin') return ['open', [url]]
+  if (platform === 'win32') return ['cmd', ['/c', 'start', '', url]]
+  return ['xdg-open', [url]]
+}
+
 /**
  * Opens the viewer of `root`, on node `id` when given. `port()` is the project's port, read again
  * on every try because a viewer started elsewhere may save another one; `probe(port)` answers what

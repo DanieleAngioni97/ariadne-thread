@@ -60,6 +60,12 @@ test('init makes the project an ariadne project, says what comes next, and can r
   assert.match(run(dir, 'card', '--hook').stdout, /nessun grafo/)
 })
 
+test('init says how to turn the band on when Claude Code does not load hooks modules yet', () => {
+  const init = flag => spawnSync(process.execPath, [CLI, 'init'], { cwd: project(), encoding: 'utf8', env: { ...process.env, CLAUDE_CODE_ENABLE_FUNCTION_HOOKS: flag } })
+  assert.match(init('').stdout, /banda.*"env": \{ "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1" \}.*settings\.json/s)
+  assert.doesNotMatch(init('1').stdout, /CLAUDE_CODE_ENABLE_FUNCTION_HOOKS/)
+})
+
 test('bin/ariadne runs the CLI by name, as the plugin puts it on the PATH of Claude\'s Bash', () => {
   const dir = project()
   const r = spawnSync('ariadne', ['init'], { cwd: dir, encoding: 'utf8', env: { ...process.env, PATH: `${join(CLI, '..')}:${process.env.PATH}` } })
@@ -210,6 +216,8 @@ test('the commit hook reports to the agent only after a git commit', () => {
   const out = JSON.parse(hook('git commit -m x').stdout)
   assert.equal(out.hookSpecificOutput.hookEventName, 'PostToolUse')
   assert.match(out.hookSpecificOutput.additionalContext, /prova per a: commit/)
+  // The graph changed after the commit: the agent saves it at once, so .ariadne/ in git is never behind.
+  assert.match(out.hookSpecificOutput.additionalContext, /git add \.ariadne && git commit -m "chore\(ariadne\): .*Thread: a/s)
 })
 
 test('the end-of-turn hook hands the agent back what the thread missed, once per turn', () => {
@@ -227,7 +235,8 @@ test('the end-of-turn hook hands the agent back what the thread missed, once per
   assert.match(out.reason, /^ariadne: .*ariadne plan/s)
   assert.equal(hook({ stop_hook_active: true }).stdout, '')
 
-  const outside = join(mkdtempSync(join(tmpdir(), 'ariadne-out-')), 'report.html')
+  // Outside the project and outside every temporary folder, which the check leaves out on purpose.
+  const outside = '/srv/ariadne-out/report.html'
   turn([{ type: 'user', message: { content: 'scrivi il rapporto' } }, write(outside), write(join(dir, 'in.md'))])
   assert.match(JSON.parse(hook().stdout).reason, new RegExp(`${outside}.*--file`))
   run(dir, 'fill', 'a', '--file', outside)
@@ -290,6 +299,20 @@ test('open on a port fixed by hand and held by another server says so, exits 1 a
   other.close()
   assert.equal(status, 1)
   assert.match(stderr, /occupata da un altro server/)
+})
+
+test('open with no browser to launch leaves the viewer up, exits 0 and says to open the address by hand', async () => {
+  const free = createServer().listen(0, '127.0.0.1')
+  await new Promise(resolve => free.on('listening', resolve))
+  const port = String(free.address().port)
+  free.close()
+  const dir = project({ graph: GOOD })
+  const viewer = spawn(process.execPath, [CLI, 'view', '--port', port], { cwd: dir })
+  await new Promise(resolve => viewer.stdout.once('data', resolve))
+  const r = spawnSync(process.execPath, [CLI, 'open', '--port', port], { cwd: dir, encoding: 'utf8', env: { ...process.env, PATH: '/nonexistent' } })
+  viewer.kill()
+  assert.equal(r.status, 0)
+  assert.match(r.stdout, new RegExp(`127\\.0\\.0\\.1:${port}/.*aprilo a mano`))
 })
 
 test('view on a project port held by another server takes a free one and saves it for band and open', async () => {
