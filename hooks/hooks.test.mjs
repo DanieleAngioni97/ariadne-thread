@@ -4,7 +4,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, readFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -43,4 +43,40 @@ test('in a project after ariadne init the session starts with the card', () => {
   const r = run(commands('SessionStart')[0], project)
   assert.equal(r.status, 0, r.stderr)
   assert.match(r.stdout, /nessun grafo/)
+})
+
+test('a first run, as a new user lives it: init, a plan, a commit that closes a step, the graph saved, a clean tree', () => {
+  const project = mkdtempSync(join(tmpdir(), 'ariadne-hooks-'))
+  // The agent runs `ariadne` by name, through the wrapper the plugin puts on the PATH of Claude's Bash.
+  const ariadne = (...args) => spawnSync(join(PLUGIN, 'bin', 'ariadne'), args, { cwd: project, encoding: 'utf8' })
+  const git = (...args) => spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', ...args], { cwd: project, encoding: 'utf8' })
+  const afterBash = command => run(commands('PostToolUse')[0], project, JSON.stringify({ tool_name: 'Bash', tool_input: { command } }))
+  try {
+    git('init', '-q')
+    git('commit', '-q', '--allow-empty', '-m', 'chore: start')
+    assert.equal(ariadne('init').status, 0)
+    assert.equal(ariadne('add', 'milestone', 'Calcolatrice', '--what', 'Le quattro operazioni', '--start').status, 0)
+    assert.equal(ariadne('plan', 'm1', 'Somma', 'Prodotto', '--ref', 'chat: piano approvato').status, 0)
+
+    writeFileSync(join(project, 'calc.py'), 'def add(a, b):\n    return a + b\n')
+    git('add', 'calc.py', '.ariadne')
+    git('commit', '-q', '-m', 'feat: add\n\nThread: m1.1 done: somma fatta')
+    const recorded = afterBash('git commit -m "feat: add"')
+    assert.equal(recorded.status, 0, recorded.stderr)
+    const told = JSON.parse(recorded.stdout).hookSpecificOutput.additionalContext
+    assert.match(told, /m1\.1/)
+    assert.match(told, /git add \.ariadne && git commit -m "chore\(ariadne\): .*Thread: m1\.2/s)
+    assert.match(git('status', '--porcelain').stdout, /^ M \.ariadne\//m)
+
+    git('add', '.ariadne')
+    git('commit', '-q', '-m', 'chore(ariadne): close the sum step\n\nThread: m1.2')
+    assert.equal(afterBash('git commit -m "chore(ariadne)"').stdout, '')
+    assert.equal(git('status', '--porcelain').stdout, '')
+
+    const card = run(commands('SessionStart')[0], project)
+    assert.equal(card.status, 0, card.stderr)
+    assert.match(card.stdout, /Prodotto \(active\)/)
+  } finally {
+    rmSync(project, { recursive: true, force: true })
+  }
 })

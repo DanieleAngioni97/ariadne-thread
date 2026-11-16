@@ -408,3 +408,5 @@
 {"at":"2026-11-16T09:39Z","id":"m5.1","op":"start","text":"started m5.1 Segnalibri nella chat"}
 {"at":"2026-11-16T09:39Z","id":"m5.1","op":"pause","text":"back among the todo steps m5.1 Segnalibri nella chat"}
 {"at":"2026-11-16T09:39Z","id":"m5.6","op":"start","text":"started m5.6 Rendere pubblico il repo"}
+{"at":"2026-11-16T10:26Z","id":"m5.6","op":"plan","text":"plan for Rendere pubblico il repo: Test di primo uso dagli hook dichiarati → CI su Linux e macOS con installazione da zero"}
+{"at":"2026-11-16T10:26Z","id":"m5.6.1","op":"start","text":"started m5.6.1 Test di primo uso dagli hook dichiarati"}
