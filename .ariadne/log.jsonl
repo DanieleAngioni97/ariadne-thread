@@ -459,3 +459,5 @@
 {"at":"2026-11-16T16:00Z","id":"m6.9","op":"start","text":"started m6.9 Conteggio dei commit senza Thread"}
 {"at":"2026-11-16T16:05Z","id":"m6.9","op":"close","text":"closed m6.9 Conteggio dei commit senza Thread: l'avviso ignora merge, commit già registrati come prova e commit precedenti all'inizio del filo","proof":[{"type":"commit","ref":"4cbd434"}]}
 {"at":"2026-11-16T16:05Z","id":"m6.11","op":"start","text":"started m6.11 Lancio da una sottocartella"}
+{"at":"2026-11-16T16:06Z","id":"m6.11","op":"close","text":"closed m6.11 Lancio da una sottocartella: da una sottocartella ariadne trova .ariadne/ risalendo fino alla root del repo git, senza uscirne","proof":[{"type":"commit","ref":"4043b8f"}]}
+{"at":"2026-11-16T16:06Z","id":"m6.10","op":"start","text":"started m6.10 Lingua del grafo"}
