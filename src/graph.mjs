@@ -86,5 +86,11 @@ export function makeGraph(nodes) {
     return null
   }
 
-  return { get, childrenOf, containers, dependencies, next }
+  /** With no step started yet, as after init and a first plan: the first ready todo step, in file order. */
+  function first() {
+    const ready = n => n.kind !== 'milestone' && n.status === 'todo' && (n.after ?? []).every(a => get(a)?.status === 'done')
+    return nodes.find(ready)?.id ?? null
+  }
+
+  return { get, childrenOf, containers, dependencies, next, first }
 }

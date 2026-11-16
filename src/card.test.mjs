@@ -78,3 +78,16 @@ test('a milestone shows the state of its steps: no one closes a milestone by han
   assert.match(text, /\n- M1 Research \(done\): /)
   assert.match(text, /\n- M3 Release \(todo\): /)
 })
+
+test('with no step started, as after init and a first plan, the card says so and points to the first ready step', () => {
+  const plan = [
+    n('m1', { kind: 'milestone', title: 'M1 Research', status: 'todo', what: 'Know the field.' }),
+    n('a', { parent: 'm1', status: 'todo' }),
+    n('b', { parent: 'm1', status: 'todo', after: ['a'] }),
+  ]
+  const text = card(plan, {}, new Map())
+  assert.doesNotMatch(text, /undefined/)
+  assert.match(text, /\nSei in: nessun passo avviato \(ariadne start <id>\)\n/)
+  assert.match(text, /\nProssimo: a Title a\n/)
+  assert.match(text, /\n## M1 Research \(todo\): Know the field\.\n- a \[todo\] Title a: a result\.\n/)
+})

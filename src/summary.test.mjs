@@ -100,3 +100,15 @@ test('a useful file with a section shows the section, so the agent opens the rig
   const nodes = NODES.map(x => (x.id === 'd' ? { ...x, proof: [{ type: 'file', ref: 'docs/implementazione.md#m3.9' }] } : x))
   assert.match(summarize(nodes, { current: 'd' }), /\nFile utili: docs\/implementazione\.md § m3\.9\n/)
 })
+
+test('with no step started, the summary says so and points to the first ready step', () => {
+  const plan = [
+    n('m1', { kind: 'milestone', title: 'M1 Research', status: 'todo' }),
+    n('a', { parent: 'm1', status: 'todo' }),
+    n('b', { parent: 'm1', status: 'todo', after: ['a'] }),
+  ]
+  const text = summarize(plan, {})
+  assert.doesNotMatch(text, /undefined/)
+  assert.match(text, /^Sei in: nessun passo avviato \(ariadne start <id>\)\n/)
+  assert.match(text, /\nProssimo: a Title a\n/)
+})

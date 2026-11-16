@@ -9,7 +9,7 @@ import { showRef } from './refs.mjs'
 const say = words({
   en: {
     notFound: '(not found)', where: (path, status) => `You are in: ${path} (${status})`,
-    lost: id => `You are in: ${id} (node not found in the graph)`, left: what => `Left to do: ${what ?? '(not written)'}`,
+    lost: id => `You are in: ${id} (node not found in the graph)`, idle: 'You are in: no step started (ariadne start <id>)', left: what => `Left to do: ${what ?? '(not written)'}`,
     next: 'Next', none: 'none in the plan', waiting: 'Returns waiting', back: 'returns to', noWaiting: 'Returns waiting: none',
     because: 'why', loose: '## Outside the milestones', replacedBy: 'replaced by', deferredTo: 'deferred to',
     changed: '## Replaced decisions and deferrals', others: '## Other milestones',
@@ -19,7 +19,7 @@ const say = words({
   },
   it: {
     notFound: '(non trovato)', where: (path, status) => `Sei in: ${path} (${status})`,
-    lost: id => `Sei in: ${id} (nodo non trovato nel grafo)`, left: what => `Resta da fare: ${what ?? '(non scritto)'}`,
+    lost: id => `Sei in: ${id} (nodo non trovato nel grafo)`, idle: 'Sei in: nessun passo avviato (ariadne start <id>)', left: what => `Resta da fare: ${what ?? '(non scritto)'}`,
     next: 'Prossimo', none: 'nessuno nel piano', waiting: 'Rientri in sospeso', back: 'rientra in', noWaiting: 'Rientri in sospeso: nessuno',
     because: 'perché', loose: '## Fuori dalle milestone', replacedBy: 'sostituito da', deferredTo: 'rinviato a',
     changed: '## Decisioni sostituite e rinvii', others: '## Altre milestone',
@@ -50,8 +50,8 @@ export function render(nodes, thread, files = new Map(), { full = false, brief =
         say('where', [...g.containers(current.id)].reverse().map(id => g.get(id).title).concat(current.title).join(' › '), current.status),
         say('left', current.detail ?? current.what),
       ]
-    : [say('lost', thread.current)]
-  const nextId = current && g.next(current.id)
+    : [thread.current ? say('lost', thread.current) : say('idle')]
+  const nextId = current ? g.next(current.id) : thread.current ? null : g.first()
   const open = nodes.filter(n => n.kind === 'detour' && (n.status === 'active' || n.status === 'todo') && n.reentry)
   head.push(`${say('next')}: ${nextId ? titled(nextId) : say('none')}`)
   head.push(open.length ? `${say('waiting')}: ${open.map(n => `${n.title} → ${say('back')} ${n.reentry}`).join(' · ')}` : say('noWaiting'))
@@ -75,7 +75,7 @@ export function render(nodes, thread, files = new Map(), { full = false, brief =
     return m.status
   }
   const section = m => [`## ${m.title} (${state(m)})${m.what ? `: ${m.what}` : ''}`, ...inside(m).map(line)]
-  const here = current && milestoneOf(current.id)
+  const here = current ? milestoneOf(current.id) : nextId && milestoneOf(nextId)
   const blocks = [head]
   if (full) {
     blocks.push(...milestones.map(section))
