@@ -22,9 +22,15 @@ export function opsFromCommits(commits, recorded) {
   return ops
 }
 
-/** How many of the latest commits carry no `Thread:` line. */
-export function untracked(commits) {
-  const latest = commits.filter(c => !graphOnly(c))
-  const k = latest.findIndex(c => c.thread.length > 0)
+/**
+ * How many of the latest commits carry no `Thread:` line. Not counted: a merge without one (it brings
+ * commits that have their own), a commit already recorded as proof, and a commit older than `since`,
+ * when the thread began (`at`, the committer date): history from before `ariadne init` is no one's debt.
+ */
+export function untracked(commits, { recorded = new Set(), since } = {}) {
+  const start = since ? Date.parse(since) : NaN
+  const before = c => c.at && Date.parse(c.at) < start
+  const latest = commits.filter(c => !graphOnly(c) && !(c.merge && c.thread.length === 0) && !before(c))
+  const k = latest.findIndex(c => c.thread.length > 0 || recorded.has(c.sha))
   return k === -1 ? latest.length : k
 }
