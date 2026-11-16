@@ -457,3 +457,5 @@
 {"at":"2026-11-16T15:59Z","id":"m6.13","op":"fill","text":"proof for m6.13: commit ef4c73b","proof":[{"type":"commit","ref":"ef4c73b"}]}
 {"at":"2026-11-16T16:00Z","id":"m6.13","op":"close","text":"closed m6.13 Titoli brevi: titoli di poche parole: plan con un --what per passo, titoli oltre 80 caratteri rifiutati, validate li segnala, skill e README lo dicono","proof":[{"type":"commit","ref":"bdcec75"}]}
 {"at":"2026-11-16T16:00Z","id":"m6.9","op":"start","text":"started m6.9 Conteggio dei commit senza Thread"}
+{"at":"2026-11-16T16:05Z","id":"m6.9","op":"close","text":"closed m6.9 Conteggio dei commit senza Thread: l'avviso ignora merge, commit già registrati come prova e commit precedenti all'inizio del filo","proof":[{"type":"commit","ref":"4cbd434"}]}
+{"at":"2026-11-16T16:05Z","id":"m6.11","op":"start","text":"started m6.11 Lancio da una sottocartella"}
