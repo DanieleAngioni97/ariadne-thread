@@ -276,3 +276,20 @@ test('a milestone without a plan and a list without points say why they are empt
   ], null)
   assert.deepEqual(['m', 'l', 'n', 's'].map(id => emptyNote(view, id)), ['plan', 'list', null, null])
 })
+
+test('the window follows the plan, not the file: after a move the steps around the current one are its neighbours in the plan', () => {
+  // Written s1…s6, then reordered by `after`: the plan is s1 → s6 → s5 → s2 → s3 → s4, current s5.
+  const step = (id, after) => ({ id, title: id, status: 'todo', parent: 'm', ...(after ? { after: [after] } : {}) })
+  const moved = {
+    current: 's5',
+    nodes: [
+      { id: 'm', title: 'M', status: 'active', kind: 'milestone' },
+      step('s1'), step('s2', 's5'), step('s3', 's2'), step('s4', 's3'),
+      { ...step('s5', 's6'), status: 'active' }, step('s6', 's1'),
+    ],
+  }
+  const ids = visibleNodes(moved, new Set(['m']), null, { limit: 3 }).map(n => n.id)
+  assert.deepEqual(ids, ['m', 'more-above:m', 's6', 's5', 's2', 'more-below:m'])
+  const edges = visibleEdges(moved, new Set(['m']), null, { limit: 3 }).map(e => `${e.source}->${e.target}`).sort()
+  assert.deepEqual(edges, ['more-above:m->s6', 's2->more-below:m', 's5->s2', 's6->s5'])
+})

@@ -79,9 +79,26 @@ function anchorOf(data, live) {
  * `above` and `below` the window, `replaced` (hidden until asked, R15, then in `tail` at the end). `revealed` holds the levels
  * opened in full (their id, '' for the top) and those showing their replaced steps (`replaced:<id>`).
  */
+/**
+ * Siblings in the order of the plan: each one after the siblings it comes `after`, file order between
+ * the rest. `move` changes `after` but not the file, so the file alone would mix far-apart steps.
+ */
+function planOrder(kids) {
+  const ids = new Set(kids.map(n => n.id))
+  const placed = new Set()
+  const out = []
+  while (out.length < kids.length) {
+    const left = kids.filter(n => !placed.has(n.id))
+    const next = left.find(n => (n.after ?? []).every(a => !ids.has(a) || placed.has(a))) ?? left[0]
+    placed.add(next.id)
+    out.push(next)
+  }
+  return out
+}
+
 function levelWindow(data, level, { limit = Infinity, revealed = new Set() } = {}) {
   const key = level ?? ''
-  const kids = childrenOf(data, level)
+  const kids = planOrder(childrenOf(data, level))
   const live = kids.filter(n => n.status !== 'replaced')
   const gone = kids.filter(n => n.status === 'replaced')
   const withReplaced = revealed.has(`replaced:${key}`)
