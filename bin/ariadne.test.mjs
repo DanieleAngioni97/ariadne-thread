@@ -394,3 +394,14 @@ test('in a session the prompt hook speaks only when the summary changed since th
   assert.equal(hook('summary'), '')
   assert.match(spawnSync(process.execPath, [CLI, 'summary', '--hook'], { cwd: dir, encoding: 'utf8', input: JSON.stringify({ session_id: `${session}-other` }) }).stdout, /^Sei in:/)
 })
+
+test('plan takes one --what per step, in order, for the details behind each short title', () => {
+  const dir = project()
+  assert.equal(run(dir, 'init').status, 0)
+  assert.equal(run(dir, 'add', 'milestone', 'M1', '--what', 'Goal').status, 0)
+  const plan = run(dir, 'plan', 'm1', 'Doctor', 'Ship', '--what', 'Lists the conflicting sources', '--what', 'Release it', '--ref', 'chat: approved')
+  assert.equal(plan.status, 0, plan.stderr)
+  const steps = readFileSync(join(dir, '.ariadne', 'graph.jsonl'), 'utf8').trim().split('\n').map(l => JSON.parse(l)).filter(x => x.parent === 'm1')
+  assert.deepEqual(steps.map(x => [x.title, x.what]), [['Doctor', 'Lists the conflicting sources'], ['Ship', 'Release it']])
+  assert.notEqual(run(dir, 'plan', 'm1', 'One', '--what', 'a', '--what', 'b', '--ref', 'chat: ok').status, 0)
+})

@@ -4,7 +4,7 @@
 
 import { makeGraph } from './graph.mjs'
 import { words } from './i18n.mjs'
-import { validate } from './validate.mjs'
+import { TITLE_LIMIT, validate } from './validate.mjs'
 
 const isStructural = n => n.kind === 'milestone' || n.kind === 'detour' || n.status === 'deferred' || n.status === 'replaced'
 const say = words({
@@ -16,6 +16,7 @@ const say = words({
     noRef: 'plan: the reference to the approved plan is missing (ref)',
     noProof: id => `close ${id}: R3, a proof is needed (commit, file or message)`,
     milestoneWhat: id => `fill ${id}: a milestone's what is yours to change`,
+    longTitle: k => `title too long (${k} characters, max ${TITLE_LIMIT}): a few words, the details go in --what`,
     noRelink: from => `relink: no proof points to ${from}`,
     nothingToUndo: 'No correction to undo.',
     staleUndo: id => `I can't undo it: ${id} changed afterwards. Tell me where to move it.`,
@@ -48,6 +49,7 @@ const say = words({
     noRef: 'plan: serve il riferimento al piano approvato (ref)',
     noProof: id => `close ${id}: R3, serve una prova (commit, file o messaggio)`,
     milestoneWhat: id => `fill ${id}: il cosa di una milestone lo cambi tu`,
+    longTitle: k => `titolo troppo lungo (${k} caratteri, massimo ${TITLE_LIMIT}): poche parole, i dettagli vanno in --what`,
     noRelink: from => `relink: nessuna prova punta a ${from}`,
     nothingToUndo: 'Nessuna correzione da annullare.',
     staleUndo: id => `Non posso annullarla: ${id} è cambiato dopo. Dimmi dove spostarlo.`,
@@ -118,7 +120,12 @@ export function apply({ text, thread, ops, at, by = 'agent' }) {
     log(n.id, 'start', say('started', reopened, n.id, n.title))
   }
 
+  const shortTitle = title => {
+    if (typeof title === 'string' && title.length > TITLE_LIMIT) refuse(say('longTitle', title.length))
+  }
+
   function create(fields) {
+    shortTitle(fields.title)
     const n = { ...fields, id: fields.id ?? freeId(fields.parent, fields.kind) }
     if (nodes.some(x => x.id === n.id && x !== n)) refuse(say('taken', n.id))
     for (const k of Object.keys(n)) if (n[k] === undefined) delete n[k]
@@ -186,6 +193,7 @@ export function apply({ text, thread, ops, at, by = 'agent' }) {
 
     fill({ id, proof, ...fields }) {
       const n = get(id)
+      shortTitle(fields.title)
       const changed = DESCRIPTIVE.filter(k => fields[k] !== undefined && fields[k] !== n[k])
       if (changed.includes('what') && n.kind === 'milestone' && by !== 'user') refuse(say('milestoneWhat', id))
       for (const k of changed) n[k] = fields[k]

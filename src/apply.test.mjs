@@ -254,3 +254,22 @@ test('relink points the file proofs of a moved file or folder to where it is now
   assert.deepEqual(r.log.map(e => e.text), ['ricollegato spikes/viewer → viewer in 2 nodi (x, y)'])
   assert.match(run([{ op: 'relink', from: 'nowhere', to: 'x' }], { text }).errors[0], /nessuna prova punta a nowhere/)
 })
+
+test('a title is a few words: a long one is refused, so the details go in what', () => {
+  const long = 'Migrazione guidata: Next e passi aperti diventano nodi, la storia resta leggibile, i file vanno in un archivio'
+  for (const ops of [
+    [{ op: 'plan', parent: 'm2', titles: [long], ref: 'chat: ok' }],
+    [{ op: 'add', node: { kind: 'step', title: long, what: 'x', parent: 'm1' } }],
+    [{ op: 'fill', id: 'c', title: long }],
+  ]) {
+    const r = run(ops)
+    assert.equal(r.ok, false, ops[0].op)
+    assert.match(r.errors.join('\n'), /titolo troppo lungo \(\d+ caratteri, massimo 80\)/, ops[0].op)
+  }
+})
+
+test('plan takes a detail for each step, so a short title keeps its explanation', () => {
+  const r = ok([{ op: 'plan', parent: 'm2', titles: [{ title: 'Doctor', what: 'Lists the conflicting sources' }, 'Ship'], ref: 'chat: ok' }])
+  const steps = parse(r.text).filter(x => x.parent === 'm2')
+  assert.deepEqual(steps.map(x => [x.title, x.what]), [['Doctor', 'Lists the conflicting sources'], ['Ship', 'Ship']])
+})
