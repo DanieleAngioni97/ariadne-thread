@@ -126,13 +126,24 @@ function usage() {
 
 /** The latest commits, newest first, with their `Thread:` values and changed files; null outside git. */
 function commits() {
-  const format = '--format=%x1d%h%x1f%(trailers:key=Thread,valueonly,separator=%x1e)%x1f'
+  const format = '--format=%x1d%h%x1f%p%x1f%cI%x1f%(trailers:key=Thread,valueonly,separator=%x1e)%x1f'
   const r = spawnSync('git', ['log', `-n${RECENT_COMMITS}`, '--name-only', format], { encoding: 'utf8' })
   if (r.status !== 0) return null
   return r.stdout.split('\x1d').filter(Boolean).map(entry => {
-    const [sha, values = '', names = ''] = entry.split('\x1f')
-    return { sha, thread: values.split('\x1e').map(v => v.trim()).filter(Boolean), files: names.split('\n').filter(Boolean) }
+    const [sha, parents = '', at = '', values = '', names = ''] = entry.split('\x1f')
+    return {
+      sha, at, merge: parents.trim().split(' ').length > 1,
+      thread: values.split('\x1e').map(v => v.trim()).filter(Boolean), files: names.split('\n').filter(Boolean),
+    }
   })
+}
+
+/** The commits without `Thread:` since the thread began, minus merges and those recorded as proof. */
+function pending(recent, nodes) {
+  const recorded = new Set(nodes.flatMap(n => (n.proof ?? []).filter(p => p.type === 'commit').map(p => p.ref)))
+  let since
+  try { since = JSON.parse(readFileSync(LOG, 'utf8').split('\n', 1)[0]).at } catch {}
+  return recent ? untracked(recent, { recorded, since }) : 0
 }
 
 /** The files each commit touched, looked up by any prefix of its sha; empty outside git. */
@@ -246,8 +257,7 @@ function summaryText() {
     const more = errors.length > 1 ? ` (+${errors.length - 1})` : ''
     out.push(say('invalid', e.line, e.id, e.rule, e.message, more))
   }
-  const recent = commits()
-  const k = recent ? untracked(recent) : 0
+  const k = pending(commits(), nodes)
   if (k > 0) out.push(say('untracked', k))
   return out.join('\n')
 }
@@ -292,10 +302,9 @@ function endOfTurn() {
   }
   const nodes = parse(readFileSync(GRAPH, 'utf8'))
   const cited = nodes.flatMap(n => (n.proof ?? []).filter(p => p.type === 'file').map(p => p.ref))
-  const recent = commits()
   const reasons = behind({
     entries, root: process.cwd(), home: homedir(), ignore: [real(tmpdir()) + '/', '/tmp/', '/private/tmp/'],
-    cited, untracked: recent ? untracked(recent) : 0, real,
+    cited, untracked: pending(commits(), nodes), real,
   })
   if (reasons.length === 0) return
   console.log(JSON.stringify({ decision: 'block', reason: `ariadne: ${reasons.join('\n')}` }))

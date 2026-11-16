@@ -40,3 +40,15 @@ test('a commit that only saves .ariadne/ is neutral: no proof, not counted as un
   assert.deepEqual(opsFromCommits([graphOnly], new Set()), [])
   assert.equal(untracked([{ sha: 'g2', thread: [], files: ['.ariadne/graph.jsonl'] }, { sha: 'a', thread: ['m3.6'], files: ['src/a.mjs'] }]), 0)
 })
+
+test('untracked skips merges, commits already recorded as proof, and commits from before the thread began', () => {
+  assert.equal(untracked([{ sha: 'm', thread: [], merge: true }, { sha: 'a', thread: ['m3.6'] }]), 0)
+  assert.equal(untracked([{ sha: 'c', thread: [] }, { sha: 'r', thread: [] }, { sha: 'z', thread: [] }], { recorded: new Set(['r']) }), 1)
+  const since = '2026-11-16T14:30Z'
+  const commits = [
+    { sha: 'n', thread: [], at: '2026-11-16T16:00:00+01:00' },
+    { sha: 'o1', thread: [], at: '2026-11-10T10:00:00Z' },
+    { sha: 'o2', thread: [], at: '2026-11-09T10:00:00Z' },
+  ]
+  assert.equal(untracked(commits, { since }), 1)
+})

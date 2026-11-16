@@ -405,3 +405,17 @@ test('plan takes one --what per step, in order, for the details behind each shor
   assert.deepEqual(steps.map(x => [x.title, x.what]), [['Doctor', 'Lists the conflicting sources'], ['Ship', 'Release it']])
   assert.notEqual(run(dir, 'plan', 'm1', 'One', '--what', 'a', '--what', 'b', '--ref', 'chat: ok').status, 0)
 })
+
+test('the summary counts neither the commits from before the thread began nor merges', () => {
+  const dir = project({ graph: PLAN, thread: { current: 'a' } })
+  git(dir, 'init', '-q')
+  const before = { ...process.env, GIT_AUTHOR_DATE: '2026-01-01T10:00:00Z', GIT_COMMITTER_DATE: '2026-01-01T10:00:00Z' }
+  for (const m of ['one', 'two']) spawnSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@t', 'commit', '-q', '--allow-empty', '-m', `chore: ${m}`], { cwd: dir, env: before })
+  writeFileSync(join(dir, '.ariadne', 'log.jsonl'), JSON.stringify({ at: '2026-06-01T10:00Z', id: 'a', op: 'start', text: 'started a' }) + '\n')
+  assert.doesNotMatch(run(dir, 'summary').stdout, /senza Thread/)
+  git(dir, 'checkout', '-q', '-b', 'side')
+  git(dir, 'commit', '-q', '--allow-empty', '-m', 'feat: side\n\nThread: a')
+  git(dir, 'checkout', '-q', '-')
+  git(dir, 'merge', '-q', '--no-ff', '--no-edit', 'side')
+  assert.doesNotMatch(run(dir, 'summary').stdout, /senza Thread/)
+})
