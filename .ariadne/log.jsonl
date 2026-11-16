@@ -401,3 +401,6 @@
 {"at":"2026-11-16T09:33Z","id":"m5.10","op":"start","text":"started m5.10 Banda: segnalare il flag early access"}
 {"at":"2026-11-16T09:35Z","id":"m5.10","op":"close","text":"closed m5.10 Banda: segnalare il flag early access: init e README spiegano come accendere la banda (env CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 in settings.json), verificato col log di debug","proof":[{"type":"commit","ref":"299dbb1"}]}
 {"at":"2026-11-16T09:35Z","id":"m5.11","op":"start","text":"started m5.11 Comando dei test e descrizione del marketplace"}
+{"at":"2026-11-16T09:36Z","id":"m5.11","op":"fill","text":"proof for m5.11: commit dd49f07","proof":[{"type":"commit","ref":"dd49f07"}]}
+{"at":"2026-11-16T09:36Z","id":"m5.11","op":"close","text":"closed m5.11 Comando dei test e descrizione del marketplace: comando dei test con i glob (Node 20–26) e marketplace con descrizione, validazione senza warning","proof":[{"type":"commit","ref":"ebdb289"}]}
+{"at":"2026-11-16T09:36Z","id":"m5.12","op":"start","text":"started m5.12 Prova da utente nuovo"}
