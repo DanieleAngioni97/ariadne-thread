@@ -36,10 +36,11 @@ jobs:
         # macOS minutes cost ten times Linux ones on a private repo: pull requests run on Linux only.
         os: ${{ github.event_name == 'pull_request' && fromJSON('["ubuntu-latest"]') || fromJSON('["ubuntu-latest", "macos-latest"]') }}
     runs-on: ${{ matrix.os }}
-    env:
-      # An empty Claude Code configuration, as on a new user's machine; no account is needed.
-      CLAUDE_CONFIG_DIR: ${{ runner.temp }}/claude
     steps:
+      # An empty Claude Code configuration, as on a new user's machine; no account is needed.
+      # Set in a step: the runner context does not exist yet at the job's env.
+      - name: Start from an empty Claude Code configuration
+        run: echo "CLAUDE_CONFIG_DIR=$RUNNER_TEMP/claude" >> "$GITHUB_ENV"
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
