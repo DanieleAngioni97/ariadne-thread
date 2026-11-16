@@ -437,3 +437,20 @@
 {"at":"2026-11-16T15:52Z","id":"m6.9","op":"fill","text":"filled m6.9: title"}
 {"at":"2026-11-16T15:52Z","id":"m6.12","op":"add","text":"added step m6.12 Prova della migrazione su un repo di lavoro under m6, from m6.6"}
 {"at":"2026-11-16T15:52Z","id":"m6.8","op":"start","text":"started m6.8 Scheda dopo init: niente 'You are in: undefined' quando nessun nodo è attivo"}
+{"at":"2026-11-16T15:56Z","id":"m6.8","op":"close","text":"closed m6.8 Scheda dopo init: niente 'You are in: undefined' quando nessun nodo è attivo: la scheda dice che nessun passo è avviato e indica il primo pronto","proof":[{"type":"commit","ref":"5e42859"}]}
+{"at":"2026-11-16T15:56Z","id":"m6.9","op":"start","text":"started m6.9 Avviso 'N commit senza Thread': non contare merge, commit già registrati come prova e commit precedenti a init"}
+{"at":"2026-11-16T15:56Z","id":"m6.1","op":"fill","text":"filled m6.1: title"}
+{"at":"2026-11-16T15:56Z","id":"m6.2","op":"fill","text":"filled m6.2: title"}
+{"at":"2026-11-16T15:56Z","id":"m6.3","op":"fill","text":"filled m6.3: title"}
+{"at":"2026-11-16T15:56Z","id":"m6.4","op":"fill","text":"filled m6.4: title"}
+{"at":"2026-11-16T15:56Z","id":"m6.5","op":"fill","text":"filled m6.5: title"}
+{"at":"2026-11-16T15:56Z","id":"m6.6","op":"fill","text":"filled m6.6: title"}
+{"at":"2026-11-16T15:56Z","id":"m6.7","op":"fill","text":"filled m6.7: title"}
+{"at":"2026-11-16T15:56Z","id":"m6.8","op":"fill","text":"filled m6.8: title"}
+{"at":"2026-11-16T15:56Z","id":"m6.9","op":"fill","text":"filled m6.9: what, title"}
+{"at":"2026-11-16T15:56Z","id":"m6.10","op":"fill","text":"filled m6.10: title"}
+{"at":"2026-11-16T15:56Z","id":"m6.11","op":"fill","text":"filled m6.11: title"}
+{"at":"2026-11-16T15:56Z","id":"m6.12","op":"fill","text":"filled m6.12: title"}
+{"at":"2026-11-16T15:56Z","id":"m6.9","op":"pause","text":"back among the todo steps m6.9 Conteggio dei commit senza Thread"}
+{"at":"2026-11-16T15:56Z","id":"m6.13","op":"add","text":"added step m6.13 Titoli brevi under m6, from m6.8"}
+{"at":"2026-11-16T15:56Z","id":"m6.9","op":"move","text":"moved m6.9 under m6 (your correction)"}
