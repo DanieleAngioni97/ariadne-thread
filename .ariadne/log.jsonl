@@ -466,3 +466,4 @@
 {"at":"2026-11-16T16:08Z","id":"m6","op":"fill","text":"proof for m6: message chat 2026-11-16: dopo i tre difetti piccoli, versione 0.1.3 e PR subito","proof":[{"type":"message","ref":"chat 2026-11-16: dopo i tre difetti piccoli, versione 0.1.3 e PR subito"}]}
 {"at":"2026-11-16T16:09Z","id":"m6.10","op":"close","text":"closed m6.10 Lingua del grafo: la lingua del grafo è quella che il progetto dichiara in CLAUDE.md o AGENTS.md, altrimenti quella della chat","proof":[{"type":"commit","ref":"91403ce"}]}
 {"at":"2026-11-16T16:09Z","id":"m6.5","op":"start","text":"started m6.5 ariadne doctor"}
+{"at":"2026-11-16T16:09Z","id":"m6","op":"fill","text":"proof for m6: commit 3211ed2","proof":[{"type":"commit","ref":"3211ed2"}]}
