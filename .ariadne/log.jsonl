@@ -477,3 +477,9 @@
 {"at":"2026-11-16T16:33Z","id":"m6.5","op":"close","text":"closed m6.5 ariadne doctor: ariadne doctor elenca hook, skill, regole e note del progetto che parlano ancora di STATE.md o LOG.md, con cosa cambiare, senza modificare niente","proof":[{"type":"commit","ref":"752f1ca"}]}
 {"at":"2026-11-16T16:33Z","id":"m6.15","op":"start","text":"started m6.15 Riavvio del viewer dopo un aggiornamento"}
 {"at":"2026-11-16T16:33Z","id":"m6.15","op":"fill","text":"proof for m6.15: commit 32b336d","proof":[{"type":"commit","ref":"32b336d"}]}
+{"at":"2026-11-16T16:35Z","id":"m6.16","op":"add","text":"added step m6.16 Riferimenti 'in chat' come non registrati under m6"}
+{"at":"2026-11-16T16:35Z","id":"m6.17","op":"add","text":"added step m6.17 Controllo prima del clear under m6"}
+{"at":"2026-11-16T16:35Z","id":"m6.18","op":"add","text":"added step m6.18 handoff nei repo con .ariadne/ under m6"}
+{"at":"2026-11-16T16:36Z","id":"m7","op":"confirm","text":"confirmed m7 Un viewer per tutti i progetti"}
+{"at":"2026-11-16T16:36Z","id":"m6.15","op":"close","text":"closed m6.15 Riavvio del viewer dopo un aggiornamento: ariadne open chiude il viewer di un'altra copia installata e ne avvia uno nuovo; uno di una versione vecchia, che non sa chiudersi, viene scavalcato su un'altra porta","proof":[{"type":"commit","ref":"9d638c6"}]}
+{"at":"2026-11-16T16:36Z","id":"m6.3","op":"start","text":"started m6.3 Rischi e decisioni aperte nel grafo"}
