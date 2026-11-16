@@ -404,3 +404,5 @@
 {"at":"2026-11-16T09:36Z","id":"m5.11","op":"fill","text":"proof for m5.11: commit dd49f07","proof":[{"type":"commit","ref":"dd49f07"}]}
 {"at":"2026-11-16T09:36Z","id":"m5.11","op":"close","text":"closed m5.11 Comando dei test e descrizione del marketplace: comando dei test con i glob (Node 20–26) e marketplace con descrizione, validazione senza warning","proof":[{"type":"commit","ref":"ebdb289"}]}
 {"at":"2026-11-16T09:36Z","id":"m5.12","op":"start","text":"started m5.12 Prova da utente nuovo"}
+{"at":"2026-11-16T09:39Z","id":"m5.12","op":"close","text":"closed m5.12 Prova da utente nuovo: prova da utente nuovo su Linux verde: init segnala il flag, piano e commit con .ariadne/ committato da Claude e tree pulito, ripresa corretta, open usa xdg-open; versione 0.1.1","proof":[{"type":"commit","ref":"387b81f"}]}
+{"at":"2026-11-16T09:39Z","id":"m5.1","op":"start","text":"started m5.1 Segnalibri nella chat"}
