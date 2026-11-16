@@ -3,11 +3,10 @@
   "current": "m6.5",
   "profile": "standard",
   "last_correction": {
-    "id": "m6.9",
+    "id": "m6.3",
     "parent": "m6",
     "after": [
-      "m6.8"
-    ],
-    "stale": true
+      "m6.5"
+    ]
   }
 }

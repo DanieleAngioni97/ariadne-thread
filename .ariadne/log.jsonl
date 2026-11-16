@@ -471,3 +471,5 @@
 {"at":"2026-11-16T16:24Z","id":"m6.14","op":"add","text":"detour m6.14 Finestra del viewer in ordine di piano, returns to m6.5"}
 {"at":"2026-11-16T16:25Z","id":"m6.14","op":"confirm","text":"confirmed m6.14 Finestra del viewer in ordine di piano"}
 {"at":"2026-11-16T16:25Z","id":"m6.14","op":"close","text":"closed m6.14 Finestra del viewer in ordine di piano: la finestra della vista compatta segue l'ordine del piano: dopo un move mostra i vicini del passo corrente","proof":[{"type":"commit","ref":"6d4d57a"}]}
+{"at":"2026-11-16T16:27Z","id":"m6.15","op":"add","text":"added step m6.15 Riavvio del viewer dopo un aggiornamento under m6, from m6.5"}
+{"at":"2026-11-16T16:27Z","id":"m6.3","op":"move","text":"moved m6.3 under m6 (your correction)"}
