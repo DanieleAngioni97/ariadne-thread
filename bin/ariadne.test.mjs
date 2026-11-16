@@ -227,7 +227,8 @@ test('the end-of-turn hook hands the agent back what the thread missed, once per
   assert.match(out.reason, /^ariadne: .*ariadne plan/s)
   assert.equal(hook({ stop_hook_active: true }).stdout, '')
 
-  const outside = join(mkdtempSync(join(tmpdir(), 'ariadne-out-')), 'report.html')
+  // Outside the project and outside every temporary folder, which the check leaves out on purpose.
+  const outside = '/srv/ariadne-out/report.html'
   turn([{ type: 'user', message: { content: 'scrivi il rapporto' } }, write(outside), write(join(dir, 'in.md'))])
   assert.match(JSON.parse(hook().stdout).reason, new RegExp(`${outside}.*--file`))
   run(dir, 'fill', 'a', '--file', outside)
