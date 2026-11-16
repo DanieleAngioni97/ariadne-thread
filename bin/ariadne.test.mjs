@@ -292,6 +292,20 @@ test('open on a port fixed by hand and held by another server says so, exits 1 a
   assert.match(stderr, /occupata da un altro server/)
 })
 
+test('open with no browser to launch leaves the viewer up, exits 0 and says to open the address by hand', async () => {
+  const free = createServer().listen(0, '127.0.0.1')
+  await new Promise(resolve => free.on('listening', resolve))
+  const port = String(free.address().port)
+  free.close()
+  const dir = project({ graph: GOOD })
+  const viewer = spawn(process.execPath, [CLI, 'view', '--port', port], { cwd: dir })
+  await new Promise(resolve => viewer.stdout.once('data', resolve))
+  const r = spawnSync(process.execPath, [CLI, 'open', '--port', port], { cwd: dir, encoding: 'utf8', env: { ...process.env, PATH: '/nonexistent' } })
+  viewer.kill()
+  assert.equal(r.status, 0)
+  assert.match(r.stdout, new RegExp(`127\\.0\\.0\\.1:${port}/.*aprilo a mano`))
+})
+
 test('view on a project port held by another server takes a free one and saves it for band and open', async () => {
   const dir = realpathSync(project({ graph: GOOD }))
   const other = createServer((_, res) => res.end('not found')).listen(derivedPort(dir), '127.0.0.1')

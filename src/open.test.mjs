@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { openViewer } from './open.mjs'
+import { browserCommand, openViewer } from './open.mjs'
 
 // These tests read what ariadne writes in Italian; English has its own tests.
 process.env.ARIADNE_LANG = 'it'
@@ -54,4 +54,12 @@ test('a viewer that does not come up in time is said', async () => {
   const p = port([null])
   await assert.rejects(openViewer({ root: ROOT, port: () => 8790, wait: 0, tries: 3, ...p }), /non è partito/)
   assert.deepEqual(p.calls.opened, [])
+})
+
+test('the browser opens with the command of each system: open on macOS, start on Windows, xdg-open elsewhere', () => {
+  const url = 'http://127.0.0.1:8790/?select=m1'
+  assert.deepEqual(browserCommand('darwin', url), ['open', [url]])
+  assert.deepEqual(browserCommand('win32', url), ['cmd', ['/c', 'start', '', url]])
+  assert.deepEqual(browserCommand('linux', url), ['xdg-open', [url]])
+  assert.deepEqual(browserCommand('freebsd', url), ['xdg-open', [url]])
 })

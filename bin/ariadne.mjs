@@ -18,7 +18,7 @@ import { behind } from '../src/check.mjs'
 import { parse } from '../src/graph.mjs'
 import { systemLang, words } from '../src/i18n.mjs'
 import { show, why } from '../src/inspect.mjs'
-import { openViewer } from '../src/open.mjs'
+import { browserCommand, openViewer } from '../src/open.mjs'
 import { keepOut, savePort, viewerPort } from '../src/port.mjs'
 import { brokenRefs } from '../src/refs.mjs'
 import { summarize } from '../src/summary.mjs'
@@ -66,6 +66,7 @@ const say = words({
     taken: port => `port ${port} is taken, try --port`,
     notStarted: why => `ariadne: viewer not started (${why})`,
     opened: url => `ariadne: viewer at ${url}`,
+    openByHand: url => `ariadne: viewer at ${url}: no browser could be opened, open it by hand`,
   },
   it: {
     usage: `uso: ariadne <comando>
@@ -93,6 +94,7 @@ const say = words({
     taken: port => `porta ${port} occupata, prova --port`,
     notStarted: why => `ariadne: viewer non avviato (${why})`,
     opened: url => `ariadne: viewer su ${url}`,
+    openByHand: url => `ariadne: viewer su ${url}: non si è aperto nessun browser, aprilo a mano`,
   },
 })
 
@@ -441,9 +443,14 @@ else if (command === 'open') {
   const probe = p => fetch(`http://127.0.0.1:${p}/root`).then(r => r.text(), () => null)
   // The viewer outlives this command: detached, like an `ariadne view` started by hand.
   const start = () => spawn(process.execPath, [fileURLToPath(import.meta.url), 'view', ...(fixed ? ['--port', values.port] : [])], { detached: true, stdio: 'ignore' }).unref()
-  const launch = url => spawnSync('open', [url])
+  let launched = true
+  const launch = url => {
+    const [cmd, cmdArgs] = browserCommand(process.platform, url)
+    const r = spawnSync(cmd, cmdArgs, { stdio: 'ignore' })
+    launched = !r.error && r.status === 0
+  }
   openViewer({ root, port, id: args[0], probe, start, launch, fixed })
-    .then(url => console.log(say('opened', url)))
+    .then(url => console.log(say(launched ? 'opened' : 'openByHand', url)))
     .catch(error => {
       console.error(`ariadne: ${error.message}`)
       process.exitCode = 1
