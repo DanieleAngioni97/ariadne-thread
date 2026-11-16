@@ -1,6 +1,6 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { existsSync, mkdtempSync, readFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -35,7 +35,10 @@ test('fact-check changes apply only where their text is found; the others are re
 test('prima runs one handoff per handoff event and one at the end, each from the files of the one before', () => {
   const withHandoff = { ...scenario, events: [...scenario.events.slice(0, 9), { type: 'handoff' }, ...scenario.events.slice(9)] }
   const out = mkdtempSync(join(tmpdir(), 'ariadne-prima-'))
-  const r = buildPrima(withHandoff, { model: 'fake', checker: 'fake', bin: FAKE, out, env: { FAKE_HANDOFF: '1' } })
+  // The real skill lives in the author's ~/.claude; the fake claude does not read it, so any text will do.
+  const skillFile = join(out, 'handoff-SKILL.md')
+  writeFileSync(skillFile, '# handoff\n')
+  const r = buildPrima(withHandoff, { model: 'fake', checker: 'fake', bin: FAKE, out, env: { FAKE_HANDOFF: '1' }, skillFile })
   assert.equal(r.handoffs.length, 2)
   assert.match(readFileSync(join(out, 'STATE.md'), 'utf8'), /Next: I start "Validate invoice totals"/)
   assert.equal(readFileSync(join(out, 'LOG.md'), 'utf8'), '# Log\n- a milestone\n- a milestone\n')
