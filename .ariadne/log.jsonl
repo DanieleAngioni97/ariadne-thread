@@ -399,3 +399,5 @@
 {"at":"2026-11-16T09:31Z","id":"m5.9","op":"start","text":"started m5.9 Salvare .ariadne/ dopo ogni passo chiuso"}
 {"at":"2026-11-16T09:33Z","id":"m5.9","op":"close","text":"closed m5.9 Salvare .ariadne/ dopo ogni passo chiuso: dopo ogni commit registrato l'hook chiede di committare subito .ariadne/ (chore(ariadne)), e la skill lo spiega","proof":[{"type":"commit","ref":"409199c"}]}
 {"at":"2026-11-16T09:33Z","id":"m5.10","op":"start","text":"started m5.10 Banda: segnalare il flag early access"}
+{"at":"2026-11-16T09:35Z","id":"m5.10","op":"close","text":"closed m5.10 Banda: segnalare il flag early access: init e README spiegano come accendere la banda (env CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 in settings.json), verificato col log di debug","proof":[{"type":"commit","ref":"299dbb1"}]}
+{"at":"2026-11-16T09:35Z","id":"m5.11","op":"start","text":"started m5.11 Comando dei test e descrizione del marketplace"}
