@@ -45,6 +45,8 @@ evidence is recorded and the thread moves on. Things you can say:
 | --- | --- |
 | "ok, go with that plan" | `ariadne plan <parent> "<step>"… --what "<detail>"… --ref "chat <date>: …"` (short titles, one detail per step) |
 | "fix CI first" | `ariadne add detour "…" --start` (it returns where you were) |
+| "I'll decide where to host it later" | `ariadne add decision "Where to host?" --what "…"` (shown in the card until you answer) |
+| "careful, the keys expire" | `ariadne add risk "Keys expire" --what "…" --under <step>` |
 | "not that one yet, it comes later" | `ariadne pause <id>` (a step started too early goes back to todo) |
 | "move X under Y", "undo", "approve all" | `ariadne move X Y`, `ariadne undo`, `ariadne confirm --all` |
 | "open the graph" | `ariadne open` |
@@ -61,8 +63,10 @@ machine-local `local.json` stay out of git.
 ## How it works
 
 - **The thread is a file.** `.ariadne/graph.jsonl` holds one JSON node per line: a milestone, a step, a
-  detour, or a list and its points for an investigation. Each node has a status (todo, active, done,
-  deferred, replaced), a why, and proofs: a commit, a file, or a chat message.
+  detour, a list and its points for an investigation, a decision only you can make, or a risk on a
+  step. Each node has a status (todo, active, done, deferred, replaced), a why, and proofs: a commit,
+  a file, or a chat message. A decision blocks the work that waits for it and closes only with your
+  answer; a risk only warns.
 - **Changes are typed operations.** `ariadne plan`, `add`, `close`, `defer`, `replace` and the others
   are checked against the graph rules and applied all or nothing. Untouched lines stay byte for byte,
   so diffs stay small. Nothing is deleted: a deferred or replaced step stays, pointing to what took
@@ -73,7 +77,7 @@ machine-local `local.json` stay out of git.
   `.ariadne/` are not proof.
 - **The agent gets the state on its own.** On session start, `/clear` and compaction, a hook injects
   the state card, at most 3,500 characters: where you are, what is left of the open step, what comes
-  next, and detours waiting to return. On each prompt, a short summary arrives only when it changed.
+  next, detours waiting to return, open decisions and the open risks of the milestone. On each prompt, a short summary arrives only when it changed.
 - **Decisions taken in chat.** The skill asks Claude to record approvals, directions and files saved
   outside the project in the same turn. At the end of each turn, a Stop hook (`ariadne check`) reads
   the turn and, once, hands Claude back what the thread missed: a short "yes" with nothing recorded,

@@ -67,6 +67,13 @@ command it names, or say in one line why there is nothing to record.
     thread then returns to where you were;
   - a step pushed to a later milestone: `ariadne defer <id> <milestone>`;
   - a step that turned out wrong: `ariadne replace <id> <successor>`.
+- **Open questions and risks,** instead of an "open decisions" note:
+  - a choice only the user can make: `ariadne add decision "<question>" --what "<options>" --under <id>`;
+    put it in the `after` of the work that waits for it. It is never started; it closes with the
+    user's answer: `ariadne close <id> "<choice>" --message "chat <date>: …"`;
+  - something that may go wrong while a step is open: `ariadne add risk "<risk>" --what "<what happens,
+    what to do>" --under <step>`; close it with what happened when it no longer applies;
+  - a standing rule or command ("never run X", "tests: …") is neither: it goes in CLAUDE.md or `docs/`.
 
 ## Investigator reasoning (when the user asks for it)
 
