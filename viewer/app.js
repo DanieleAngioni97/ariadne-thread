@@ -16,8 +16,7 @@ import { dayOffset, groupOf, kindOf, lastActivity, listCounts, listRows, openCom
 import { lang, t } from './i18n.js'
 import {
   anomalies, cameFrom, defaultExpanded, emptyNote, fromGraph, hasChildren, holdsCurrent, labelOf, ledTo, panelRows, pathTo, threadSet,
-  limitOf, visibleEdges, visibleNodes,
-} from './model.js'
+  limitOf, visibleEdges, visibleNodes, progressOf } from './model.js'
 
 const html = htm.bind(React.createElement)
 const elk = new ELK()
@@ -39,6 +38,9 @@ const FIT_PAD = 40
 const FLY_PAD = 160
 const ARROWS = { ArrowLeft: 'left', ArrowRight: 'right', ArrowUp: 'up', ArrowDown: 'down' }
 const GROUP_HEAD = 48
+// The join bar of a container with parallel branches (m7.2): a node of its own in the layout.
+const JOIN = '::join'
+const JOIN_SIZE = { width: 36, height: 64 }
 
 // The repo as it is now: `ariadne view` serves .ariadne/ and tells the page where the repo lives.
 // The files are read again every RELOAD_MS; `load` swaps the graph in when they change.
@@ -169,11 +171,14 @@ async function layout(expanded, focus, revealed) {
   const edges = visibleEdges(data, expanded, focus, options)
   const isOpen = n => !n.more && expanded.has(n.id) && hasChildren(data, n.id)
 
+  // An open container whose sub-steps run in two or more branches ends in a join bar: all of them close it.
+  const joins = shown.filter(n => isOpen(n) && n.kind !== 'milestone' && (progressOf(data, n.id)?.ends.filter(id => shownIds.has(id)).length ?? 0) >= 2)
+  const joinEdges = joins.flatMap(n => progressOf(data, n.id).ends.filter(id => shownIds.has(id)).map(id => ({ id: `${id}->${n.id}${JOIN}`, source: id, target: n.id + JOIN, isJoin: true })))
   const toElk = n => isOpen(n)
     ? {
         id: n.id,
         layoutOptions: { 'elk.padding': '[top=60,left=24,bottom=24,right=24]' },
-        children: shown.filter(c => c.parent === n.id).map(toElk),
+        children: [...shown.filter(c => c.parent === n.id).map(toElk), ...(joins.includes(n) ? [{ id: n.id + JOIN, ...JOIN_SIZE }] : [])],
       }
     : n.more ? { id: n.id, ...MORE } : { id: n.id, width: STEP.width, height: heightOf(n) }
 
@@ -193,12 +198,16 @@ async function layout(expanded, focus, revealed) {
       'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
     },
     children: roots.map(toElk),
-    edges: edges.map(e => ({ id: e.id, sources: [e.source], targets: [e.target] })),
+    edges: [...edges, ...joinEdges].map(e => ({ id: e.id, sources: [e.source], targets: [e.target] })),
   })
 
   const nodes = []
   const routes = new Map()
   const walk = (elkNode, parentId) => {
+    if (elkNode.id.endsWith(JOIN)) {
+      nodes.push({ id: elkNode.id, type: 'join', position: { x: elkNode.x ?? 0, y: elkNode.y ?? 0 }, parentId, style: { width: elkNode.width, height: elkNode.height }, data: { node: byId.get(parentId) }, draggable: false, selectable: false, zIndex: 1 })
+      return
+    }
     const node = byId.get(elkNode.id) ?? markers.get(elkNode.id)
     const open = isOpen(node)
     nodes.push({
@@ -223,7 +232,7 @@ async function layout(expanded, focus, revealed) {
 
   return {
     nodes,
-    edges: edges.map(e => {
+    edges: [...edges, ...joinEdges].map(e => {
       const color = e.isThread ? 'var(--thread)' : e.isDetour ? 'var(--detour)' : 'var(--line-strong)'
       return {
         id: e.id,
@@ -232,7 +241,7 @@ async function layout(expanded, focus, revealed) {
         type: 'routed',
         data: { sections: routes.get(e.id) ?? [] },
         zIndex: 2,
-        style: { stroke: color, strokeWidth: e.isThread ? 2.5 : 1.5, strokeDasharray: e.isDetour ? '5 4' : undefined },
+        style: { stroke: color, strokeWidth: e.isThread ? 2.5 : 1.5, strokeDasharray: e.isDetour ? '5 4' : e.isJoin ? '2 3' : undefined },
         markerEnd: { type: MarkerType.ArrowClosed, width: 14, height: 14, color },
       }
     }),
@@ -278,7 +287,7 @@ function Step({ data: { node } }) {
       <${Badge} node=${node} size=${20} />
       <div class="txt">
         <div class="title"><span class="nid">${node.id}</span> ${node.title}${node.uncertain && html` <span class="unsure" title=${node.uncertain} aria-label=${t.uncertain}>?</span>`}</div>
-        <div class="meta">${labelText(node)}</div>
+        <div class="meta">${labelText(node)}${progressOf(data, node.id) ? ` · ${t.progress(progressOf(data, node.id))}` : ''}</div>
       </div>
       ${inside > 0 && html`
         <button class="expand" aria-label=${t.open(inside, node.title)}
@@ -296,7 +305,7 @@ function Group({ data: { node } }) {
       <div class="group-head" onMouseEnter=${e => hover(node, e.currentTarget)} onMouseLeave=${() => hover(null)}>
         <${Badge} node=${node} size=${20} />
         <div class="title"><span class="nid">${node.id}</span> ${node.title}</div>
-        <div class="meta">${labelText(node)}</div>
+        <div class="meta">${labelText(node)}${progressOf(data, node.id) ? ` · ${t.progress(progressOf(data, node.id))} · ${t.closesWith}` : ''}</div>
         <button class="expand" aria-label=${t.close(node.title)}
           onClick=${e => { e.stopPropagation(); toggle(node.id) }}>−</button>
       </div>
@@ -317,7 +326,18 @@ function More({ data: { node } }) {
     </div>`
 }
 
-const nodeTypes = { step: Step, group: Group, more: More }
+/** Where the branches of a container meet: it closes when all of them are done (AND-join, m7.2). */
+function Join({ data: { node } }) {
+  const p = progressOf(data, node.id)
+  return html`
+    <div class=${`join ${p.done === p.total ? 'is-done' : ''}`} title=${t.joinHint(node.title)}>
+      <${Handle} type="target" position=${Position.Left} />
+      <div class="bar"></div>
+      <div class="count">${p.done}/${p.total}</div>
+    </div>`
+}
+
+const nodeTypes = { step: Step, group: Group, more: More, join: Join }
 const edgeTypes = { routed: RoutedEdge }
 
 /** One tooltip for the whole page, above everything, placed under the hovered node. */

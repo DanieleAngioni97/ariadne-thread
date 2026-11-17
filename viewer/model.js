@@ -345,3 +345,18 @@ export function emptyNote(data, id) {
   if (!node || hasChildren(data, id)) return null
   return node.kind === 'milestone' ? 'plan' : node.kind === 'list' ? 'list' : null
 }
+
+/**
+ * What closes a container (m7.2): its sub-steps and decisions, done out of total (risks only warn), and
+ * the ends of its branches — the sub-steps no sibling waits for. Null for a node with nothing inside.
+ */
+export function progressOf(data, id) {
+  const kids = data.nodes.filter(n => n.parent === id && n.kind !== 'risk')
+  if (kids.length === 0) return null
+  const waited = new Set(kids.flatMap(k => k.after ?? []))
+  return {
+    done: kids.filter(k => k.status === 'done').length,
+    total: kids.filter(k => k.status !== 'replaced' && k.status !== 'deferred').length,
+    ends: kids.filter(k => !waited.has(k.id) && k.status !== 'replaced' && k.status !== 'deferred').map(k => k.id),
+  }
+}

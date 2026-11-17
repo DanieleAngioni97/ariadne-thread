@@ -2,7 +2,7 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
 import {
-  anomalies, continuationOf, defaultExpanded, deferredCount, emptyNote, filesWithin, fromGraph, labelOf, limitOf, origin, panelRows,
+  anomalies, continuationOf, defaultExpanded, deferredCount, emptyNote, filesWithin, fromGraph, labelOf, limitOf, origin, panelRows, progressOf,
   threadSet, visibleEdges, visibleNodes,
 } from './model.js'
 
@@ -292,4 +292,18 @@ test('the window follows the plan, not the file: after a move the steps around t
   assert.deepEqual(ids, ['m', 'more-above:m', 's6', 's5', 's2', 'more-below:m'])
   const edges = visibleEdges(moved, new Set(['m']), null, { limit: 3 }).map(e => `${e.source}->${e.target}`).sort()
   assert.deepEqual(edges, ['more-above:m->s6', 's2->more-below:m', 's5->s2', 's6->s5'])
+})
+
+test('progressOf counts the sub-steps that close a container and the ends of its branches', () => {
+  const data = { nodes: [
+    { id: 'p', status: 'active' },
+    { id: 'a', parent: 'p', status: 'done' },
+    { id: 'b', parent: 'p', status: 'todo', after: ['a'] },
+    { id: 'c', parent: 'p', status: 'todo' },
+    { id: 'd', parent: 'p', status: 'todo', kind: 'decision' },
+    { id: 'r', parent: 'p', status: 'todo', kind: 'risk' },
+    { id: 'x', status: 'todo' },
+  ] }
+  assert.deepEqual(progressOf(data, 'p'), { done: 1, total: 4, ends: ['b', 'c', 'd'] })
+  assert.equal(progressOf(data, 'x'), null)
 })

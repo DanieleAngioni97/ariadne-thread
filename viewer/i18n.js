@@ -56,6 +56,9 @@ const STRINGS = {
       approve: 'Approve', reject: 'Reject', approveAll: k => `Approve all ${k}`,
       why: { added: 'Added', milestone: 'New milestone', deferred: 'Deferred', replaced: 'Replaced' },
     },
+    progress: ({ done, total }) => `${done}/${total} done`,
+    closesWith: 'closes with the last',
+    joinHint: title => `${title} closes when every branch is done, in any order`,
     comments: {
       title: 'Comments', open: k => `${k} waiting for the agent`, agent: 'Agent:', waiting: 'The agent reads it at your next prompt.',
       placeholder: 'What should change here, or what is unclear?', send: 'Send', hint: 'The agent changes it or explains, then answers here.',
@@ -154,6 +157,9 @@ const STRINGS = {
       approve: 'Approva', reject: 'Rifiuta', approveAll: k => `Approva tutte e ${k}`,
       why: { added: 'Aggiunto', milestone: 'Nuova milestone', deferred: 'Rinviato', replaced: 'Sostituito' },
     },
+    progress: ({ done, total }) => `${done}/${total} fatti`,
+    closesWith: 'si chiude con l’ultimo',
+    joinHint: title => `${title} si chiude quando ogni ramo è fatto, in qualsiasi ordine`,
     comments: {
       title: 'Commenti', open: k => `${k} in attesa dell’agente`, agent: 'Agente:', waiting: 'L’agente lo legge al tuo prossimo prompt.',
       placeholder: 'Cosa va cambiato qui, o cosa non è chiaro?', send: 'Invia', hint: 'L’agente lo cambia o lo spiega, poi risponde qui.',
