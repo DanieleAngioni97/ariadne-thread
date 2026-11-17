@@ -87,6 +87,17 @@ test('R15: a replaced node points to its successor; a deferred one to the task t
   assert.deepEqual(rules(resumed), [])
 })
 
+test('a decision waits for the user: it is never active', () => {
+  assert.deepEqual(rules(jsonl([node({ kind: 'decision', status: 'todo' })])), [])
+  assert.deepEqual(rules(jsonl([node({ kind: 'decision', status: 'active' })])), ['decision'])
+})
+
+test('a risk hangs on the node it threatens: it has a parent', () => {
+  assert.deepEqual(rules(jsonl([node({}), node({ id: 'r', kind: 'risk', status: 'todo', parent: 'a' })])), [])
+  assert.deepEqual(rules(jsonl([node({ id: 'r', kind: 'risk', status: 'todo' })])), ['parent'])
+  assert.deepEqual(rules(jsonl([node({}), node({ id: 'r', kind: 'risk', status: 'active', parent: 'a' })])), ['risk'])
+})
+
 test('a title longer than 80 characters is flagged: the details go in what', () => {
   assert.deepEqual(rules(jsonl([node({ title: 'x'.repeat(81) })])), ['title'])
   assert.deepEqual(rules(jsonl([node({ title: 'x'.repeat(80) })])), [])

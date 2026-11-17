@@ -2,7 +2,8 @@
 // Rules come from docs/ux/allineamento/brief.md (R2, R3, R5, R15, R16, R22) and concetti.md (schema).
 // Pure, for the CLI (`ariadne validate`) and the viewer alike.
 
-const KINDS = ['milestone', 'step', 'list', 'point', 'detour']
+// decision: a choice the user makes, blocking what has it in `after`; risk: a warning on its parent.
+const KINDS = ['milestone', 'step', 'list', 'point', 'detour', 'decision', 'risk']
 const STATUSES = ['todo', 'active', 'done', 'deferred', 'replaced']
 const PROOF_TYPES = ['commit', 'file', 'message']
 const AUTHORS = ['agent', 'user']
@@ -56,6 +57,9 @@ export function validate(text) {
     const waiting = n.review === 'confirm'
     if (isStructural(n) && !waiting && !(n.confirmed && DATE.test(n.confirmed.at ?? ''))) fail(n, 'confirmed', 'R2: structural node without the user confirmation or review: confirm')
     if (n.kind === 'detour' && isOpen(n) && !n.reentry) fail(n, 'reentry', 'R22: an open detour declares where it re-enters')
+    if (n.kind === 'decision' && n.status === 'active') fail(n, 'decision', 'a decision is the user\'s: it stays todo until they choose')
+    if (n.kind === 'risk' && n.status === 'active') fail(n, 'risk', 'a risk is not work: todo while open, done when it is over')
+    if (n.kind === 'risk' && !n.parent) fail(n, 'parent', 'a risk hangs on the node it threatens')
     if (n.status === 'replaced' && !n.replaced_by) fail(n, 'replaced_by', 'R15: a replaced node points to its successor')
     if (n.status === 'deferred' && !n.deferred_to) fail(n, 'deferred_to', 'a deferred node points to the task that resumes it')
 
