@@ -127,6 +127,8 @@ test('with an open milestone propose works inside it, after its last step, and s
 test('the agent corrects the guess item by item: a pointer or a dropped item makes no node', () => {
   const plan = propose({ state: readState(STATE), log: [], nodes: [], at: AT, as: { 1: 'risk', 2: 'drop' } })
   assert.deepEqual(plan.open.map(o => o.as), ['risk', 'drop'])
+  const pointed = preview(propose({ state: readState(STATE), log: [], nodes: [], at: AT, as: { 2: 'pointer' } })).split('\n')
+  assert.ok(pointed.includes('- Open decisions and risks 2: Bedrock keys expire: a 403 means a new key. Check before long runs.'), pointed.join('\n'))
   const kinds = parse(run([], plan).text).map(n => n.kind)
   assert.deepEqual(kinds, ['milestone', 'step', 'step', 'risk'])
 })
@@ -138,8 +140,8 @@ test('the preview says what would happen, numbers the open items and how to corr
     '- m1.2 Write the CSV writer with headers',
     '1 [decisione] Decide where to host the repo (GitHub Acme?).',
     '2 [rischio] Bedrock keys expire: a 403 means a new key. Check before long runs.',
-    '- Git workflow (agreed 2026-10-27): 1 voce',
-    '- Pointers: 1 voce',
+    '- Git workflow (agreed 2026-10-27): One branch per task.',
+    '- Pointers: Verify: `npm test` → green',
     'Storia: 2 righe di LOG.md → m1.1 Storia prima di ariadne',
     'STATE.md → .ariadne/archive/STATE-2026-11-17.md',
   ]) assert.ok(text.split('\n').includes(line), `${line}\n---\n${text}`)

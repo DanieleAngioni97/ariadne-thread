@@ -19,7 +19,7 @@ import { findConflicts, report } from '../src/doctor.mjs'
 import { parse } from '../src/graph.mjs'
 import { systemLang, words } from '../src/i18n.mjs'
 import { show, why } from '../src/inspect.mjs'
-import { preview, propose, readLog, readState } from '../src/migrate.mjs'
+import { elsewhere, preview, propose, readLog, readState } from '../src/migrate.mjs'
 import { browserCommand, openViewer } from '../src/open.mjs'
 import { keepOut, savePort, viewerPort } from '../src/port.mjs'
 import { brokenRefs } from '../src/refs.mjs'
@@ -236,6 +236,7 @@ function migrate(values) {
   writeFileSync(MIGRATION, JSON.stringify({ ...before, after: done.text, archive: plan.archive }, null, 2) + '\n')
   for (const l of done.log) console.log(`↺ ${l.text}`)
   for (const { from, to } of plan.archive) console.log(`↺ ${from} → ${to}`)
+  for (const line of elsewhere(plan)) console.log(line)
   console.log(say('migrated'))
 }
 

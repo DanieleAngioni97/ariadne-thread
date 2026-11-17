@@ -17,7 +17,6 @@ const say = words({
     open: 'Decisions and risks (correct with --as <n>=decision|risk|pointer|drop):',
     as: { decision: 'decision', risk: 'risk', pointer: 'to CLAUDE.md or docs/', drop: 'dropped' },
     other: 'To move into CLAUDE.md or docs/, not into the graph:',
-    items: k => `${k} ${k === 1 ? 'item' : 'items'}`,
     archive: 'Archive (git mv):',
     apply: 'Every node enters to confirm. To apply: ariadne migrate --apply [--as …]',
   },
@@ -33,7 +32,6 @@ const say = words({
     open: 'Decisioni e rischi (correggi con --as <n>=decision|risk|pointer|drop):',
     as: { decision: 'decisione', risk: 'rischio', pointer: 'in CLAUDE.md o docs/', drop: 'scartata' },
     other: 'Da portare in CLAUDE.md o docs/, non nel grafo:',
-    items: k => `${k} ${k === 1 ? 'voce' : 'voci'}`,
     archive: 'Archivio (git mv):',
     apply: 'Ogni nodo entra da confermare. Per applicare: ariadne migrate --apply [--as …]',
   },
@@ -175,9 +173,16 @@ export function propose({ state, log, nodes, at, as = {} }) {
     return item
   })
 
-  const other = (state?.other ?? []).map(s => ({ title: s.title, count: s.items.length }))
+  // Standing knowledge goes to CLAUDE.md or docs/, not into the graph (m6.4): listed in full for the agent.
+  const other = [
+    ...(state?.other ?? []).flatMap(s => s.items.map(text => ({ from: s.title, text }))),
+    ...openItems.filter(o => o.as === 'pointer').map(o => ({ from: `${state.sections.open} ${o.n}`, text: o.text })),
+  ]
   return { milestone, history, steps, open: openItems, other, archive, ops }
 }
+
+/** What the agent moves into CLAUDE.md or docs/ by hand, in lines; none when there is nothing. */
+export const elsewhere = ({ other }) => (other.length ? [say('other'), ...other.map(o => `- ${o.from}: ${o.text}`)] : [])
 
 /** The preview of a proposal, in lines for the terminal. */
 export function preview(plan) {
@@ -186,7 +191,7 @@ export function preview(plan) {
   if (history) lines.push(say('historyLine', history.count, history.id, history.title))
   if (steps.length) lines.push(say('next'), ...steps.map(s => `- ${s.id} ${s.title}`))
   if (open.length) lines.push(say('open'), ...open.map(o => `${o.n} [${say('as')[o.as]}] ${o.text}`))
-  if (other.length) lines.push(say('other'), ...other.map(o => `- ${o.title}: ${say('items', o.count)}`))
+  lines.push(...elsewhere(plan))
   if (archive.length) lines.push(say('archive'), ...archive.map(a => `${a.from} → ${a.to}`))
   lines.push(say('apply'))
   return lines.join('\n')
