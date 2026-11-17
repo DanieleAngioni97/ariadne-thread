@@ -43,6 +43,8 @@ const say = words({
     confirmed: (id, title) => `confirmed ${id} ${title}`,
     rejected: (id, title) => `rejected ${id} ${title}: kept on record, outside the plan`,
     commented: (id, text) => `comment on ${id}: ${text}`,
+    openChildren: (id, list) => `close ${id}: sub-steps still open: ${list}; close, defer or replace them first`,
+    closedByChildren: (id, title, k) => `closed ${id} ${title}: all ${k} sub-steps done`,
     answered: (id, text) => `answer on ${id}: ${text}`,
     noComment: id => `answer ${id}: no open comment on this node`,
   },
@@ -81,11 +83,14 @@ const say = words({
     confirmed: (id, title) => `confermato ${id} ${title}`,
     rejected: (id, title) => `rifiutato ${id} ${title}: resta tracciato fuori dal piano`,
     commented: (id, text) => `commento su ${id}: ${text}`,
+    openChildren: (id, list) => `close ${id}: restano aperti i sotto-passi ${list}; prima chiudili, rinviali (defer) o sostituiscili (replace)`,
+    closedByChildren: (id, title, k) => `chiuso ${id} ${title}: tutti i ${k} sotto-passi fatti`,
     answered: (id, text) => `risposta su ${id}: ${text}`,
     noComment: id => `answer ${id}: nessun commento aperto su questo nodo`,
   },
 })
 const DESCRIPTIVE = ['what', 'why', 'detail', 'title']
+const OPEN = ['todo', 'active']
 
 class Refusal extends Error {}
 const refuse = message => { throw new Refusal(message) }
@@ -107,6 +112,8 @@ export function apply({ text, thread, ops, at, by = 'agent' }) {
   const touch = n => { touched.add(n.id); if (state.thread.last_correction?.id === n.id && !state.moving) state.thread.last_correction.stale = true }
   const log = (id, op, text, proof) => state.log.push({ at, id, op, text, ...(proof?.length ? { proof } : {}) })
   const sign = n => { if (by === 'user') { delete n.review; if (isStructural(n)) n.confirmed = { at, ref: 'chat' } } else if (isStructural(n) && !n.confirmed) n.review = 'confirm' }
+  // The sub-steps and decisions still open inside a node; risks only warn.
+  const openInside = id => nodes.filter(c => c.parent === id && c.kind !== 'risk' && OPEN.includes(c.status))
   const chatProof = () => [{ type: 'message', ref: `chat ${at.slice(0, 10)}` }]
 
   function freeId(parent, kind) {
@@ -187,11 +194,26 @@ export function apply({ text, thread, ops, at, by = 'agent' }) {
         if (fresh.length) { touch(n); log(id, 'fill', say('proofFor', id, fresh.map(p => `${p.type} ${p.ref}`).join(', ')), fresh) }
         return
       }
+      // A container is done when its sub-steps are: never before (chat 2026-11-17, m7.2).
+      const open = openInside(id)
+      if (open.length) refuse(say('openChildren', id, open.map(c => c.id).join(', ')))
       n.status = 'done'
       if (what) n.what = what
       addProof(n, proof)
       touch(n)
       log(id, 'close', say('closed', id, n.title, n.what), proof)
+      // ...and it closes by itself with the last of them, up to the milestone, whose state is derived.
+      let top = n
+      for (let up = nodes.find(x => x.id === top.parent); up && up.kind !== 'milestone' && OPEN.includes(up.status); up = nodes.find(x => x.id === up.parent)) {
+        if (openInside(up.id).length) break
+        const done = nodes.filter(c => c.parent === up.id && c.kind !== 'risk' && c.status === 'done')
+        const evidence = done.flatMap(c => (c.proof ?? []).filter(p => p.type !== 'message'))
+        const fresh = addProof(up, evidence.length ? evidence : [{ type: 'message', ref: `sotto-passi ${done.map(c => c.id).join(', ')}` }])
+        up.status = 'done'
+        touch(up)
+        log(up.id, 'close', say('closedByChildren', up.id, up.title, done.length), fresh)
+        top = up
+      }
       if (state.thread.current !== id) return
       if (n.kind === 'detour' && n.reentry) {
         const back = get(n.reentry)
@@ -200,9 +222,9 @@ export function apply({ text, thread, ops, at, by = 'agent' }) {
         return
       }
       // The next step of the same level; a finished level goes back to its container, which you close.
-      const following = g().next(id)
-      if (following && get(following).parent === n.parent) start(get(following))
-      else if (n.parent) state.thread.current = n.parent
+      const following = g().next(top.id)
+      if (following && get(following).parent === top.parent) start(get(following))
+      else if (top.parent) state.thread.current = top.parent
       else if (following) start(get(following))
     },
 

@@ -317,3 +317,42 @@ test('a comment from you waits on the node until the agent answers it', () => {
   assert.deepEqual(r2.get('c').comments.map(c => c.answer), [{ at: AT, text: 'It needs b; split done.' }, { at: AT, text: 'It needs b; split done.' }])
   assert.equal(run([{ op: 'answer', id: 'a', text: 'Nothing to answer.' }]).ok, false)
 })
+
+const CONTAINER = [
+  n('m1', { kind: 'milestone', title: 'M1', status: 'active', confirmed: OK }),
+  n('p', { parent: 'm1', status: 'active' }),
+  n('p.1', { parent: 'p', proof: [{ type: 'commit', ref: 'aaa1111' }] }),
+  n('p.2', { parent: 'p', status: 'active', proof: PLAN }),
+  n('p.r', { parent: 'p', kind: 'risk', status: 'todo' }),
+  n('q', { parent: 'm1', status: 'todo', after: ['p'] }),
+]
+const ctext = nodes => nodes.map(x => JSON.stringify(x)).join('\n') + '\n'
+
+test('closing the last open sub-step closes its container too, with the sub-steps as proof, and moves on', () => {
+  const r = ok([{ op: 'close', id: 'p.2', what: 'Done.', proof: [{ type: 'commit', ref: 'bbb2222' }] }], { text: ctext(CONTAINER), thread: { current: 'p.2' } })
+  assert.equal(r.get('p').status, 'done')
+  assert.deepEqual(r.get('p').proof.filter(x => x.type === 'commit').map(x => x.ref), ['aaa1111', 'bbb2222'])
+  assert.equal(r.get('m1').status, 'active')
+  assert.deepEqual(r.log.map(l => l.text), ['chiuso p.2 Title p.2: Done.', 'chiuso p Title p: tutti i 2 sotto-passi fatti', 'iniziato q Title q'])
+  assert.equal(r.thread.current, 'q')
+})
+
+test('a container with open sub-steps or decisions does not close; open risks do not count', () => {
+  const r = run([{ op: 'close', id: 'p', what: 'All done.', proof: PLAN }], { text: ctext(CONTAINER), thread: { current: 'p' } })
+  assert.equal(r.ok, false)
+  assert.match(r.errors[0], /close p: .*p\.2/)
+  assert.doesNotMatch(r.errors[0], /p\.r/)
+  const decided = ctext([...CONTAINER.map(x => (x.id === 'p.2' ? { ...x, status: 'done' } : x)), n('p.d', { parent: 'p', kind: 'decision', status: 'todo' })])
+  assert.match(run([{ op: 'close', id: 'p', what: 'x', proof: PLAN }], { text: decided }).errors[0], /p\.d/)
+})
+
+test('closing up stops at the milestone: its state comes from its steps', () => {
+  const nested = ctext([
+    n('m1', { kind: 'milestone', title: 'M1', status: 'active', confirmed: OK }),
+    n('p', { parent: 'm1', status: 'active' }),
+    n('p.1', { parent: 'p', status: 'active' }),
+    n('p.1.1', { parent: 'p.1', status: 'active' }),
+  ])
+  const r = ok([{ op: 'close', id: 'p.1.1', what: 'Leaf.', proof: PLAN }], { text: nested, thread: { current: 'p.1.1' } })
+  assert.deepEqual(['p.1.1', 'p.1', 'p', 'm1'].map(id => r.get(id).status), ['done', 'done', 'done', 'active'])
+})
