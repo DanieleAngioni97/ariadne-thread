@@ -558,3 +558,4 @@
 {"at":"2026-11-17T10:05Z","id":"m6.12","op":"start","text":"started m6.12 Prova su un repo di lavoro"}
 {"at":"2026-11-17T10:05Z","id":"m6.18","op":"close","text":"closed m6.18 handoff nei repo con .ariadne/: in un repo con .ariadne/ handoff non scrive STATE.md né LOG.md: lancia ariadne check --clear e registra quello che manca; provato contro la versione vecchia su un repo sintetico","proof":[{"type":"file","ref":"~/.claude/skills/handoff/SKILL.md"}]}
 {"at":"2026-11-17T10:05Z","id":"m6.12","op":"close","text":"closed m6.12 Prova su un repo di lavoro: repo sintetico con git_guard vero: prima inietta STATE.md, dopo init inietta e suggerisce migrate, dopo migrate --apply non inietta e c'è la scheda (doctor pulito), dopo --undo torna come prima","proof":[{"type":"message","ref":"chat 2026-11-17: prova m6.12 su repo sintetico, quattro fasi tutte corrette"}]}
+{"at":"2026-11-17T10:09Z","id":"","op":"confirm","text":"confirmed 1 changes"}
