@@ -515,3 +515,7 @@
 {"at":"2026-11-17T09:36Z","id":"m6.2.4","op":"fill","text":"proof for m6.2.4: commit ba5901a","proof":[{"type":"commit","ref":"ba5901a"}]}
 {"at":"2026-11-17T09:36Z","id":"m6.2.4","op":"fill","text":"proof for m6.2.4: commit 70b0440","proof":[{"type":"commit","ref":"70b0440"}]}
 {"at":"2026-11-17T09:37Z","id":"m6.2.4","op":"fill","text":"proof for m6.2.4: commit 1a34243","proof":[{"type":"commit","ref":"1a34243"}]}
+{"at":"2026-11-17T09:38Z","id":"m6.2.4","op":"fill","text":"proof for m6.2.4: commit b31ba66","proof":[{"type":"commit","ref":"b31ba66"}]}
+{"at":"2026-11-17T09:38Z","id":"m6.2.4","op":"close","text":"closed m6.2.4 Undo della migrazione: migrate --undo rimette file, grafo, thread e diario; init, skill e README spiegano migrate; provato su una copia reale","proof":[{"type":"commit","ref":"3f793c5"}]}
+{"at":"2026-11-17T09:38Z","id":"m6.2","op":"close","text":"closed m6.2 Migrazione guidata con undo: ariadne migrate: anteprima, --as, --apply con archivio in .ariadne/archive/, --undo; nodi migrati da confermare","proof":[{"type":"file","ref":"docs/m6.2-migrazione.md"}]}
+{"at":"2026-11-17T09:38Z","id":"m6.4","op":"start","text":"started m6.4 Pointers in CLAUDE.md o docs/"}
