@@ -13,6 +13,7 @@ const say = words({
     next: 'Next', none: 'none in the plan', files: 'Useful files', more: 'To dig deeper: ariadne show <id> · ariadne why <id>',
     cut: (k, id) => `- (${k} cut to stay within the limit: ariadne why ${id})`, start: '- (start of the branch)',
     from: 'Comes from (dependencies only):',
+    comments: list => `Comments to read: ${list} · answer: ariadne answer <id> "…"`,
   },
   it: {
     where: (path, status) => `Sei in: ${path} (${status})`, lost: id => `Sei in: ${id} (nodo non trovato nel grafo)`,
@@ -21,6 +22,7 @@ const say = words({
     next: 'Prossimo', none: 'nessuno nel piano', files: 'File utili', more: 'Per approfondire: ariadne show <id> · ariadne why <id>',
     cut: (k, id) => `- (${k} tagliate per stare nel limite: ariadne why ${id})`, start: '- (inizio del ramo)',
     from: 'Da dove viene (solo le dipendenze):',
+    comments: list => `Commenti da leggere: ${list} · rispondi: ariadne answer <id> "…"`,
   },
 })
 
@@ -54,9 +56,9 @@ export function summarize(nodes, thread) {
       .map(n => `- ${n.id} ${n.title}: ${n.what}${n.uncertain ? ` (${say('uncertain')}: ${n.uncertain})` : ''}`)
     : []
 
-  const open = nodes.filter(n => n.kind === 'detour' && (n.status === 'active' || n.status === 'todo') && n.reentry)
-  const reentries = open.length
-    ? [say('waiting'), ...open.map(n => `- ${n.title} → ${say('back')} ${n.reentry}`)]
+  const detours = nodes.filter(n => n.kind === 'detour' && (n.status === 'active' || n.status === 'todo') && n.reentry)
+  const reentries = detours.length
+    ? [say('waiting'), ...detours.map(n => `- ${n.title} → ${say('back')} ${n.reentry}`)]
     : [say('noWaiting')]
 
   const files = current ? usefulFiles(g, current.id) : []
@@ -72,7 +74,10 @@ export function summarize(nodes, thread) {
   const placeholder = behind.length
     ? say('cut', behind.length, current.id)
     : say('start')
-  const render = deps => [where, say('from'), ...(deps.length ? deps : [placeholder]), ...tail].join('\n')
+  // Your comments from the viewer, until the agent answers them (m6.19): read on the next prompt.
+  const open = nodes.flatMap(n => (n.comments ?? []).filter(c => !c.answer).map(c => `${n.id} «${c.text.length > 60 ? c.text.slice(0, 59) + '…' : c.text}»`))
+  const comments = open.length ? [say('comments', open.slice(0, 3).join(', '))] : []
+  const render = deps => [where, ...comments, say('from'), ...(deps.length ? deps : [placeholder]), ...tail].join('\n')
   // Over the limit, the farthest dependencies go first; the other lines always stay.
   let deps = behind
   while (deps.length > 0 && tokens(render(deps)) > LIMIT) deps = deps.slice(0, -1)

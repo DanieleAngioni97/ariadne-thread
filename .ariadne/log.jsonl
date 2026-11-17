@@ -537,3 +537,5 @@
 {"at":"2026-11-17T09:47Z","id":"m6.6","op":"start","text":"started m6.6 Integrazione con l'harness"}
 {"at":"2026-11-17T09:48Z","id":"m6.6","op":"pause","text":"back among the todo steps m6.6 Integrazione con l'harness"}
 {"at":"2026-11-17T09:48Z","id":"m6.19","op":"start","text":"started m6.19 Approvare dal viewer"}
+{"at":"2026-11-17T09:48Z","id":"m6.19","op":"plan","text":"plan for Approvare dal viewer: Commenti nel grafo → Azioni dal server → Coda da confermare nel viewer → Prova nel browser"}
+{"at":"2026-11-17T09:48Z","id":"m6.19.1","op":"start","text":"started m6.19.1 Commenti nel grafo"}

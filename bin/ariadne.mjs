@@ -56,6 +56,7 @@ const say = words({
   fill <id> [--what|--why|--detail|--title …] [--commit|--file|--message …]
   defer <id> <milestone> · replace <id> <successor> · relink <old path> <new>
   move <id> <parent> [--after a,b] · undo · confirm <id>|--all · reject <id> [successor]
+  comment <id> "<text>" (yours) · answer <id> "<text>" (the agent's reply)
   apply <ops.json> · sync [--hook] · view [--port n] · open [id] [--port n] · band [--review i] · check --clear
   --by user: the action comes from you (move, undo, confirm and reject always do)`,
     migrated: 'ariadne migrate: done · every new node waits for your confirmation (ariadne open) · to go back: ariadne migrate --undo',
@@ -98,6 +99,7 @@ const say = words({
   fill <id> [--what|--why|--detail|--title …] [--commit|--file|--message …]
   defer <id> <milestone> · replace <id> <successore> · relink <vecchio percorso> <nuovo>
   move <id> <parent> [--after a,b] · undo · confirm <id>|--all · reject <id> [successore]
+  comment <id> "<testo>" (tuo) · answer <id> "<testo>" (la risposta dell'agente)
   apply <ops.json> · sync [--hook] · view [--port n] · open [id] [--port n] · band [--review i] · check --clear
   --by user: l'azione viene da te (move, undo, confirm e reject lo sono sempre)`,
     noFile: id => `ariadne: ⚠ ${id} si chiude senza file né commit: dove sta il risultato? ariadne fill ${id} --file <percorso>[#sezione]`,
@@ -139,7 +141,7 @@ const FLAGS = {
   by: { type: 'string' }, commit: { type: 'string', multiple: true }, file: { type: 'string', multiple: true },
   message: { type: 'string', multiple: true }, as: { type: 'string', multiple: true }, apply: { type: 'boolean' }, undo: { type: 'boolean' }, always: { type: 'boolean' }, off: { type: 'boolean' }, clear: { type: 'boolean' },
 }
-const USER_OPS = ['move', 'undo', 'confirm', 'reject']
+const USER_OPS = ['move', 'undo', 'confirm', 'reject', 'comment']
 
 // ARIADNE_NOW fixes the clock, so the evaluation generator writes the same bytes on every run.
 const now = () => process.env.ARIADNE_NOW || new Date().toISOString().slice(0, 16) + 'Z'
@@ -531,6 +533,8 @@ function operation(command, args, v) {
     case 'undo': return { op: 'undo' }
     case 'confirm': return a || v.all ? { op: 'confirm', id: a, all: v.all } : null
     case 'reject': return a ? { op: 'reject', id: a, by: b } : null
+    case 'comment': return a && b ? { op: 'comment', id: a, text: b } : null
+    case 'answer': return a && b ? { op: 'answer', id: a, text: b } : null
     default: return null
   }
 }

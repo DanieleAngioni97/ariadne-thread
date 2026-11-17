@@ -98,6 +98,10 @@ A hypothesis the evidence disproves: `ariadne replace <id> <clue that disproves 
 "Move X under Y" → `ariadne move X Y`; "undo" → `ariadne undo`; "approve all" → `ariadne confirm --all`;
 "no, not that" → `ariadne reject <id>`. These are the user's own acts, recorded as theirs.
 
+The user can also comment on a node from the viewer: the card and the prompt summary show "Comments
+to read". Read the node and its diff, change what the comment asks or explain why not, then
+`ariadne answer <id> "<what you did or why>"`; the comment stays open until you answer.
+
 ## Look
 
 `ariadne open [id]` opens the graph in the browser; `ariadne show <id>`, `ariadne why <id>` and

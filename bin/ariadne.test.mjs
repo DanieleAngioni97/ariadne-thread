@@ -601,3 +601,14 @@ test('check --clear says what a /clear would lose, and that it is safe when noth
   assert.match(r.stdout, /Non committato: .*notes\.md/)
   assert.match(r.stdout, /Solo in chat: b \(what\)/)
 })
+
+test('comment is yours and answer is the agent\'s; the card shows the comment until it is answered', () => {
+  const dir = project({ graph: GOOD, thread: { current: 'b' } })
+  assert.equal(run(dir, 'comment', 'b', 'Why now?').status, 0)
+  const node = () => readFileSync(join(dir, '.ariadne', 'graph.jsonl'), 'utf8').trim().split('\n').map(l => JSON.parse(l)).find(x => x.id === 'b')
+  assert.equal(node().comments[0].text, 'Why now?')
+  assert.match(JSON.parse(readFileSync(join(dir, '.ariadne', 'log.jsonl'), 'utf8').trim().split('\n').at(-1)).text, /commento su b/)
+  assert.match(run(dir, 'card').stdout, /## Commenti da leggere\n- b Title b: «Why now\?»/)
+  assert.equal(run(dir, 'answer', 'b', 'Because a is done.').status, 0)
+  assert.doesNotMatch(run(dir, 'card').stdout, /Commenti da leggere/)
+})

@@ -308,3 +308,12 @@ test('plan takes a detail for each step, so a short title keeps its explanation'
   const steps = parse(r.text).filter(x => x.parent === 'm2')
   assert.deepEqual(steps.map(x => [x.title, x.what]), [['Doctor', 'Lists the conflicting sources'], ['Ship', 'Ship']])
 })
+
+test('a comment from you waits on the node until the agent answers it', () => {
+  const r1 = ok([{ op: 'comment', id: 'c', text: 'Why after b?' }], { by: 'user' })
+  assert.deepEqual(r1.get('c').comments, [{ at: AT, text: 'Why after b?' }])
+  assert.deepEqual(r1.log.map(l => l.text), ['commento su c: Why after b?'])
+  const r2 = ok([{ op: 'comment', id: 'c', text: 'And split it.' }, { op: 'answer', id: 'c', text: 'It needs b; split done.' }], { text: r1.text, by: 'user' })
+  assert.deepEqual(r2.get('c').comments.map(c => c.answer), [{ at: AT, text: 'It needs b; split done.' }, { at: AT, text: 'It needs b; split done.' }])
+  assert.equal(run([{ op: 'answer', id: 'a', text: 'Nothing to answer.' }]).ok, false)
+})

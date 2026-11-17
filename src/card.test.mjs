@@ -136,3 +136,11 @@ test('with no step started, as after init and a first plan, the card says so and
   assert.match(text, /\nProssimo: a Title a\n/)
   assert.match(text, /\n## M1 Research \(todo\): Know the field\.\n- a \[todo\] Title a: a result\.\n/)
 })
+
+test('the card puts the open comments first, with how to answer', () => {
+  const nodes = [...NODES, n('g', { parent: 'm2', status: 'todo', comments: [{ at: AT, text: 'Split it?' }] })]
+  const lines = card(nodes, { current: 'd' }, FILES).split('\n')
+  const at = lines.indexOf('## Commenti da leggere')
+  assert.ok(at > 0 && at < lines.indexOf('## M2 Design (active): Shape the tool.'), lines.join('\n'))
+  assert.equal(lines[at + 1], '- g Title g: «Split it?» (rispondi: ariadne answer g "…")')
+})

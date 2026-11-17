@@ -112,3 +112,14 @@ test('with no step started, the summary says so and points to the first ready st
   assert.match(text, /^Sei in: nessun passo avviato \(ariadne start <id>\)\n/)
   assert.match(text, /\nProssimo: a Title a\n/)
 })
+
+test('open comments come right after where you are, with how to answer', () => {
+  process.env.ARIADNE_LANG = 'it'
+  const nodes = [
+    { id: 'a', kind: 'step', title: 'A', status: 'active', what: 'A.', comments: [{ at: '2026-11-17', text: 'Why this order?' }] },
+    { id: 'b', kind: 'step', title: 'B', status: 'todo', what: 'B.', comments: [{ at: '2026-11-17', text: 'Old.', answer: { at: '2026-11-17', text: 'Done.' } }] },
+  ]
+  const lines = summarize(nodes, { current: 'a' }).split('\n')
+  assert.equal(lines[1], 'Commenti da leggere: a «Why this order?» · rispondi: ariadne answer <id> "…"')
+  assert.equal(summarize(nodes.slice(1), { current: 'b' }).includes('Commenti'), false)
+})

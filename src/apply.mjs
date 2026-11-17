@@ -42,6 +42,9 @@ const say = words({
     confirmedAll: n => `confirmed ${n} changes`,
     confirmed: (id, title) => `confirmed ${id} ${title}`,
     rejected: (id, title) => `rejected ${id} ${title}: kept on record, outside the plan`,
+    commented: (id, text) => `comment on ${id}: ${text}`,
+    answered: (id, text) => `answer on ${id}: ${text}`,
+    noComment: id => `answer ${id}: no open comment on this node`,
   },
   it: {
     kind: { milestone: 'milestone', step: 'passo', list: 'lista', point: 'punto', detour: 'deviazione', decision: 'decisione', risk: 'rischio' },
@@ -77,6 +80,9 @@ const say = words({
     confirmedAll: n => `confermate ${n} modifiche`,
     confirmed: (id, title) => `confermato ${id} ${title}`,
     rejected: (id, title) => `rifiutato ${id} ${title}: resta tracciato fuori dal piano`,
+    commented: (id, text) => `commento su ${id}: ${text}`,
+    answered: (id, text) => `risposta su ${id}: ${text}`,
+    noComment: id => `answer ${id}: nessun commento aperto su questo nodo`,
   },
 })
 const DESCRIPTIVE = ['what', 'why', 'detail', 'title']
@@ -293,6 +299,23 @@ export function apply({ text, thread, ops, at, by = 'agent' }) {
         touch(n)
       }
       log(all ? '' : id, 'confirm', all ? say('confirmedAll', queue.length) : say('confirmed', id, queue[0].title))
+    },
+
+    // Your note on a node, from the viewer or the chat; the agent reads it and answers (m6.19).
+    comment({ id, text }) {
+      const n = get(id)
+      n.comments = [...(n.comments ?? []), { at, text }]
+      touch(n)
+      log(id, 'comment', say('commented', id, text))
+    },
+
+    answer({ id, text }) {
+      const n = get(id)
+      const open = (n.comments ?? []).filter(c => !c.answer)
+      if (open.length === 0) refuse(say('noComment', id))
+      for (const c of open) c.answer = { at, text }
+      touch(n)
+      log(id, 'answer', say('answered', id, text))
     },
 
     reject({ id, by: successor }) {
