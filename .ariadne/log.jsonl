@@ -500,3 +500,5 @@
 {"at":"2026-11-17T09:19Z","id":"m6.3.4","op":"close","text":"closed m6.3.4 Viewer, skill e README: viewer con icona e colore per decisioni e rischi aperti; skill e README spiegano quando usarli","proof":[{"type":"commit","ref":"0e641e2"}]}
 {"at":"2026-11-17T09:20Z","id":"m6.3","op":"close","text":"closed m6.3 Rischi e decisioni aperte nel grafo: decision e risk nel grafo: schema, regole, scheda, viewer, skill e README","proof":[{"type":"file","ref":"docs/m6.3-decisioni-e-rischi.md"}]}
 {"at":"2026-11-17T09:20Z","id":"m6.1","op":"start","text":"started m6.1 Init rileva STATE.md e LOG.md"}
+{"at":"2026-11-17T09:21Z","id":"m6.1","op":"close","text":"closed m6.1 Init rileva STATE.md e LOG.md: init rileva STATE.md e LOG.md e propone dove portare ogni parte, senza toccarli","proof":[{"type":"commit","ref":"e5a1142"}]}
+{"at":"2026-11-17T09:21Z","id":"m6.2","op":"start","text":"started m6.2 Migrazione guidata con undo"}
