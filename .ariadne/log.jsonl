@@ -508,3 +508,5 @@
 {"at":"2026-11-17T09:27Z","id":"m6.2.1","op":"start","text":"started m6.2.1 Lettura di STATE.md e LOG.md"}
 {"at":"2026-11-17T09:28Z","id":"m6.2.1","op":"close","text":"closed m6.2.1 Lettura di STATE.md e LOG.md: src/migrate.mjs legge sezioni di STATE.md e righe di LOG.md; provato sugli 8 repo reali, nessuna riga persa","proof":[{"type":"commit","ref":"2e65ee7"}]}
 {"at":"2026-11-17T09:28Z","id":"m6.2.2","op":"start","text":"started m6.2.2 Anteprima delle operazioni"}
+{"at":"2026-11-17T09:32Z","id":"m6.2.2","op":"close","text":"closed m6.2.2 Anteprima delle operazioni: ariadne migrate stampa l'anteprima verificata da apply, con --as per correggere la classificazione; provato su una copia di benchmark-repo","proof":[{"type":"commit","ref":"fab9515"}]}
+{"at":"2026-11-17T09:32Z","id":"m6.2.3","op":"start","text":"started m6.2.3 Apply con archivio"}
