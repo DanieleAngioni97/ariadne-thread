@@ -496,3 +496,7 @@
 {"at":"2026-11-17T09:15Z","id":"m6.3.3","op":"start","text":"started m6.3.3 Sezioni nella scheda"}
 {"at":"2026-11-17T09:16Z","id":"m6.3.3","op":"close","text":"closed m6.3.3 Sezioni nella scheda: la scheda mostra Decisioni aperte (tutte) e Rischi aperti (milestone corrente); STATE.md etichetta il tipo","proof":[{"type":"commit","ref":"310edf6"}]}
 {"at":"2026-11-17T09:16Z","id":"m6.3.4","op":"start","text":"started m6.3.4 Viewer, skill e README"}
+{"at":"2026-11-17T09:19Z","id":"m6.3.4","op":"fill","text":"proof for m6.3.4: commit ad82a2c","proof":[{"type":"commit","ref":"ad82a2c"}]}
+{"at":"2026-11-17T09:19Z","id":"m6.3.4","op":"close","text":"closed m6.3.4 Viewer, skill e README: viewer con icona e colore per decisioni e rischi aperti; skill e README spiegano quando usarli","proof":[{"type":"commit","ref":"0e641e2"}]}
+{"at":"2026-11-17T09:20Z","id":"m6.3","op":"close","text":"closed m6.3 Rischi e decisioni aperte nel grafo: decision e risk nel grafo: schema, regole, scheda, viewer, skill e README","proof":[{"type":"file","ref":"docs/m6.3-decisioni-e-rischi.md"}]}
+{"at":"2026-11-17T09:20Z","id":"m6.1","op":"start","text":"started m6.1 Init rileva STATE.md e LOG.md"}
