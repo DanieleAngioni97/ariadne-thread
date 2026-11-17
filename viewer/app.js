@@ -332,7 +332,7 @@ function Join({ data: { node } }) {
   return html`
     <div class=${`join ${p.done === p.total ? 'is-done' : ''}`} title=${t.joinHint(node.title)}>
       <${Handle} type="target" position=${Position.Left} />
-      <div class="bar"></div>
+      <div class="join-line"></div>
       <div class="count">${p.done}/${p.total}</div>
     </div>`
 }
