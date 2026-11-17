@@ -576,3 +576,4 @@
 {"at":"2026-11-17T10:21Z","id":"m8.1","op":"start","text":"started m8.1 Avvisi sulla salute del piano"}
 {"at":"2026-11-17T10:26Z","id":"m8","op":"fill","text":"proof for m8: message chat 2026-11-17: obiettivo dell'utente: arrivare a migrare il repo Atlas per provare ariadne sul lavoro vero e farne fix o nuove funzioni","proof":[{"type":"message","ref":"chat 2026-11-17: obiettivo dell'utente: arrivare a migrare il repo Atlas per provare ariadne sul lavoro vero e farne fix o nuove funzioni"}]}
 {"at":"2026-11-17T10:26Z","id":"m8.2","op":"add","text":"detour m8.2 Sblocchi per migrare Atlas, returns to m8.1"}
+{"at":"2026-11-17T10:27Z","id":"m8.2","op":"close","text":"closed m8.2 Sblocchi per migrare Atlas: titoli storici lunghi non bloccano più le scritture; migrate sceglie la milestone del passo corrente; anteprima su una copia di Atlas corretta","proof":[{"type":"commit","ref":"a5d8970"}]}
