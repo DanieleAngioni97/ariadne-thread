@@ -502,3 +502,7 @@
 {"at":"2026-11-17T09:20Z","id":"m6.1","op":"start","text":"started m6.1 Init rileva STATE.md e LOG.md"}
 {"at":"2026-11-17T09:21Z","id":"m6.1","op":"close","text":"closed m6.1 Init rileva STATE.md e LOG.md: init rileva STATE.md e LOG.md e propone dove portare ogni parte, senza toccarli","proof":[{"type":"commit","ref":"e5a1142"}]}
 {"at":"2026-11-17T09:21Z","id":"m6.2","op":"start","text":"started m6.2 Migrazione guidata con undo"}
+{"at":"2026-11-17T09:27Z","id":"m6.2","op":"fill","text":"proof for m6.2: message chat 2026-11-17: archivio in .ariadne/archive/; l'agente classifica liberamente le voci e i nodi migrati restano da confermare; undo con ariadne migrate --undo","proof":[{"type":"message","ref":"chat 2026-11-17: archivio in .ariadne/archive/; l'agente classifica liberamente le voci e i nodi migrati restano da confermare; undo con ariadne migrate --undo"}]}
+{"at":"2026-11-17T09:27Z","id":"m6","op":"plan","text":"plan for Sostituire STATE.md e LOG.md in sicurezza: Approvare dal viewer"}
+{"at":"2026-11-17T09:27Z","id":"m6.2","op":"plan","text":"plan for Migrazione guidata con undo: Lettura di STATE.md e LOG.md → Anteprima delle operazioni → Apply con archivio → Undo della migrazione"}
+{"at":"2026-11-17T09:27Z","id":"m6.2.1","op":"start","text":"started m6.2.1 Lettura di STATE.md e LOG.md"}
