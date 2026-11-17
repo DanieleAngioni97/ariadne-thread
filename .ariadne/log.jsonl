@@ -541,3 +541,5 @@
 {"at":"2026-11-17T09:48Z","id":"m6.19.1","op":"start","text":"started m6.19.1 Commenti nel grafo"}
 {"at":"2026-11-17T09:49Z","id":"m6.19.1","op":"close","text":"closed m6.19.1 Commenti nel grafo: comment (tuo) e answer (agente) sui nodi; scheda e riassunto mostrano i commenti aperti","proof":[{"type":"commit","ref":"651221e"}]}
 {"at":"2026-11-17T09:49Z","id":"m6.19.2","op":"start","text":"started m6.19.2 Azioni dal server"}
+{"at":"2026-11-17T09:51Z","id":"m6.19.2","op":"close","text":"closed m6.19.2 Azioni dal server: POST /act sul server del viewer (confirm, confirmAll, reject, comment come utente), con header e Host di guardia","proof":[{"type":"commit","ref":"992ba87"}]}
+{"at":"2026-11-17T09:51Z","id":"m6.19.3","op":"start","text":"started m6.19.3 Coda da confermare nel viewer"}
