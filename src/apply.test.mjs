@@ -94,6 +94,41 @@ test('closing the last step of a level goes back to its container', () => {
   assert.equal(r.thread.current, 'm1')
 })
 
+const DECISION = n('d', { kind: 'decision', parent: 'm1', status: 'todo', title: 'Where to host?', what: 'GitHub or GitLab.' })
+const RISK = n('r', { kind: 'risk', parent: 'b', status: 'todo', title: 'Merge conflicts', what: 'Expect add/add on STATE.md.' })
+const withNodes = (...extra) => [...NODES, ...extra].map(x => JSON.stringify(x)).join('\n') + '\n'
+
+test('a decision and a risk are not work: start refuses them', () => {
+  for (const id of ['d', 'r']) {
+    const r = run([{ op: 'start', id }], { text: withNodes(DECISION, RISK) })
+    assert.equal(r.ok, false, id)
+    assert.match(r.errors[0], new RegExp(`start ${id}`))
+  }
+})
+
+test('a decision closes only with the user\'s word: a message', () => {
+  const text = withNodes(DECISION)
+  const refused = run([{ op: 'close', id: 'd', what: 'GitHub.', proof: [{ type: 'commit', ref: 'abc1234' }] }], { text })
+  assert.equal(refused.ok, false)
+  assert.match(refused.errors[0], /close d/)
+  const r = ok([{ op: 'close', id: 'd', what: 'GitHub.', proof: [{ type: 'message', ref: 'chat 2026-11-11: GitHub' }] }], { text })
+  assert.deepEqual([r.get('d').status, r.get('d').what, r.thread.current], ['done', 'GitHub.', 'b'])
+})
+
+test('closing a step does not move onto a decision or a risk, nor onto what waits for a decision', () => {
+  const c = n('c', { parent: 'm1', status: 'todo', after: ['d'] })
+  const text = [...NODES.filter(x => x.id !== 'c'), { ...DECISION, after: ['b'] }, RISK, c].map(x => JSON.stringify(x)).join('\n') + '\n'
+  const r = ok([{ op: 'close', id: 'b', what: 'B.', proof: PLAN }], { text })
+  assert.equal(r.thread.current, 'm1')
+  assert.deepEqual(['d', 'r', 'c'].map(id => r.get(id).status), ['todo', 'todo', 'todo'])
+})
+
+test('add risk hangs it on where you are; the log names the kind', () => {
+  const r = ok([{ op: 'add', node: { kind: 'risk', title: 'Keys expire', what: 'Bedrock answers 403.' } }, { op: 'add', node: { kind: 'decision', title: 'Host?', what: 'GitHub or GitLab.' } }])
+  assert.deepEqual([r.get('b.1').kind, r.get('b.1').parent, r.get('b.1').review], ['risk', 'b', undefined])
+  assert.deepEqual(r.log.map(l => l.text), ['aggiunto rischio b.1 Keys expire sotto b', 'aggiunto decisione b.2 Host? sotto b'])
+})
+
 test('a detour starts where you are and closing it goes back there', () => {
   const r1 = ok([{ op: 'add', node: { kind: 'detour', title: 'Side', what: 'Check a side question.', start: true } }])
   const d = r1.get('m1.1')

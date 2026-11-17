@@ -14,6 +14,9 @@ export function parse(text) {
   return nodes
 }
 
+/** A decision waits for the user and a risk only warns: neither is work to start. */
+export const isWork = n => n.kind !== 'decision' && n.kind !== 'risk'
+
 export function makeGraph(nodes) {
   const byId = new Map(nodes.map(n => [n.id, n]))
   const get = id => byId.get(id)
@@ -74,7 +77,7 @@ export function makeGraph(nodes) {
    */
   function next(current) {
     const here = new Set([current, ...containers(current)])
-    const ready = n => n.status === 'todo' && (n.after ?? []).every(a => here.has(a) || get(a)?.status === 'done')
+    const ready = n => isWork(n) && n.status === 'todo' && (n.after ?? []).every(a => here.has(a) || get(a)?.status === 'done')
     const inside = childrenOf(current).find(ready)
     if (inside) return inside.id
     for (const level of [get(current)?.parent, ...containers(current).map(c => get(c).parent)]) {
@@ -88,7 +91,7 @@ export function makeGraph(nodes) {
 
   /** With no step started yet, as after init and a first plan: the first ready todo step, in file order. */
   function first() {
-    const ready = n => n.kind !== 'milestone' && n.status === 'todo' && (n.after ?? []).every(a => get(a)?.status === 'done')
+    const ready = n => n.kind !== 'milestone' && isWork(n) && n.status === 'todo' && (n.after ?? []).every(a => get(a)?.status === 'done')
     return nodes.find(ready)?.id ?? null
   }
 

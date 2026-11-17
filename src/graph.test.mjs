@@ -104,6 +104,18 @@ test('next climbs a level when the container has nothing ready', () => {
   assert.equal(g.next('e'), 'm3')
 })
 
+test('next and first skip decisions and risks: they are not work', () => {
+  const g = makeGraph([
+    { id: 'm', kind: 'milestone', status: 'active' },
+    { id: 'r', kind: 'risk', parent: 'm', status: 'todo' },
+    { id: 'd', kind: 'decision', parent: 'm', status: 'todo' },
+    { id: 'a', kind: 'step', parent: 'm', status: 'todo', after: ['d'] },
+    { id: 'b', kind: 'step', parent: 'm', status: 'todo' },
+  ])
+  assert.equal(g.first(), 'b')
+  assert.equal(g.next('m'), 'b')
+})
+
 test('next is null when the plan is over', () => {
   assert.equal(makeGraph(NODES.slice(0, 3)).next('b'), null)
 })

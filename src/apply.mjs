@@ -2,14 +2,16 @@
 // Rules: docs/implementazione.md § m3.6 and specifica.md § Operazioni. Pure: text in, text out.
 // Untouched nodes keep their line byte for byte and new nodes go at the end, so diffs stay small (R19).
 
-import { makeGraph } from './graph.mjs'
+import { isWork, makeGraph } from './graph.mjs'
 import { words } from './i18n.mjs'
 import { TITLE_LIMIT, validate } from './validate.mjs'
 
 const isStructural = n => n.kind === 'milestone' || n.kind === 'detour' || n.status === 'deferred' || n.status === 'replaced'
 const say = words({
   en: {
-    kind: { milestone: 'milestone', step: 'step', list: 'list', point: 'point', detour: 'detour' },
+    kind: { milestone: 'milestone', step: 'step', list: 'list', point: 'point', detour: 'detour', decision: 'decision', risk: 'risk' },
+    notWork: (id, kind) => `start ${id}: a ${kind} is not work to start (a decision is closed with the user's choice, a risk when it is over)`,
+    decisionWord: id => `close ${id}: a decision is closed with the user's word, a message (--message "chat <date>: …")`,
     invalid: line => `invalid graph at line ${line}: fix it before changing it`,
     unknown: id => `node ${id} not found`,
     taken: id => `id ${id} already used`,
@@ -42,7 +44,9 @@ const say = words({
     rejected: (id, title) => `rejected ${id} ${title}: kept on record, outside the plan`,
   },
   it: {
-    kind: { milestone: 'milestone', step: 'passo', list: 'lista', point: 'punto', detour: 'deviazione' },
+    kind: { milestone: 'milestone', step: 'passo', list: 'lista', point: 'punto', detour: 'deviazione', decision: 'decisione', risk: 'rischio' },
+    notWork: (id, kind) => `start ${id}: ${kind === 'risk' ? 'un rischio' : 'una decisione'} non è lavoro da avviare (una decisione si chiude con la scelta dell'utente, un rischio quando è passato)`,
+    decisionWord: id => `close ${id}: una decisione si chiude con la parola dell'utente, un messaggio (--message "chat <data>: …")`,
     invalid: line => `grafo non valido alla riga ${line}: correggilo prima di cambiarlo`,
     unknown: id => `nodo ${id} non trovato`,
     taken: id => `id ${id} già usato`,
@@ -152,7 +156,11 @@ export function apply({ text, thread, ops, at, by = 'agent' }) {
       if (made.length && parent === state.thread.current) start(made[0])
     },
 
-    start({ id }) { start(get(id)) },
+    start({ id }) {
+      const n = get(id)
+      if (!isWork(n)) refuse(say('notWork', id, n.kind))
+      start(n)
+    },
 
     // A step started too early, as a plan's first step is: back to todo, and the thread on its container.
     pause({ id }) {
@@ -167,6 +175,7 @@ export function apply({ text, thread, ops, at, by = 'agent' }) {
     close({ id, what, proof = [] }) {
       const n = get(id)
       if (proof.length === 0) refuse(say('noProof', id))
+      if (n.kind === 'decision' && !proof.some(p => p.type === 'message')) refuse(say('decisionWord', id))
       if (n.status === 'done') {
         const fresh = addProof(n, proof)
         if (fresh.length) { touch(n); log(id, 'fill', say('proofFor', id, fresh.map(p => `${p.type} ${p.ref}`).join(', ')), fresh) }
