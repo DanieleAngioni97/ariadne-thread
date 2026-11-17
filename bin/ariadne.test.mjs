@@ -60,6 +60,21 @@ test('init makes the project an ariadne project, says what comes next, and can r
   assert.match(run(dir, 'card', '--hook').stdout, /nessun grafo/)
 })
 
+test('init finds STATE.md and LOG.md and proposes moving them into the thread, without touching them', () => {
+  const dir = project()
+  writeFileSync(join(dir, 'STATE.md'), '# State\n')
+  writeFileSync(join(dir, 'LOG.md'), '# Log\n')
+  const r = run(dir, 'init')
+  assert.equal(r.status, 0, r.stderr)
+  assert.match(r.stdout, /trovati STATE\.md e LOG\.md/)
+  assert.match(r.stdout, /add decision.*add risk.*CLAUDE\.md.*ariadne doctor/s)
+  assert.equal(readFileSync(join(dir, 'STATE.md'), 'utf8'), '# State\n')
+  const only = project()
+  writeFileSync(join(only, 'LOG.md'), '# Log\n')
+  assert.match(run(only, 'init').stdout, /trovato LOG\.md/)
+  assert.doesNotMatch(run(project(), 'init').stdout, /STATE\.md|LOG\.md/)
+})
+
 test('init says how to turn the band on when Claude Code does not load hooks modules yet', () => {
   const init = flag => spawnSync(process.execPath, [CLI, 'init'], { cwd: project(), encoding: 'utf8', env: { ...process.env, CLAUDE_CODE_ENABLE_FUNCTION_HOOKS: flag } })
   assert.match(init('').stdout, /banda.*"env": \{ "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1" \}.*settings\.json/s)

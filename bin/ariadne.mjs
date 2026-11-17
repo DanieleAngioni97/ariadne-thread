@@ -54,6 +54,7 @@ const say = words({
   --by user: the action comes from you (move, undo, confirm and reject always do)`,
     noFile: id => `ariadne: ⚠ ${id} closes with no file or commit: where does the result live? ariadne fill ${id} --file <path>[#section]`,
     ready: 'ariadne: project ready in .ariadne/ · ask the agent to keep the thread: the graph starts with the first plan',
+    oldState: files => `ariadne: found ${files.join(' and ')}: two sources of state are one too many. Propose to the user to move ${files.length > 1 ? 'them' : 'it'} into the thread: Next and open steps → ariadne plan; open decisions → ariadne add decision; risks → ariadne add risk; commands, tests and paths → CLAUDE.md or docs/. Then ariadne doctor lists the hooks and skills that still use STATE.md or LOG.md. ariadne leaves the files where they are until the user chooses.`,
     bandOff: 'ariadne: the band above the prompt needs hooks modules, in early access: add "env": { "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1" } to ~/.claude/settings.json and restart Claude Code. Everything else works without it.',
     noGraph: 'ariadne: no graph in .ariadne/ yet · the agent starts it with the first plan',
     invalid: (line, id, rule, message, more) => `⚠ invalid graph: line ${line}${id ? ` ${id}` : ''} [${rule}] ${message}${more}`,
@@ -84,6 +85,7 @@ const say = words({
   --by user: l'azione viene da te (move, undo, confirm e reject lo sono sempre)`,
     noFile: id => `ariadne: ⚠ ${id} si chiude senza file né commit: dove sta il risultato? ariadne fill ${id} --file <percorso>[#sezione]`,
     ready: "ariadne: progetto pronto in .ariadne/ · chiedi all'agente di tracciare il lavoro: il grafo nasce con il primo piano",
+    oldState: files => `ariadne: ${files.length > 1 ? 'trovati' : 'trovato'} ${files.join(' e ')}: due fonti dello stato sono una di troppo. Proponi all'utente di portar${files.length > 1 ? 'li' : 'lo'} nel filo: Next e passi aperti → ariadne plan; decisioni aperte → ariadne add decision; rischi → ariadne add risk; comandi, test e percorsi → CLAUDE.md o docs/. Poi ariadne doctor elenca hook e skill che usano ancora STATE.md o LOG.md. ariadne lascia i file dove sono finché l'utente non sceglie.`,
     bandOff: 'ariadne: la banda sopra il prompt richiede gli hooks modules, in early access: aggiungi "env": { "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1" } a ~/.claude/settings.json e riavvia Claude Code. Tutto il resto funziona anche senza.',
     noGraph: "ariadne: nessun grafo in .ariadne/ · l'agente lo crea con il primo piano",
     invalid: (line, id, rule, message, more) => `⚠ grafo non valido: riga ${line}${id ? ` ${id}` : ''} [${rule}] ${message}${more}`,
@@ -220,6 +222,9 @@ function init() {
   mkdirSync('.ariadne', { recursive: true })
   for (const name of ['STATE.md', 'local.json']) keepOut(process.cwd(), name)
   console.log(say('ready'))
+  // A hand-written state next to the thread splits the truth: propose the move, touch nothing (m6.1).
+  const old = ['STATE.md', 'LOG.md'].filter(name => existsSync(name))
+  if (old.length) console.log(say('oldState', old))
   // Claude Code loads the band only with this flag in its environment, which its Bash inherits.
   if (process.env.CLAUDE_CODE_ENABLE_FUNCTION_HOOKS !== '1') console.log(say('bandOff'))
 }
