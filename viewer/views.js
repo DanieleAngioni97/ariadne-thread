@@ -109,3 +109,9 @@ export function searchNodes(data, query, limit = 8) {
     .slice(0, limit)
     .map(x => x.n)
 }
+
+/** What the agent added or changed alone and waits for you (review: confirm), in graph order (m6.19). */
+export const reviewQueue = data => inOrder(data).filter(({ node }) => node.review === 'confirm')
+
+/** Your comments on a node that the agent has not answered yet. */
+export const openComments = node => (node.comments ?? []).filter(c => !c.answer)

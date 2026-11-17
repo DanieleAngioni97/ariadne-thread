@@ -48,7 +48,18 @@ const STRINGS = {
     cues: [
       ['current', 'current step'], ['thread', 'where it comes from'], ['review', 'to confirm'], ['uncertain', 'uncertain proof'],
     ],
-    views: { label: 'Views', graph: 'Graph', timeline: 'Timeline', list: 'List' },
+    views: { label: 'Views', graph: 'Graph', timeline: 'Timeline', list: 'List', review: k => (k ? `To confirm (${k})` : 'To confirm') },
+    review: {
+      intro: k => `The agent added or changed ${k === 1 ? 'one thing' : `${k} things`} on its own. Approve what is right, reject what is not: a rejected node stays on record, outside the plan.`,
+      none: 'Nothing to confirm: everything the agent did alone has your answer.',
+      note: 'The agent added this on its own: is it right?',
+      approve: 'Approve', reject: 'Reject', approveAll: k => `Approve all ${k}`,
+      why: { added: 'Added', milestone: 'New milestone', deferred: 'Deferred', replaced: 'Replaced' },
+    },
+    comments: {
+      title: 'Comments', open: k => `${k} waiting for the agent`, agent: 'Agent:', waiting: 'The agent reads it at your next prompt.',
+      placeholder: 'What should change here, or what is unclear?', send: 'Send', hint: 'The agent changes it or explains, then answers here.',
+    },
     search: { label: 'Search steps', placeholder: 'Search' },
     filters: 'Filters',
     all: 'All',
@@ -134,7 +145,18 @@ const STRINGS = {
     cues: [
       ['current', 'passo corrente'], ['thread', 'da dove viene'], ['review', 'da confermare'], ['uncertain', 'prova incerta'],
     ],
-    views: { label: 'Viste', graph: 'Grafo', timeline: 'Cronologia', list: 'Elenco' },
+    views: { label: 'Viste', graph: 'Grafo', timeline: 'Cronologia', list: 'Elenco', review: k => (k ? `Da confermare (${k})` : 'Da confermare') },
+    review: {
+      intro: k => `L'agente ha aggiunto o cambiato ${k === 1 ? 'una cosa' : `${k} cose`} da solo. Approva quello che va bene, rifiuta il resto: un nodo rifiutato resta tracciato, fuori dal piano.`,
+      none: 'Niente da confermare: tutto quello che l’agente ha fatto da solo ha la tua risposta.',
+      note: 'L’agente l’ha aggiunto da solo: va bene?',
+      approve: 'Approva', reject: 'Rifiuta', approveAll: k => `Approva tutte e ${k}`,
+      why: { added: 'Aggiunto', milestone: 'Nuova milestone', deferred: 'Rinviato', replaced: 'Sostituito' },
+    },
+    comments: {
+      title: 'Commenti', open: k => `${k} in attesa dell’agente`, agent: 'Agente:', waiting: 'L’agente lo legge al tuo prossimo prompt.',
+      placeholder: 'Cosa va cambiato qui, o cosa non è chiaro?', send: 'Invia', hint: 'L’agente lo cambia o lo spiega, poi risponde qui.',
+    },
     search: { label: 'Cerca un passo', placeholder: 'Cerca' },
     filters: 'Filtri',
     all: 'Tutti',

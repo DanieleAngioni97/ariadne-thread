@@ -455,3 +455,38 @@ button { font: inherit; color: inherit; }
 .to-up .arrow { transform: rotate(-90deg); }
 .to-down .arrow { transform: rotate(90deg); }
 .legend-keys { grid-column: 1 / -1; margin: 6px 0 0; padding-top: 8px; border-top: 1px solid var(--line); color: var(--muted); }
+
+/* Review and comments (m6.19): your answers to what the agent did alone. */
+.btn {
+  display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border-radius: 8px;
+  border: 1px solid var(--line-strong); background: var(--surface); font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: border-color 120ms ease, background-color 120ms ease, transform 120ms var(--ease-out);
+}
+.btn:hover { border-color: var(--ink); }
+.btn:active { transform: scale(0.97); }
+.btn:disabled { opacity: 0.5; cursor: default; transform: none; }
+.btn-primary { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+.review-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+.act-error { color: var(--thread); font-size: 13px; font-weight: 600; }
+.review-box { margin: 16px 24px 0; padding: 12px 14px; border-radius: 8px; border: 1px dashed var(--thread); background: var(--thread-soft); }
+.review-box p { font-weight: 600; }
+.review-head { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 12px; }
+.review-head p { margin: 0; flex: 1 1 360px; line-height: 1.5; }
+.review-list { list-style: none; margin: 0; padding: 0; }
+.review-item { border: 1px solid var(--line); border-left: 4px solid var(--k); border-radius: 10px; padding: 12px 14px; }
+.review-item + .review-item { margin-top: 10px; }
+.review-item.is-selected { border-color: var(--ink); border-left-color: var(--k); }
+.review-item p { margin: 6px 0 0; font-size: 14px; line-height: 1.5; }
+.review-item .muted { color: var(--muted); font-size: 13px; }
+.views .has-review { color: var(--thread); }
+.comments { list-style: none; margin: 0 0 12px; padding: 0; font-size: 14px; }
+.comments li { padding: 8px 10px; border-radius: 8px; background: var(--ground); }
+.comments li + li { margin-top: 6px; }
+.comments .when { color: var(--muted); font-size: 12px; }
+.comments .answer { margin-top: 6px; }
+.comments .waiting { margin-top: 4px; color: var(--muted); font-size: 13px; }
+.comment-form textarea {
+  width: 100%; resize: vertical; font: inherit; font-size: 14px; padding: 8px 10px;
+  border: 1px solid var(--line-strong); border-radius: 8px; background: var(--surface); color: var(--ink);
+}
+.comment-form .hint { color: var(--muted); font-size: 12px; align-self: center; }

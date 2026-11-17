@@ -12,7 +12,7 @@ import { summarize } from '../src/summary.mjs'
 import { validate } from '../src/validate.mjs'
 import { StatusIcon } from './icons.js'
 import { fitTarget, nearest, offscreen, viewportFor } from './nav.js'
-import { dayOffset, groupOf, kindOf, lastActivity, listCounts, listRows, parseLog, searchNodes, timeline } from './views.js'
+import { dayOffset, groupOf, kindOf, lastActivity, listCounts, listRows, openComments, parseLog, reviewQueue, searchNodes, timeline } from './views.js'
 import { lang, t } from './i18n.js'
 import {
   anomalies, cameFrom, defaultExpanded, emptyNote, fromGraph, hasChildren, holdsCurrent, labelOf, ledTo, panelRows, pathTo, threadSet,
@@ -66,6 +66,66 @@ load(files)
 document.documentElement.lang = lang
 // The summary from src/ speaks the interface's language.
 globalThis.ARIADNE_LANG = lang
+
+// Your acts on the graph go through the viewer's server, as you (m6.19): null when done, else the refusal.
+// The page then reads the files again at once instead of at the next tick.
+const act = body => fetch('act', { method: 'POST', headers: { 'content-type': 'application/json', 'x-ariadne-act': '1' }, body: JSON.stringify(body) })
+  .then(async r => {
+    if (!r.ok) return (await r.text()) || String(r.status)
+    dispatchEvent(new Event('ariadne:changed'))
+    return null
+  }, error => error.message)
+
+/** Approve or reject one node the agent added alone. */
+function ReviewActions({ id }) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
+  const run = async body => { setBusy(true); setError(await act(body)); setBusy(false) }
+  return html`
+    <div class="review-actions">
+      <button class="btn btn-primary" disabled=${busy} onClick=${() => run({ op: 'confirm', id })}>${t.review.approve}</button>
+      <button class="btn" disabled=${busy} onClick=${() => run({ op: 'reject', id })}>${t.review.reject}</button>
+      ${error && html`<span class="act-error" role="alert">${error}</span>`}
+    </div>`
+}
+
+/** Your comments on a node, the agent's answers, and a box for a new one. */
+function Comments({ node }) {
+  const [text, setText] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
+  const list = node.comments ?? []
+  const send = async e => {
+    e.preventDefault()
+    if (!text.trim()) return
+    setBusy(true)
+    const refused = await act({ op: 'comment', id: node.id, text })
+    setError(refused)
+    if (!refused) setText('')
+    setBusy(false)
+  }
+  return html`
+    <section>
+      <h3>${t.comments.title}${openComments(node).length ? ` · ${t.comments.open(openComments(node).length)}` : ''}</h3>
+      ${list.length > 0 && html`
+        <ol class="comments">
+          ${list.map((c, i) => html`
+            <li key=${i}>
+              <p>${c.text}</p>
+              <span class="when">${shortDate(c.at)} ${timeOf(c.at)}</span>
+              ${c.answer ? html`<p class="answer"><b>${t.comments.agent}</b> ${c.answer.text}</p>` : html`<p class="waiting">${t.comments.waiting}</p>`}
+            </li>`)}
+        </ol>`}
+      <form class="comment-form" onSubmit=${send}>
+        <textarea rows="3" value=${text} onInput=${e => setText(e.target.value)} placeholder=${t.comments.placeholder} aria-label=${t.comments.title}></textarea>
+        <div class="row-actions">
+          <button class="btn" type="submit" disabled=${busy || !text.trim()}>${t.comments.send}</button>
+          <span class="hint">${t.comments.hint}</span>
+        </div>
+        ${error && html`<p class="act-error" role="alert">${error}</p>`}
+      </form>
+    </section>`
+}
 
 const childCount = id => data.nodes.filter(n => n.parent === id).length
 const allContainers = () => new Set(data.nodes.filter(n => hasChildren(data, n.id)).map(n => n.id))
@@ -337,6 +397,11 @@ function Panel({ node, open, expanded, focus, onSelect, onToggle, onFocus, onClo
       </header>
 
       ${problem && html`<div class="warning" role="alert"><b>!</b> ${t.anomaly[problem]}</div>`}
+      ${node.review === 'confirm' && html`
+        <div class="review-box">
+          <p>${t.review.note}</p>
+          <${ReviewActions} key=${node.id} id=${node.id} />
+        </div>`}
       ${emptyNote(data, node.id) && html`<p class="empty-note">${t.empty[emptyNote(data, node.id)]}</p>`}
 
       <dl class="rows">
@@ -373,6 +438,8 @@ function Panel({ node, open, expanded, focus, onSelect, onToggle, onFocus, onClo
             ${history.map((e, i) => html`<li key=${i}><span class="when">${shortDate(e.at)} ${timeOf(e.at)}</span> ${t.ops[e.op] ?? e.op}${outcomeOf(e.text) ? `: ${outcomeOf(e.text)}` : ''}</li>`)}
           </ol>
         </section>`}
+
+      <${Comments} key=${node.id} node=${node} />
 
       ${isCurrent && agentSummary && html`
         <section>
@@ -504,6 +571,35 @@ function Timeline({ query, selected, onSelect }) {
     </section>`
 }
 
+/** Everything the agent added or changed alone, to approve or reject one by one or all at once. */
+function ReviewQueue({ selected, onSelect }) {
+  const rows = reviewQueue(data)
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState(null)
+  const all = async () => { setBusy(true); setError(await act({ op: 'confirmAll' })); setBusy(false) }
+  const why = node => t.review.why[node.status === 'deferred' ? 'deferred' : node.status === 'replaced' ? 'replaced' : node.kind === 'milestone' ? 'milestone' : 'added']
+  return html`
+    <section class="sheet" aria-label=${t.views.review(rows.length)}>
+      <div class="review-head">
+        <p>${rows.length ? t.review.intro(rows.length) : t.review.none}</p>
+        ${rows.length > 1 && html`<button class="btn btn-primary" disabled=${busy} onClick=${all}>${t.review.approveAll(rows.length)}</button>`}
+        ${error && html`<span class="act-error" role="alert">${error}</span>`}
+      </div>
+      <ul class="review-list">
+        ${rows.map(({ node, milestone }) => html`
+          <li key=${node.id} class=${`review-item k-${kindOf(node)} ${node.id === selected ? 'is-selected' : ''}`}>
+            <button class="row-title" onClick=${() => onSelect(node.id)}>
+              <span class="badge"><${StatusIcon} kind=${kindOf(node)} /></span>
+              <span><span class="nid">${node.id}</span> ${node.title}</span>
+            </button>
+            <p class="review-what"><b>${why(node)}</b>${node.what && node.what !== node.title ? ` · ${node.what}` : ''}</p>
+            <p class="muted">${[milestone?.title, node.at && shortDate(node.at)].filter(Boolean).join(' · ')}</p>
+            <${ReviewActions} id=${node.id} />
+          </li>`)}
+      </ul>
+    </section>`
+}
+
 const FILTERS = ['all', 'active', 'todo', 'done', 'deferred', 'detour', 'decision', 'risk', 'dropped']
 
 /** Every node in graph order, one chip per kind with its count. */
@@ -607,7 +703,7 @@ function App() {
   // The panel slides away for a full-width graph; choosing anything brings it back.
   const [panelOpen, setPanelOpen] = useState(true)
   // Graph, timeline or list; the search text is shared by all three.
-  const [view, setView] = useState(() => (['timeline', 'list'].includes(params.get('view')) ? params.get('view') : 'graph'))
+  const [view, setView] = useState(() => (['timeline', 'list', 'review'].includes(params.get('view')) ? params.get('view') : 'graph'))
   const [query, setQuery] = useState('')
   const searchRef = useRef(null)
   const tipTimer = useRef(null)
@@ -694,7 +790,7 @@ function App() {
   }, [expanded, focus, revealed, version])
 
   useEffect(() => {
-    const timer = setInterval(async () => {
+    const tick = async () => {
       const next = await readFiles().catch(() => null)
       if (!next || signature(next) === loaded) return
       const was = data.current
@@ -702,8 +798,10 @@ function App() {
       setVersion(v => v + 1)
       // Looking at where you are follows where you are; any other choice stays.
       setSelected(id => (id === was ? data.current : id))
-    }, RELOAD_MS)
-    return () => clearInterval(timer)
+    }
+    const timer = setInterval(tick, RELOAD_MS)
+    addEventListener('ariadne:changed', tick)
+    return () => { clearInterval(timer); removeEventListener('ariadne:changed', tick) }
   }, [])
 
   // Zoom onto the chosen step once it is drawn, then make it pulse so the eye lands on it.
@@ -746,7 +844,7 @@ function App() {
   // Esc puts the panel away; / goes to the search.
   useEffect(() => {
     const onKey = e => {
-      if (e.target.closest?.('input')) return
+      if (e.target.closest?.('input, textarea')) return
       if (e.key === 'Escape') setPanelOpen(false)
       if (e.key === '/' && !e.metaKey && !e.ctrlKey) { e.preventDefault(); searchRef.current?.focus() }
     }
@@ -778,7 +876,7 @@ function App() {
   useEffect(() => {
     if (view !== 'graph') return
     const onKey = e => {
-      if (e.target.closest?.('input') || e.metaKey || e.ctrlKey || e.altKey) return
+      if (e.target.closest?.('input, textarea') || e.metaKey || e.ctrlKey || e.altKey) return
       if (e.key === 'Enter' && selected && hasChildren(data, selected)) return toggle(selected)
       const dir = ARROWS[e.key]
       if (!dir) return
@@ -827,6 +925,7 @@ function App() {
           <nav class="views" aria-label=${t.views.label}>
             ${['graph', 'timeline', 'list'].map(key => html`
               <button key=${key} aria-current=${view === key ? 'page' : undefined} onClick=${() => setView(key)}>${t.views[key]}</button>`)}
+            <button key="review" class=${reviewQueue(data).length ? 'has-review' : ''} aria-current=${view === 'review' ? 'page' : undefined} onClick=${() => setView('review')}>${t.views.review(reviewQueue(data).length)}</button>
           </nav>
           <nav class="where" aria-label=${t.here}>
             <span class="where-label">${t.here}</span>
@@ -841,6 +940,7 @@ function App() {
           <div class="overlays"><${Invalid} /></div>
           ${view === 'timeline' && html`<${Timeline} query=${query} selected=${selected} onSelect=${select} />`}
           ${view === 'list' && html`<${NodeList} query=${query} selected=${selected} onSelect=${select} />`}
+          ${view === 'review' && html`<${ReviewQueue} selected=${selected} onSelect=${select} />`}
           <div class="canvas-tools" hidden=${view !== 'graph'}>
             <div class="seg" role="group" aria-label=${t.detail}>
               ${['milestones', 'path', 'all'].map(key => html`

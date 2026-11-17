@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { dayOffset, groupOf, kindOf, lastActivity, listCounts, listRows, parseLog, searchNodes, timeline } from './views.js'
+import { dayOffset, groupOf, kindOf, lastActivity, listCounts, listRows, openComments, parseLog, reviewQueue, searchNodes, timeline } from './views.js'
 
 const data = {
   current: 'm1.2',
@@ -98,4 +98,20 @@ test('search ranks the exact id, then id prefixes, then titles; at most the limi
   assert.deepEqual(searchNodes(data, 'layout').map(n => n.id), ['m1.2'])
   assert.deepEqual(searchNodes(data, 'm', 2).length, 2)
   assert.deepEqual(searchNodes(data, '  '), [])
+})
+
+test('the review queue lists what the agent added alone, in graph order, with its milestone', () => {
+  const queue = { nodes: [
+    { id: 'm1', title: 'M', kind: 'milestone', status: 'active', review: 'confirm' },
+    { id: 'm1.1', title: 'A', parent: 'm1', status: 'todo' },
+    { id: 'm1.2', title: 'B', parent: 'm1', status: 'todo', kind: 'risk', review: 'confirm' },
+  ] }
+  assert.deepEqual(reviewQueue(queue).map(r => [r.node.id, r.milestone?.id ?? null]), [['m1', null], ['m1.2', 'm1']])
+  assert.deepEqual(reviewQueue(data), [])
+})
+
+test('the open comments of a node are those the agent has not answered yet', () => {
+  const node = { comments: [{ at: 'x', text: 'one', answer: { at: 'y', text: 'done' } }, { at: 'z', text: 'two' }] }
+  assert.deepEqual(openComments(node).map(c => c.text), ['two'])
+  assert.deepEqual(openComments({}), [])
 })
