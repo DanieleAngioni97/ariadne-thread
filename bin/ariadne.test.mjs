@@ -75,6 +75,25 @@ test('init finds STATE.md and LOG.md and proposes moving them into the thread, w
   assert.doesNotMatch(run(project(), 'init').stdout, /STATE\.md|LOG\.md/)
 })
 
+test('migrate previews the move of STATE.md and LOG.md and writes nothing; --as corrects an item', () => {
+  const dir = project()
+  run(dir, 'init')
+  writeFileSync(join(dir, 'STATE.md'), '## Milestone\nShip it.\n\n## Next\n1. Write docs\n\n## Open decisions and risks\n- Decide the host?\n- Keys expire.\n')
+  writeFileSync(join(dir, 'LOG.md'), '- 2026-10-01 · Started · abc1234\n')
+  const r = run(dir, 'migrate')
+  assert.equal(r.status, 0, r.stderr)
+  assert.match(r.stdout, /anteprima, niente è stato scritto/)
+  assert.match(r.stdout, /^1 \[decisione\] Decide the host\?$/m)
+  assert.match(r.stdout, /^2 \[rischio\] Keys expire\.$/m)
+  assert.equal(existsSync(join(dir, '.ariadne', 'graph.jsonl')), false)
+  assert.equal(existsSync(join(dir, 'STATE.md')), true)
+  assert.match(run(dir, 'migrate', '--as', '1=risk,2=drop').stdout, /^1 \[rischio\] .*\n2 \[scartata\] /m)
+  assert.equal(run(dir, 'migrate', '--as', '1=maybe').status, 2)
+  const none = project()
+  run(none, 'init')
+  assert.match(run(none, 'migrate').stderr, /nessun STATE\.md né LOG\.md/)
+})
+
 test('init says how to turn the band on when Claude Code does not load hooks modules yet', () => {
   const init = flag => spawnSync(process.execPath, [CLI, 'init'], { cwd: project(), encoding: 'utf8', env: { ...process.env, CLAUDE_CODE_ENABLE_FUNCTION_HOOKS: flag } })
   assert.match(init('').stdout, /banda.*"env": \{ "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1" \}.*settings\.json/s)

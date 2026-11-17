@@ -19,6 +19,7 @@ import { findConflicts, report } from '../src/doctor.mjs'
 import { parse } from '../src/graph.mjs'
 import { systemLang, words } from '../src/i18n.mjs'
 import { show, why } from '../src/inspect.mjs'
+import { preview, propose, readLog, readState } from '../src/migrate.mjs'
 import { browserCommand, openViewer } from '../src/open.mjs'
 import { keepOut, savePort, viewerPort } from '../src/port.mjs'
 import { brokenRefs } from '../src/refs.mjs'
@@ -44,6 +45,7 @@ const say = words({
   en: {
     usage: `usage: ariadne <command>
   init · card [--hook] · summary [--hook] · show <id> · why <id> · log [n] · validate [file] · doctor
+  migrate [--as n=decision|risk|pointer|drop,…]
   plan <parent> "<step>"… [--what "<detail>"]… --ref "<approval>"
   start <id> · pause <id> · close <id> "<outcome>" (--commit sha | --file path | --message text)
   add <kind> "<title>" --what "…" [--under id] [--after a,b] [--why …] [--detail …] [--reentry id] [--id x] [--start | --done]
@@ -52,6 +54,8 @@ const say = words({
   move <id> <parent> [--after a,b] · undo · confirm <id>|--all · reject <id> [successor]
   apply <ops.json> · sync [--hook] · view [--port n] · open [id] [--port n] · band [--review i]
   --by user: the action comes from you (move, undo, confirm and reject always do)`,
+    noOld: 'ariadne migrate: no STATE.md or LOG.md in the project root, nothing to migrate',
+    badAs: value => `ariadne migrate: --as ${value}: write n=decision, risk, pointer or drop, n being the number in the preview`,
     noFile: id => `ariadne: ⚠ ${id} closes with no file or commit: where does the result live? ariadne fill ${id} --file <path>[#section]`,
     ready: 'ariadne: project ready in .ariadne/ · ask the agent to keep the thread: the graph starts with the first plan',
     oldState: files => `ariadne: found ${files.join(' and ')}: two sources of state are one too many. Propose to the user to move ${files.length > 1 ? 'them' : 'it'} into the thread: Next and open steps → ariadne plan; open decisions → ariadne add decision; risks → ariadne add risk; commands, tests and paths → CLAUDE.md or docs/. Then ariadne doctor lists the hooks and skills that still use STATE.md or LOG.md. ariadne leaves the files where they are until the user chooses.`,
@@ -75,6 +79,7 @@ const say = words({
   it: {
     usage: `uso: ariadne <comando>
   init · card [--hook] · summary [--hook] · show <id> · why <id> · log [n] · validate [file] · doctor
+  migrate [--as n=decision|risk|pointer|drop,…]
   plan <parent> "<passo>"… [--what "<dettaglio>"]… --ref "<approvazione>"
   start <id> · pause <id> · close <id> "<esito>" (--commit sha | --file path | --message testo)
   add <kind> "<titolo>" --what "…" [--under id] [--after a,b] [--why …] [--detail …] [--reentry id] [--id x] [--start | --done]
@@ -84,6 +89,8 @@ const say = words({
   apply <ops.json> · sync [--hook] · view [--port n] · open [id] [--port n] · band [--review i]
   --by user: l'azione viene da te (move, undo, confirm e reject lo sono sempre)`,
     noFile: id => `ariadne: ⚠ ${id} si chiude senza file né commit: dove sta il risultato? ariadne fill ${id} --file <percorso>[#sezione]`,
+    noOld: 'ariadne migrate: nessun STATE.md né LOG.md nella root del progetto, niente da migrare',
+    badAs: value => `ariadne migrate: --as ${value}: scrivi n=decision, risk, pointer o drop, con n il numero nell'anteprima`,
     ready: "ariadne: progetto pronto in .ariadne/ · chiedi all'agente di tracciare il lavoro: il grafo nasce con il primo piano",
     oldState: files => `ariadne: ${files.length > 1 ? 'trovati' : 'trovato'} ${files.join(' e ')}: due fonti dello stato sono una di troppo. Proponi all'utente di portar${files.length > 1 ? 'li' : 'lo'} nel filo: Next e passi aperti → ariadne plan; decisioni aperte → ariadne add decision; rischi → ariadne add risk; comandi, test e percorsi → CLAUDE.md o docs/. Poi ariadne doctor elenca hook e skill che usano ancora STATE.md o LOG.md. ariadne lascia i file dove sono finché l'utente non sceglie.`,
     bandOff: 'ariadne: la banda sopra il prompt richiede gli hooks modules, in early access: aggiungi "env": { "CLAUDE_CODE_ENABLE_FUNCTION_HOOKS": "1" } a ~/.claude/settings.json e riavvia Claude Code. Tutto il resto funziona anche senza.',
@@ -110,7 +117,7 @@ const FLAGS = {
   title: { type: 'string' }, under: { type: 'string' }, after: { type: 'string' }, reentry: { type: 'string' },
   id: { type: 'string' }, start: { type: 'boolean' }, done: { type: 'boolean' }, all: { type: 'boolean' }, hook: { type: 'boolean' }, port: { type: 'string' }, review: { type: 'string' },
   by: { type: 'string' }, commit: { type: 'string', multiple: true }, file: { type: 'string', multiple: true },
-  message: { type: 'string', multiple: true },
+  message: { type: 'string', multiple: true }, as: { type: 'string', multiple: true },
 }
 const USER_OPS = ['move', 'undo', 'confirm', 'reject']
 
@@ -176,6 +183,34 @@ function told(session) {
 
 const sessionOf = () => {
   try { return JSON.parse(readFileSync(0, 'utf8')).session_id ?? null } catch { return null }
+}
+
+/** `--as 1=risk,3=drop` as `{ 1: 'risk', 3: 'drop' }`; exits 2 on a malformed item. */
+function corrections(values) {
+  const as = {}
+  for (const item of (values ?? []).flatMap(list)) {
+    const m = item.match(/^(\d+)=(decision|risk|pointer|drop)$/)
+    if (!m) { console.error(say('badAs', item)); process.exit(2) }
+    as[m[1]] = m[2]
+  }
+  return as
+}
+
+/** The move of a hand-written STATE.md and LOG.md into the thread (m6.2): the preview, checked by apply. */
+function migrate(values) {
+  const read = name => (existsSync(name) ? readFileSync(name, 'utf8') : null)
+  const [stateText, logText] = [read('STATE.md'), read('LOG.md')]
+  if (stateText === null && logText === null) { console.error(say('noOld')); process.exit(1) }
+  const text = existsSync(GRAPH) ? readFileSync(GRAPH, 'utf8') : ''
+  const nodes = parse(text)
+  const at = now()
+  const plan = propose({ state: stateText && readState(stateText), log: logText && readLog(logText), nodes, at, as: corrections(values.as) })
+  const r = apply({ text, thread: readThread(nodes), ops: plan.ops, at })
+  if (!r.ok) {
+    for (const e of r.errors) console.error(`ariadne: ${e}`)
+    process.exit(1)
+  }
+  console.log(preview(plan))
 }
 
 /** Applies `ops` and writes graph, thread and log; returns the log entries or the refusal errors. */
@@ -465,6 +500,7 @@ else if (command === 'doctor') {
   const configDirs = [process.env.CLAUDE_CONFIG_DIR, join(homedir(), '.claude')].filter(Boolean)
   console.log(report(findConflicts({ project: process.cwd(), configDirs, home: homedir() })))
 }
+else if (command === 'migrate') migrate(values)
 else if (command === 'log') showLog(Number(args[0]) || undefined)
 else if (command === 'view') {
   const root = process.cwd()
