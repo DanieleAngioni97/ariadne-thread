@@ -586,3 +586,18 @@ test('fill and close warn when what they record lives only in the chat', () => {
   assert.match(run(dir, 'close', 'b', 'Steps as agreed in chat.', '--file', 'x.md').stderr, /⚠ b rimanda alla chat \(what\)/)
   assert.doesNotMatch(run(dir, 'fill', 'a', '--message', 'chat 2026-11-17: use GitHub').stderr, /rimanda alla chat/)
 })
+
+test('check --clear says what a /clear would lose, and that it is safe when nothing is', () => {
+  const dir = project({ graph: GOOD, thread: { current: 'b' } })
+  git(dir, 'init', '-q')
+  git(dir, 'add', '.')
+  git(dir, 'commit', '-q', '-m', 'chore: start')
+  const safe = run(dir, 'check', '--clear')
+  assert.equal(safe.status, 0, safe.stderr)
+  assert.match(safe.stdout, /puoi fare \/clear/)
+  writeFileSync(join(dir, 'notes.md'), 'x\n')
+  run(dir, 'fill', 'b', '--what', 'Steps as agreed in chat.')
+  const r = run(dir, 'check', '--clear')
+  assert.match(r.stdout, /Non committato: .*notes\.md/)
+  assert.match(r.stdout, /Solo in chat: b \(what\)/)
+})

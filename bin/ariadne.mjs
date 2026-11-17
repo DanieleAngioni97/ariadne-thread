@@ -21,7 +21,7 @@ import { systemLang, words } from '../src/i18n.mjs'
 import { show, why } from '../src/inspect.mjs'
 import { elsewhere, preview, propose, readLog, readState } from '../src/migrate.mjs'
 import { exportLog, exportState, isGenerated } from '../src/export.mjs'
-import { onlyInChat } from '../src/chat.mjs'
+import { beforeClear, clearReport, onlyInChat } from '../src/chat.mjs'
 import { browserCommand, openViewer } from '../src/open.mjs'
 import { keepOut, savePort, viewerPort } from '../src/port.mjs'
 import { brokenRefs } from '../src/refs.mjs'
@@ -56,7 +56,7 @@ const say = words({
   fill <id> [--what|--why|--detail|--title …] [--commit|--file|--message …]
   defer <id> <milestone> · replace <id> <successor> · relink <old path> <new>
   move <id> <parent> [--after a,b] · undo · confirm <id>|--all · reject <id> [successor]
-  apply <ops.json> · sync [--hook] · view [--port n] · open [id] [--port n] · band [--review i]
+  apply <ops.json> · sync [--hook] · view [--port n] · open [id] [--port n] · band [--review i] · check --clear
   --by user: the action comes from you (move, undo, confirm and reject always do)`,
     migrated: 'ariadne migrate: done · every new node waits for your confirmation (ariadne open) · to go back: ariadne migrate --undo',
     exported: always => `ariadne export: STATE.md and LOG.md written from the thread${always ? ', and kept in step with every change (export --off to stop)' : ''}`,
@@ -98,7 +98,7 @@ const say = words({
   fill <id> [--what|--why|--detail|--title …] [--commit|--file|--message …]
   defer <id> <milestone> · replace <id> <successore> · relink <vecchio percorso> <nuovo>
   move <id> <parent> [--after a,b] · undo · confirm <id>|--all · reject <id> [successore]
-  apply <ops.json> · sync [--hook] · view [--port n] · open [id] [--port n] · band [--review i]
+  apply <ops.json> · sync [--hook] · view [--port n] · open [id] [--port n] · band [--review i] · check --clear
   --by user: l'azione viene da te (move, undo, confirm e reject lo sono sempre)`,
     noFile: id => `ariadne: ⚠ ${id} si chiude senza file né commit: dove sta il risultato? ariadne fill ${id} --file <percorso>[#sezione]`,
     migrated: 'ariadne migrate: fatto · ogni nodo nuovo aspetta la tua conferma (ariadne open) · per tornare indietro: ariadne migrate --undo',
@@ -137,7 +137,7 @@ const FLAGS = {
   title: { type: 'string' }, under: { type: 'string' }, after: { type: 'string' }, reentry: { type: 'string' },
   id: { type: 'string' }, start: { type: 'boolean' }, done: { type: 'boolean' }, all: { type: 'boolean' }, hook: { type: 'boolean' }, port: { type: 'string' }, review: { type: 'string' },
   by: { type: 'string' }, commit: { type: 'string', multiple: true }, file: { type: 'string', multiple: true },
-  message: { type: 'string', multiple: true }, as: { type: 'string', multiple: true }, apply: { type: 'boolean' }, undo: { type: 'boolean' }, always: { type: 'boolean' }, off: { type: 'boolean' },
+  message: { type: 'string', multiple: true }, as: { type: 'string', multiple: true }, apply: { type: 'boolean' }, undo: { type: 'boolean' }, always: { type: 'boolean' }, off: { type: 'boolean' }, clear: { type: 'boolean' },
 }
 const USER_OPS = ['move', 'undo', 'confirm', 'reject']
 
@@ -588,6 +588,12 @@ else if (command === 'sync') {
   } catch (error) {
     if (!values.hook) console.error(say('noSync', error.message))
   }
+}
+else if (command === 'check' && values.clear) {
+  const text = existsSync(GRAPH) ? readFileSync(GRAPH, 'utf8') : ''
+  const nodes = parse(text)
+  const status = spawnSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).stdout ?? ''
+  console.log(clearReport(beforeClear({ nodes, thread: readThread(nodes), status })))
 }
 else if (command === 'check') {
   try {
