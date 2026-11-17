@@ -569,3 +569,5 @@
 {"at":"2026-11-17T10:17Z","id":"m8","op":"plan","text":"plan for Qualità del piano e del grafo: Avvisi sulla salute del piano"}
 {"at":"2026-11-17T10:18Z","id":"m7.2.1","op":"close","text":"closed m7.2.1 Regola di chiusura dei contenitori: un contenitore si chiude da solo con l'ultimo sotto-passo e non prima; nel grafo reale m4.3 e m5.6 risultano aperti con tutti i figli chiusi","proof":[{"type":"commit","ref":"1867c02"}]}
 {"at":"2026-11-17T10:18Z","id":"m7.2.2","op":"start","text":"started m7.2.2 Disegno dei sotto-passi paralleli"}
+{"at":"2026-11-17T10:19Z","id":"m7.2.2","op":"close","text":"closed m7.2.2 Disegno dei sotto-passi paralleli: contatore k/N sui contenitori, \"si chiude con l'ultimo\", barra di ricongiungimento quando i rami sono due o più","proof":[{"type":"commit","ref":"08266eb"}]}
+{"at":"2026-11-17T10:19Z","id":"m7.2.3","op":"start","text":"started m7.2.3 Prova nel browser"}
