@@ -53,6 +53,7 @@ evidence is recorded and the thread moves on. Things you can say:
 | "why are we doing this?" | `ariadne why <id>` |
 | "move my STATE.md and LOG.md into the thread" | `ariadne migrate` (preview), then `ariadne migrate --apply`; `ariadne migrate --undo` goes back |
 | "a teammate doesn't use ariadne" / "I want out" | `ariadne export --always` keeps a generated STATE.md and LOG.md in step; `ariadne export` writes them once, to leave |
+| "can I /clear now?" | `ariadne check --clear` (what is not committed, only in the chat, or outside the repo) |
 | "something still reads STATE.md" | `ariadne doctor` (hooks, skills and rules that still use STATE.md or LOG.md, and what to change; it edits nothing) |
 
 The band's **Open the graph** button opens the viewer too. Each project gets its own viewer port,

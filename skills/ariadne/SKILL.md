@@ -43,7 +43,9 @@ then `ariadne why <id>` only for the nodes you need. Don't read the whole graph.
 The test of the thread: the user can `/clear` at any moment and the next session needs nothing from
 you. Commits are recorded by a hook; what is decided in chat is recorded only if you do it, there and
 then. If you ever feel you should write a recap before `/clear`, something was not recorded when it
-happened: record it now, and next time earlier. At the end of a turn a hook may hand you back what the
+happened: record it now, and next time earlier. When the user asks whether they can `/clear`, run
+`ariadne check --clear`: it lists what is not committed, what lives only in the chat and what lives
+outside the repo. At the end of a turn a hook may hand you back what the
 thread missed (an approval, a file outside the project, a commit without `Thread:`): record it with the
 command it names, or say in one line why there is nothing to record.
 
