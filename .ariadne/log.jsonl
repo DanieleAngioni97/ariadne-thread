@@ -547,3 +547,9 @@
 {"at":"2026-11-17T09:53Z","id":"m6.19.4","op":"start","text":"started m6.19.4 Prova nel browser"}
 {"at":"2026-11-17T09:55Z","id":"m6.19","op":"close","text":"closed m6.19 Approvare dal viewer: vista Da confermare e commenti nel viewer, via POST /act come utente; provato nel browser","proof":[{"type":"commit","ref":"d69e3c2"}]}
 {"at":"2026-11-17T09:55Z","id":"m6.19.4","op":"close","text":"closed m6.19.4 Prova nel browser: provato con Playwright su un repo sintetico migrato: approva, rifiuta, commento letto dalla scheda, risposta nel pannello","proof":[{"type":"commit","ref":"d69e3c2"}]}
+{"at":"2026-11-17T10:01Z","id":"m6.6","op":"fill","text":"proof for m6.6: message chat 2026-11-17: approvate le modifiche a git_guard.py, handoff, commit-checkpoint, CLAUDE.md globale ed explainer-html; transizione fluida e senza traumi: i repo senza .ariadne/ non cambiano","proof":[{"type":"message","ref":"chat 2026-11-17: approvate le modifiche a git_guard.py, handoff, commit-checkpoint, CLAUDE.md globale ed explainer-html; transizione fluida e senza traumi: i repo senza .ariadne/ non cambiano"}]}
+{"at":"2026-11-17T10:01Z","id":"m6.18","op":"fill","text":"proof for m6.18: message chat 2026-11-17: approvato, handoff in un repo con .ariadne/ non scrive STATE.md né LOG.md","proof":[{"type":"message","ref":"chat 2026-11-17: approvato, handoff in un repo con .ariadne/ non scrive STATE.md né LOG.md"}]}
+{"at":"2026-11-17T10:01Z","id":"m8","op":"add","text":"added milestone m8 Qualità del piano e del grafo"}
+{"at":"2026-11-17T10:01Z","id":"m7","op":"plan","text":"plan for Un viewer per tutti i progetti: Misure di qualità del piano → Passi paralleli necessari"}
+{"at":"2026-11-17T10:01Z","id":"m7.1","op":"move","text":"moved m7.1 under m8 (your correction)"}
+{"at":"2026-11-17T10:01Z","id":"m7.2","op":"move","text":"moved m7.2 under m8 (your correction)"}
