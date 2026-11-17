@@ -5,7 +5,7 @@
 
 import { spawn, spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { appendFileSync, existsSync, mkdirSync, readFileSync, realpathSync, renameSync, statSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync, readFileSync, realpathSync, renameSync, rmSync, statSync, truncateSync, writeFileSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -47,7 +47,7 @@ const say = words({
   en: {
     usage: `usage: ariadne <command>
   init · card [--hook] · summary [--hook] · show <id> · why <id> · log [n] · validate [file] · doctor
-  migrate [--as n=decision|risk|pointer|drop,…] [--apply]
+  migrate [--as n=decision|risk|pointer|drop,…] [--apply] · migrate --undo
   plan <parent> "<step>"… [--what "<detail>"]… --ref "<approval>"
   start <id> · pause <id> · close <id> "<outcome>" (--commit sha | --file path | --message text)
   add <kind> "<title>" --what "…" [--under id] [--after a,b] [--why …] [--detail …] [--reentry id] [--id x] [--start | --done]
@@ -57,6 +57,9 @@ const say = words({
   apply <ops.json> · sync [--hook] · view [--port n] · open [id] [--port n] · band [--review i]
   --by user: the action comes from you (move, undo, confirm and reject always do)`,
     migrated: 'ariadne migrate: done · every new node waits for your confirmation (ariadne open) · to go back: ariadne migrate --undo',
+    undone: 'ariadne migrate: undone · STATE.md and LOG.md are back where they were, the graph is as before',
+    noMigration: 'ariadne migrate --undo: no migration to undo',
+    staleMigration: 'ariadne migrate --undo: the graph changed after the migration: undo those changes first, then try again',
     noOld: 'ariadne migrate: no STATE.md or LOG.md in the project root, nothing to migrate',
     badAs: value => `ariadne migrate: --as ${value}: write n=decision, risk, pointer or drop, n being the number in the preview`,
     noFile: id => `ariadne: ⚠ ${id} closes with no file or commit: where does the result live? ariadne fill ${id} --file <path>[#section]`,
@@ -82,7 +85,7 @@ const say = words({
   it: {
     usage: `uso: ariadne <comando>
   init · card [--hook] · summary [--hook] · show <id> · why <id> · log [n] · validate [file] · doctor
-  migrate [--as n=decision|risk|pointer|drop,…] [--apply]
+  migrate [--as n=decision|risk|pointer|drop,…] [--apply] · migrate --undo
   plan <parent> "<passo>"… [--what "<dettaglio>"]… --ref "<approvazione>"
   start <id> · pause <id> · close <id> "<esito>" (--commit sha | --file path | --message testo)
   add <kind> "<titolo>" --what "…" [--under id] [--after a,b] [--why …] [--detail …] [--reentry id] [--id x] [--start | --done]
@@ -93,6 +96,9 @@ const say = words({
   --by user: l'azione viene da te (move, undo, confirm e reject lo sono sempre)`,
     noFile: id => `ariadne: ⚠ ${id} si chiude senza file né commit: dove sta il risultato? ariadne fill ${id} --file <percorso>[#sezione]`,
     migrated: 'ariadne migrate: fatto · ogni nodo nuovo aspetta la tua conferma (ariadne open) · per tornare indietro: ariadne migrate --undo',
+    undone: 'ariadne migrate: annullata · STATE.md e LOG.md sono tornati dov\'erano, il grafo è com\'era prima',
+    noMigration: 'ariadne migrate --undo: nessuna migrazione da annullare',
+    staleMigration: 'ariadne migrate --undo: il grafo è cambiato dopo la migrazione: annulla prima quei cambiamenti, poi riprova',
     noOld: 'ariadne migrate: nessun STATE.md né LOG.md nella root del progetto, niente da migrare',
     badAs: value => `ariadne migrate: --as ${value}: scrivi n=decision, risk, pointer o drop, con n il numero nell'anteprima`,
     ready: "ariadne: progetto pronto in .ariadne/ · chiedi all'agente di tracciare il lavoro: il grafo nasce con il primo piano",
@@ -121,7 +127,7 @@ const FLAGS = {
   title: { type: 'string' }, under: { type: 'string' }, after: { type: 'string' }, reentry: { type: 'string' },
   id: { type: 'string' }, start: { type: 'boolean' }, done: { type: 'boolean' }, all: { type: 'boolean' }, hook: { type: 'boolean' }, port: { type: 'string' }, review: { type: 'string' },
   by: { type: 'string' }, commit: { type: 'string', multiple: true }, file: { type: 'string', multiple: true },
-  message: { type: 'string', multiple: true }, as: { type: 'string', multiple: true }, apply: { type: 'boolean' },
+  message: { type: 'string', multiple: true }, as: { type: 'string', multiple: true }, apply: { type: 'boolean' }, undo: { type: 'boolean' },
 }
 const USER_OPS = ['move', 'undo', 'confirm', 'reject']
 
@@ -202,6 +208,7 @@ function corrections(values) {
 
 /** The move of a hand-written STATE.md and LOG.md into the thread (m6.2): the preview, checked by apply. */
 function migrate(values) {
+  if (values.undo) return undoMigration()
   const read = name => (existsSync(name) ? readFileSync(name, 'utf8') : null)
   const [stateText, logText] = [read('STATE.md'), read('LOG.md')]
   if (stateText === null && logText === null) { console.error(say('noOld')); process.exit(1) }
@@ -230,6 +237,26 @@ function migrate(values) {
   for (const l of done.log) console.log(`↺ ${l.text}`)
   for (const { from, to } of plan.archive) console.log(`↺ ${from} → ${to}`)
   console.log(say('migrated'))
+}
+
+/** Back to before `migrate --apply`: files in place, graph, thread and diary as they were (m6.2). */
+function undoMigration() {
+  if (!existsSync(MIGRATION)) { console.error(say('noMigration')); process.exit(1) }
+  const saved = JSON.parse(readFileSync(MIGRATION, 'utf8'))
+  const current = existsSync(GRAPH) ? readFileSync(GRAPH, 'utf8') : ''
+  if (current !== saved.after) { console.error(say('staleMigration')); process.exit(1) }
+  const restore = (file, content) => (content ? writeFileSync(file, content) : rmSync(file, { force: true }))
+  restore(GRAPH, saved.graph)
+  restore(THREAD, saved.thread)
+  if (saved.log > 0) truncateSync(LOG, saved.log)
+  else rmSync(LOG, { force: true })
+  for (const { from, to } of saved.archive) move(to, from)
+  const tracked = spawnSync('git', ['ls-files', '--error-unmatch', MIGRATION], { stdio: 'ignore' }).status === 0
+  if (tracked) spawnSync('git', ['rm', '-q', '-f', MIGRATION])
+  else rmSync(MIGRATION)
+  if (saved.graph) writeView(parse(saved.graph), saved.thread ? JSON.parse(saved.thread) : readThread(parse(saved.graph)))
+  else rmSync(VIEW, { force: true })
+  console.log(say('undone'))
 }
 
 /** git mv for a tracked file, so history follows it; a plain rename otherwise. */

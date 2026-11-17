@@ -518,3 +518,32 @@ test('migrate --apply moves a file git does not track with a plain rename', () =
   assert.equal(existsSync(join(dir, 'LOG.md')), false)
   assert.equal(readdirSync(join(dir, '.ariadne', 'archive')).filter(f => f.startsWith('LOG-')).length, 1)
 })
+
+test('migrate --undo puts the files and the graph back, once, and only while the graph is as the migration left it', () => {
+  const setup = () => {
+    const dir = project()
+    git(dir, 'init', '-q')
+    run(dir, 'init')
+    writeFileSync(join(dir, 'STATE.md'), '## Next\n1. Write docs\n')
+    writeFileSync(join(dir, 'LOG.md'), '- 2026-10-01 · Started\n')
+    git(dir, 'add', 'STATE.md', 'LOG.md')
+    git(dir, 'commit', '-q', '-m', 'chore: state')
+    assert.equal(run(dir, 'migrate', '--apply').status, 0)
+    return dir
+  }
+  const dir = setup()
+  const r = run(dir, 'migrate', '--undo')
+  assert.equal(r.status, 0, r.stderr)
+  assert.match(r.stdout, /annullata/)
+  assert.equal(readFileSync(join(dir, 'STATE.md'), 'utf8'), '## Next\n1. Write docs\n')
+  assert.equal(git(dir, 'status', '--short', 'STATE.md', 'LOG.md', '.ariadne/archive').stdout, '')
+  assert.deepEqual(['graph.jsonl', 'thread.json', 'log.jsonl', 'archive/migration.json'].map(f => existsSync(join(dir, '.ariadne', f))), [false, false, false, false])
+  assert.equal(run(dir, 'migrate', '--undo').status, 1)
+
+  const changed = setup()
+  run(changed, 'add', 'risk', 'Late', '--what', 'Added after.', '--under', 'm1')
+  const refused = run(changed, 'migrate', '--undo')
+  assert.equal(refused.status, 1)
+  assert.match(refused.stderr, /cambiato dopo la migrazione/)
+  assert.equal(existsSync(join(changed, 'STATE.md')), false)
+})
