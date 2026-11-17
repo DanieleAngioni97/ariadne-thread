@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { spawn, spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, realpathSync, writeFileSync } from 'node:fs'
 import { createServer } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -483,4 +483,38 @@ test('doctor reads the Claude Code configuration of CLAUDE_CONFIG_DIR and ~/.cla
   assert.match(r.stdout, /^ariadne doctor: 2 righe in 2 file/)
   assert.match(r.stdout, /\n- ~\/profile\/skills\/handoff\/SKILL\.md:1 Rewrite STATE\.md\.\n/)
   assert.match(r.stdout, /\n- ~\/\.claude\/CLAUDE\.md:1 Next lives in STATE\.md\.\n/)
+})
+
+test('migrate --apply writes the nodes, moves the files into the archive with git mv and keeps what it needs to undo', () => {
+  const dir = project()
+  git(dir, 'init', '-q')
+  run(dir, 'init')
+  writeFileSync(join(dir, 'STATE.md'), '## Milestone\nShip it.\n\n## Next\n1. Write docs\n\n## Open decisions and risks\n- Decide the host?\n')
+  writeFileSync(join(dir, 'LOG.md'), '- 2026-10-01 · Started · abc1234\n')
+  git(dir, 'add', 'STATE.md', 'LOG.md')
+  git(dir, 'commit', '-q', '-m', 'chore: state')
+  const env = { ...process.env, ARIADNE_NOW: '2026-11-17T10:00Z' }
+  const r = spawnSync(process.execPath, [CLI, 'migrate', '--apply'], { cwd: dir, encoding: 'utf8', env })
+  assert.equal(r.status, 0, r.stderr)
+  assert.match(r.stdout, /STATE\.md → \.ariadne\/archive\/STATE-2026-11-17\.md/)
+  assert.match(r.stdout, /migrate --undo/)
+  assert.equal(existsSync(join(dir, 'STATE.md')), false)
+  assert.equal(readFileSync(join(dir, '.ariadne', 'archive', 'LOG-2026-11-17.md'), 'utf8'), '- 2026-10-01 · Started · abc1234\n')
+  assert.match(git(dir, 'status', '--short').stdout, /^R {2}STATE\.md -> \.ariadne\/archive\/STATE-2026-11-17\.md$/m)
+  const nodes = readFileSync(join(dir, '.ariadne', 'graph.jsonl'), 'utf8').trim().split('\n').map(l => JSON.parse(l))
+  assert.deepEqual(nodes.map(n => n.kind), ['milestone', 'step', 'step', 'decision'])
+  const saved = JSON.parse(readFileSync(join(dir, '.ariadne', 'archive', 'migration.json'), 'utf8'))
+  assert.deepEqual([saved.graph, saved.archive.length], ['', 2])
+  assert.equal(run(dir, 'validate').status, 0, run(dir, 'validate').stderr)
+  assert.equal(run(dir, 'migrate', '--apply').status, 1)
+})
+
+test('migrate --apply moves a file git does not track with a plain rename', () => {
+  const dir = project()
+  git(dir, 'init', '-q')
+  run(dir, 'init')
+  writeFileSync(join(dir, 'LOG.md'), '- 2026-10-01 · Started\n')
+  assert.equal(run(dir, 'migrate', '--apply').status, 0)
+  assert.equal(existsSync(join(dir, 'LOG.md')), false)
+  assert.equal(readdirSync(join(dir, '.ariadne', 'archive')).filter(f => f.startsWith('LOG-')).length, 1)
 })

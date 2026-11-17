@@ -5,7 +5,7 @@
 
 import { spawn, spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { appendFileSync, existsSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs'
+import { appendFileSync, existsSync, mkdirSync, readFileSync, realpathSync, renameSync, statSync, writeFileSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { basename, dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -31,6 +31,8 @@ import { validate } from '../src/validate.mjs'
 const GRAPH = '.ariadne/graph.jsonl'
 const THREAD = '.ariadne/thread.json'
 const LOG = '.ariadne/log.jsonl'
+const ARCHIVE = '.ariadne/archive'
+const MIGRATION = '.ariadne/archive/migration.json'
 const VIEW = '.ariadne/STATE.md'
 const HISTORY = 2000
 const RECENT_COMMITS = 20
@@ -45,7 +47,7 @@ const say = words({
   en: {
     usage: `usage: ariadne <command>
   init · card [--hook] · summary [--hook] · show <id> · why <id> · log [n] · validate [file] · doctor
-  migrate [--as n=decision|risk|pointer|drop,…]
+  migrate [--as n=decision|risk|pointer|drop,…] [--apply]
   plan <parent> "<step>"… [--what "<detail>"]… --ref "<approval>"
   start <id> · pause <id> · close <id> "<outcome>" (--commit sha | --file path | --message text)
   add <kind> "<title>" --what "…" [--under id] [--after a,b] [--why …] [--detail …] [--reentry id] [--id x] [--start | --done]
@@ -54,6 +56,7 @@ const say = words({
   move <id> <parent> [--after a,b] · undo · confirm <id>|--all · reject <id> [successor]
   apply <ops.json> · sync [--hook] · view [--port n] · open [id] [--port n] · band [--review i]
   --by user: the action comes from you (move, undo, confirm and reject always do)`,
+    migrated: 'ariadne migrate: done · every new node waits for your confirmation (ariadne open) · to go back: ariadne migrate --undo',
     noOld: 'ariadne migrate: no STATE.md or LOG.md in the project root, nothing to migrate',
     badAs: value => `ariadne migrate: --as ${value}: write n=decision, risk, pointer or drop, n being the number in the preview`,
     noFile: id => `ariadne: ⚠ ${id} closes with no file or commit: where does the result live? ariadne fill ${id} --file <path>[#section]`,
@@ -79,7 +82,7 @@ const say = words({
   it: {
     usage: `uso: ariadne <comando>
   init · card [--hook] · summary [--hook] · show <id> · why <id> · log [n] · validate [file] · doctor
-  migrate [--as n=decision|risk|pointer|drop,…]
+  migrate [--as n=decision|risk|pointer|drop,…] [--apply]
   plan <parent> "<passo>"… [--what "<dettaglio>"]… --ref "<approvazione>"
   start <id> · pause <id> · close <id> "<esito>" (--commit sha | --file path | --message testo)
   add <kind> "<titolo>" --what "…" [--under id] [--after a,b] [--why …] [--detail …] [--reentry id] [--id x] [--start | --done]
@@ -89,6 +92,7 @@ const say = words({
   apply <ops.json> · sync [--hook] · view [--port n] · open [id] [--port n] · band [--review i]
   --by user: l'azione viene da te (move, undo, confirm e reject lo sono sempre)`,
     noFile: id => `ariadne: ⚠ ${id} si chiude senza file né commit: dove sta il risultato? ariadne fill ${id} --file <percorso>[#sezione]`,
+    migrated: 'ariadne migrate: fatto · ogni nodo nuovo aspetta la tua conferma (ariadne open) · per tornare indietro: ariadne migrate --undo',
     noOld: 'ariadne migrate: nessun STATE.md né LOG.md nella root del progetto, niente da migrare',
     badAs: value => `ariadne migrate: --as ${value}: scrivi n=decision, risk, pointer o drop, con n il numero nell'anteprima`,
     ready: "ariadne: progetto pronto in .ariadne/ · chiedi all'agente di tracciare il lavoro: il grafo nasce con il primo piano",
@@ -117,7 +121,7 @@ const FLAGS = {
   title: { type: 'string' }, under: { type: 'string' }, after: { type: 'string' }, reentry: { type: 'string' },
   id: { type: 'string' }, start: { type: 'boolean' }, done: { type: 'boolean' }, all: { type: 'boolean' }, hook: { type: 'boolean' }, port: { type: 'string' }, review: { type: 'string' },
   by: { type: 'string' }, commit: { type: 'string', multiple: true }, file: { type: 'string', multiple: true },
-  message: { type: 'string', multiple: true }, as: { type: 'string', multiple: true },
+  message: { type: 'string', multiple: true }, as: { type: 'string', multiple: true }, apply: { type: 'boolean' },
 }
 const USER_OPS = ['move', 'undo', 'confirm', 'reject']
 
@@ -210,15 +214,39 @@ function migrate(values) {
     for (const e of r.errors) console.error(`ariadne: ${e}`)
     process.exit(1)
   }
-  console.log(preview(plan))
+  if (!values.apply) return console.log(preview(plan))
+
+  // What --undo needs to put everything back: the graph and thread of before, the diary's length.
+  const before = { at, graph: text, thread: existsSync(THREAD) ? readFileSync(THREAD, 'utf8') : null, log: existsSync(LOG) ? statSync(LOG).size : 0 }
+  mkdirSync(ARCHIVE, { recursive: true })
+  for (const { from, to } of plan.archive) move(from, to)
+  const done = commit(plan.ops, 'agent', at)
+  if (!done.ok) {
+    for (const { from, to } of plan.archive) move(to, from)
+    for (const e of done.errors) console.error(`ariadne: ${e}`)
+    process.exit(1)
+  }
+  writeFileSync(MIGRATION, JSON.stringify({ ...before, after: done.text, archive: plan.archive }, null, 2) + '\n')
+  for (const l of done.log) console.log(`↺ ${l.text}`)
+  for (const { from, to } of plan.archive) console.log(`↺ ${from} → ${to}`)
+  console.log(say('migrated'))
+}
+
+/** git mv for a tracked file, so history follows it; a plain rename otherwise. */
+function move(from, to) {
+  const tracked = spawnSync('git', ['ls-files', '--error-unmatch', from], { stdio: 'ignore' }).status === 0
+  if (tracked) {
+    const r = spawnSync('git', ['mv', from, to], { encoding: 'utf8' })
+    if (r.status !== 0) throw new Error(r.stderr.trim())
+  } else renameSync(from, to)
 }
 
 /** Applies `ops` and writes graph, thread and log; returns the log entries or the refusal errors. */
-function commit(ops, by) {
+function commit(ops, by, at = now()) {
   // Before the first node there is no graph yet: it starts empty.
   const text = existsSync(GRAPH) ? readFileSync(GRAPH, 'utf8') : ''
   const thread = readThread(parse(text))
-  const r = apply({ text, thread, ops, at: now(), by })
+  const r = apply({ text, thread, ops, at, by })
   if (!r.ok) return r
   if (r.text !== text) writeFileSync(GRAPH, r.text)
   if (JSON.stringify(r.thread) !== JSON.stringify(thread)) writeFileSync(THREAD, JSON.stringify(r.thread, null, 2) + '\n')
