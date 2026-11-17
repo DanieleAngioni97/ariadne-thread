@@ -25,6 +25,14 @@ Change `.ariadne/` only through `ariadne`: it validates every change and keeps t
 No `.ariadne/` folder yet and the user wants the thread: run `ariadne init`. The graph starts with the
 first milestone, `ariadne add milestone "<title>" --what "<the goal in one line>" --start`, and its plan.
 
+A hand-written STATE.md or LOG.md in the root (init says so) moves into the thread, or there are two
+sources of truth. `ariadne migrate` prints the preview and writes nothing: read each numbered open
+item and fix the guessed kind with `--as <n>=decision|risk|pointer|drop` (a standing rule is a
+`pointer`, work already planned elsewhere is `drop`). Then `ariadne migrate --apply --as …`: every
+new node enters to confirm, the files move into `.ariadne/archive/`. Tell the user what moved, that
+they confirm it in the viewer, and that `ariadne migrate --undo` goes back. Move the pointers and
+the other sections the preview lists into CLAUDE.md or `docs/`, then run `ariadne doctor`.
+
 ## Resume after /clear
 
 Read the state card first. For anything else, grep `.ariadne/STATE.md` (one line per node, generated),

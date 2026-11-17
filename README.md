@@ -51,6 +51,7 @@ evidence is recorded and the thread moves on. Things you can say:
 | "move X under Y", "undo", "approve all" | `ariadne move X Y`, `ariadne undo`, `ariadne confirm --all` |
 | "open the graph" | `ariadne open` |
 | "why are we doing this?" | `ariadne why <id>` |
+| "move my STATE.md and LOG.md into the thread" | `ariadne migrate` (preview), then `ariadne migrate --apply`; `ariadne migrate --undo` goes back |
 | "something still reads STATE.md" | `ariadne doctor` (hooks, skills and rules that still use STATE.md or LOG.md, and what to change; it edits nothing) |
 
 The band's **Open the graph** button opens the viewer too. Each project gets its own viewer port,

@@ -512,3 +512,6 @@
 {"at":"2026-11-17T09:32Z","id":"m6.2.3","op":"start","text":"started m6.2.3 Apply con archivio"}
 {"at":"2026-11-17T09:33Z","id":"m6.2.3","op":"close","text":"closed m6.2.3 Apply con archivio: migrate --apply scrive i nodi, sposta i file in .ariadne/archive/ con git mv e salva migration.json per l'undo","proof":[{"type":"commit","ref":"427fb2f"}]}
 {"at":"2026-11-17T09:33Z","id":"m6.2.4","op":"start","text":"started m6.2.4 Undo della migrazione"}
+{"at":"2026-11-17T09:36Z","id":"m6.2.4","op":"fill","text":"proof for m6.2.4: commit ba5901a","proof":[{"type":"commit","ref":"ba5901a"}]}
+{"at":"2026-11-17T09:36Z","id":"m6.2.4","op":"fill","text":"proof for m6.2.4: commit 70b0440","proof":[{"type":"commit","ref":"70b0440"}]}
+{"at":"2026-11-17T09:37Z","id":"m6.2.4","op":"fill","text":"proof for m6.2.4: commit 1a34243","proof":[{"type":"commit","ref":"1a34243"}]}
