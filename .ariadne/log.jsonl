@@ -492,3 +492,5 @@
 {"at":"2026-11-17T09:14Z","id":"m6.3.1","op":"close","text":"closed m6.3.1 Tipi decision e risk nello schema: validate accetta decision (mai active) e risk (mai active, sempre con parent)","proof":[{"type":"commit","ref":"421707a"}]}
 {"at":"2026-11-17T09:14Z","id":"m6.3.2","op":"start","text":"started m6.3.2 Regole di start, close e next"}
 {"at":"2026-11-17T09:15Z","id":"m6.3.2","op":"start","text":"started m6.3.2 Regole di start, close e next"}
+{"at":"2026-11-17T09:15Z","id":"m6.3.2","op":"close","text":"closed m6.3.2 Regole di start, close e next: start rifiuta decision e risk, next e first li saltano, close di una decision vuole un messaggio","proof":[{"type":"commit","ref":"b5570fd"}]}
+{"at":"2026-11-17T09:15Z","id":"m6.3.3","op":"start","text":"started m6.3.3 Sezioni nella scheda"}
