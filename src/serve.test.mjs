@@ -1,6 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { request } from 'node:http'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -51,4 +52,48 @@ test('the viewer says which package runs it, and closes on a quit that only aria
   assert.equal((await fetch(`${at}/quit`, { method: 'POST', headers: { 'x-ariadne-quit': '1' } })).status, 200)
   await closed
   assert.equal(server.listening, false)
+})
+
+test('POST /act confirms, rejects and comments as you, only with its header and on known operations', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'ariadne-serve-'))
+  mkdirSync(join(dir, '.ariadne'))
+  const node = (id, fields) => JSON.stringify({ id, kind: 'step', title: id, status: 'todo', what: `${id}.`, proof: [{ type: 'message', ref: 'chat' }], by: 'agent', at: '2026-11-17', ...fields })
+  writeFileSync(join(dir, '.ariadne', 'graph.jsonl'), [node('m1', { kind: 'milestone', status: 'active', review: 'confirm' }), node('a', { parent: 'm1' })].join('\n') + '\n')
+  const server = serve(dir, 0)
+  await new Promise(resolve => server.on('listening', resolve))
+  const act = (body, headers = { 'x-ariadne-act': '1' }) => fetch(`http://127.0.0.1:${server.address().port}/act`, { method: 'POST', headers: { 'content-type': 'application/json', ...headers }, body: JSON.stringify(body) })
+  const graph = () => readFileSync(join(dir, '.ariadne', 'graph.jsonl'), 'utf8')
+  try {
+    assert.equal((await act({ op: 'confirm', id: 'm1' }, {})).status, 403)
+    assert.equal((await act({ op: 'start', id: 'a' })).status, 400)
+    assert.equal((await act({ op: 'confirm', id: '../x' })).status, 400)
+    const r = await act({ op: 'comment', id: 'a', text: 'Why?' })
+    assert.equal(r.status, 200, await r.clone().text())
+    assert.match(graph(), /"comments":\[\{"at":"[^"]+","text":"Why\?"\}\]/)
+    assert.equal((await act({ op: 'confirm', id: 'm1' })).status, 200)
+    assert.doesNotMatch(graph(), /"review"/)
+    assert.match(graph(), /"confirmed"/)
+    const missing = await act({ op: 'reject', id: 'ghost' })
+    assert.equal(missing.status, 409)
+    assert.match(await missing.text(), /ghost/)
+  } finally {
+    server.close()
+  }
+})
+
+test('POST /act answers only to a page served from 127.0.0.1 or localhost, not to a rebound name', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'ariadne-serve-'))
+  mkdirSync(join(dir, '.ariadne'))
+  const server = serve(dir, 0)
+  await new Promise(resolve => server.on('listening', resolve))
+  const post = host => new Promise(resolve => {
+    const req = request({ host: '127.0.0.1', port: server.address().port, path: '/act', method: 'POST', headers: { host, 'x-ariadne-act': '1' } }, res => resolve(res.statusCode))
+    req.end(JSON.stringify({ op: 'confirmAll' }))
+  })
+  try {
+    assert.equal(await post('evil.example:80'), 403)
+    assert.notEqual(await post(`localhost:${server.address().port}`), 403)
+  } finally {
+    server.close()
+  }
 })
