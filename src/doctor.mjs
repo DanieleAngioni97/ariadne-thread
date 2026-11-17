@@ -4,6 +4,7 @@
 
 import { existsSync, readFileSync, readdirSync, realpathSync, statSync } from 'node:fs'
 import { join, relative } from 'node:path'
+import { isGenerated } from './export.mjs'
 import { words } from './i18n.mjs'
 
 const say = words({
@@ -11,26 +12,27 @@ const say = words({
     clean: 'ariadne doctor: no source mentions STATE.md or LOG.md any more: the state lives only in the graph',
     head: (lines, files) => `ariadne doctor: ${lines} lines in ${files} files still mention STATE.md or LOG.md (nothing was changed)`,
     more: k => `  … +${k} more lines in this file`,
-    hook: 'Hooks', skill: 'Skills', rule: 'Rules and instructions', project: 'Project', root: 'Files in the root',
+    hook: 'Hooks', skill: 'Skills', rule: 'Rules and instructions', project: 'Project', root: 'Files in the root', ready: 'Already ready for ariadne',
     fixHook: '→ in a project with .ariadne/, skip STATE.md (e.g. `[ -d .ariadne ] && exit 0`): ariadne already gives the card at session start',
     fixSkill: '→ add: "If the project has .ariadne/, the state lives there: don\'t write STATE.md or LOG.md, record with ariadne."',
     fixProject: '→ point to the ariadne card and the generated .ariadne/STATE.md instead of STATE.md',
-    fixRoot: '→ the guided migration will bring them into the graph; until then STATE.md and the ariadne card may disagree',
+    fixRoot: '→ ariadne migrate brings them into the graph (preview first, then --apply; --undo goes back); until then STATE.md and the ariadne card may disagree',
   },
   it: {
     clean: 'ariadne doctor: nessuna fonte parla più di STATE.md o LOG.md: lo stato sta solo nel grafo',
     head: (lines, files) => `ariadne doctor: ${lines} righe in ${files} file parlano ancora di STATE.md o LOG.md (non ho modificato niente)`,
     more: k => `  … +${k} righe in questo file`,
-    hook: 'Hook', skill: 'Skill', rule: 'Regole e istruzioni', project: 'Progetto', root: 'File nella root',
+    hook: 'Hook', skill: 'Skill', rule: 'Regole e istruzioni', project: 'Progetto', root: 'File nella root', ready: 'Già pronti per ariadne',
     fixHook: '→ in un progetto con .ariadne/ salta STATE.md (per esempio `[ -d .ariadne ] && exit 0`): la scheda di ariadne arriva già a inizio sessione',
     fixSkill: '→ aggiungi: «Se il progetto ha .ariadne/, lo stato sta lì: non scrivere STATE.md né LOG.md, registra con ariadne.»',
     fixProject: '→ punta alla scheda di ariadne e alla vista generata .ariadne/STATE.md invece che a STATE.md',
-    fixRoot: '→ la migrazione guidata li porterà nel grafo; fino ad allora STATE.md e la scheda di ariadne possono non coincidere',
+    fixRoot: '→ ariadne migrate li porta nel grafo (prima l\'anteprima, poi --apply; --undo torna indietro); fino ad allora STATE.md e la scheda di ariadne possono non coincidere',
   },
 })
 
 // STATE.md or LOG.md on its own, not a path such as .ariadne/STATE.md (ariadne's generated view).
 const MENTION = /(?<![\w./-])(?:STATE|LOG)\.md\b/
+const READY = /\.ariadne\b/
 const SCRIPT = /\.(?:py|sh|bash|zsh|js|mjs|cjs|ts|rb)$/
 const GROUPS = ['hook', 'skill', 'rule', 'project']
 // A long script would drown the rest: a few lines per file say where to look.
@@ -58,6 +60,7 @@ const markdownIn = dir => listDir(dir).flatMap(name => {
 export function findConflicts({ project, configDirs, home }) {
   const seen = new Set()
   const found = []
+  const ready = []
   // A file reached through a link shows its real path: that is the one to edit.
   const realOf = path => (existsSync(path) ? realpathSync(path) : path)
   const [realProject, realHome] = [realOf(project), realOf(home)]
@@ -67,9 +70,11 @@ export function findConflicts({ project, configDirs, home }) {
     const real = realpathSync(path)
     if (seen.has(real)) return
     seen.add(real)
-    read(path).split('\n').forEach((text, i) => {
-      if (MENTION.test(text)) found.push({ group, file: show(real), line: i + 1, text: text.trim().replace(/\s+/g, ' ').slice(0, 100), ...(via ? { via } : {}) })
-    })
+    const content = read(path)
+    const lines = content.split('\n').flatMap((text, i) => (MENTION.test(text) ? [{ group, file: show(real), line: i + 1, text: text.trim().replace(/\s+/g, ' ').slice(0, 100), ...(via ? { via } : {}) }] : []))
+    // A file that names .ariadne/ already tells the two cases apart: ready, not a conflict.
+    if (lines.length && READY.test(content)) ready.push(show(real))
+    else found.push(...lines)
   }
 
   // Hooks: the settings that declare them, and the scripts their commands run.
@@ -107,13 +112,15 @@ export function findConflicts({ project, configDirs, home }) {
   for (const name of ['CLAUDE.md', 'CLAUDE.local.md', 'AGENTS.md', join('.claude', 'CLAUDE.md')]) scan('project', join(project, name))
 
   const findings = GROUPS.flatMap(group => found.filter(f => f.group === group))
-  const rootFiles = ['STATE.md', 'LOG.md'].filter(name => isFile(join(project, name)))
-  return { findings, rootFiles }
+  // A STATE.md or LOG.md that `ariadne export` wrote is the thread itself, not a second source.
+  const rootFiles = ['STATE.md', 'LOG.md'].filter(name => isFile(join(project, name)) && !isGenerated(read(join(project, name))))
+  return { findings, rootFiles, ready }
 }
 
 /** The findings as text, one section per group, each with what to change. */
-export function report({ findings, rootFiles }) {
-  if (findings.length === 0 && rootFiles.length === 0) return say('clean')
+export function report({ findings, rootFiles, ready = [] }) {
+  const readyBlock = ready.length ? ['', `## ${say('ready')}`, ...ready.map(f => `- ${f}`)] : []
+  if (findings.length === 0 && rootFiles.length === 0) return [say('clean'), ...readyBlock].join('\n')
   const files = new Set(findings.map(f => f.file)).size
   const out = [say('head', findings.length, files)]
   for (const group of GROUPS) {
@@ -128,5 +135,6 @@ export function report({ findings, rootFiles }) {
     out.push(say(FIX[group]))
   }
   if (rootFiles.length) out.push('', `## ${say('root')}`, `- ${rootFiles.join(', ')}`, say('fixRoot'))
+  out.push(...readyBlock)
   return out.join('\n')
 }
