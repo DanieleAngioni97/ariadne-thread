@@ -67,7 +67,7 @@ test('init finds STATE.md and LOG.md and proposes moving them into the thread, w
   const r = run(dir, 'init')
   assert.equal(r.status, 0, r.stderr)
   assert.match(r.stdout, /trovati STATE\.md e LOG\.md/)
-  assert.match(r.stdout, /add decision.*add risk.*CLAUDE\.md.*ariadne doctor/s)
+  assert.match(r.stdout, /ariadne migrate.*--apply.*--undo.*ariadne doctor/s)
   assert.equal(readFileSync(join(dir, 'STATE.md'), 'utf8'), '# State\n')
   const only = project()
   writeFileSync(join(only, 'LOG.md'), '# Log\n')
