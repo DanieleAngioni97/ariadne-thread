@@ -578,3 +578,4 @@
 {"at":"2026-11-17T10:26Z","id":"m8.2","op":"add","text":"detour m8.2 Sblocchi per migrare Atlas, returns to m8.1"}
 {"at":"2026-11-17T10:27Z","id":"m8.2","op":"close","text":"closed m8.2 Sblocchi per migrare Atlas: titoli storici lunghi non bloccano più le scritture; migrate sceglie la milestone del passo corrente; anteprima su una copia di Atlas corretta","proof":[{"type":"commit","ref":"a5d8970"}]}
 {"at":"2026-11-17T10:29Z","id":"","op":"confirm","text":"confirmed 1 changes"}
+{"at":"2026-11-17T10:47Z","id":"m8.1","op":"fill","text":"proof for m8.1: commit 30d3408","proof":[{"type":"commit","ref":"30d3408"}]}
