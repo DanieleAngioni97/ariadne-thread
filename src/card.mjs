@@ -59,13 +59,14 @@ export function render(nodes, thread, files = new Map(), { full = false, brief =
   head.push(open.length ? `${say('waiting')}: ${open.map(n => `${n.title} → ${say('back')} ${n.reentry}`).join(' · ')}` : say('noWaiting'))
 
   // brief 1: the other milestones lose their goal; brief 2: done steps keep only their title.
+  // Title and what, without saying the title twice when the what begins with it (as a migrated item does).
+  const body = n => (!n.what || n.what === n.title ? n.title : n.what.startsWith(n.title.replace(/…$/, '')) ? n.what : `${n.title}: ${n.what}`)
   const line = n => {
     const status = n.status === 'replaced' ? `replaced → ${titled(n.replaced_by)}` : n.status === 'deferred' ? `deferred → ${target(n.deferred_to)}` : n.status
-    const bare = `- ${n.id} [${isWork(n) ? status : `${say('kind')[n.kind]} ${status}`}] ${n.title}`
-    if (brief >= 2 && n.status === 'done' && n.id !== current?.id) return bare
-    const what = n.what && n.what !== n.title ? `: ${n.what}` : ''
+    const head = `- ${n.id} [${isWork(n) ? status : `${say('kind')[n.kind]} ${status}`}] `
+    if (brief >= 2 && n.status === 'done' && n.id !== current?.id) return head + n.title
     const f = filesOf(n, files)
-    return bare + what + (n.why ? ` · ${say('because')}: ${n.why}` : '') + (f.length ? ` · file: ${f.join(', ')}` : '')
+    return head + body(n) + (n.why ? ` · ${say('because')}: ${n.why}` : '') + (f.length ? ` · file: ${f.join(', ')}` : '')
   }
   const milestones = nodes.filter(n => n.kind === 'milestone')
   const inside = m => nodes.filter(n => n.kind !== 'milestone' && milestoneOf(n.id) === m.id)
@@ -81,7 +82,7 @@ export function render(nodes, thread, files = new Map(), { full = false, brief =
   const section = m => [`## ${m.title} (${state(m)})${m.what ? `: ${m.what}` : ''}`, ...inside(m).filter(n => full || !waits(n)).map(line)]
   const here = current ? milestoneOf(current.id) : nextId && milestoneOf(nextId)
   const blocks = [head]
-  const about = n => `- ${n.id} ${n.title}${n.what && n.what !== n.title ? `: ${n.what}` : ''}`
+  const about = n => `- ${n.id} ${body(n)}`
   const decisions = nodes.filter(n => n.kind === 'decision' && waits(n))
     .map(n => about(n) + (milestoneOf(n.id) ? ` (${g.get(milestoneOf(n.id)).title})` : ''))
   if (decisions.length) blocks.push([say('decisions'), ...decisions])

@@ -84,6 +84,15 @@ test('the view labels decisions and risks on their line, for grep', () => {
   assert.ok(lines.includes('- k2 [rischio todo] Later risk: Not this milestone.'))
 })
 
+test('a what that begins with the title does not repeat it', () => {
+  const nodes = [...NODES, n('k', { kind: 'risk', parent: 'd', status: 'todo', title: 'Keys expire', what: 'Keys expire: Bedrock answers 403.' }), n('g', { parent: 'm2', status: 'todo', title: 'Ship it', what: 'Ship it: tag and push.' })]
+  const lines = card(nodes, { current: 'd' }, FILES).split('\n')
+  assert.ok(lines.includes('- k Keys expire: Bedrock answers 403. (su d Title d)'), lines.join('\n'))
+  assert.ok(lines.includes('- g [todo] Ship it: tag and push.'), lines.join('\n'))
+  const cut = card([...NODES, n('h', { parent: 'm2', status: 'todo', title: 'Launch one suite at…', what: 'Launch one suite at a time, slack first.' })], { current: 'd' }, FILES).split('\n')
+  assert.ok(cut.includes('- h [todo] Launch one suite at a time, slack first.'), cut.join('\n'))
+})
+
 test('the view lists every milestone in full, one greppable line per node', () => {
   const lines = view(NODES, { current: 'd' }, FILES).split('\n')
   assert.ok(lines.includes('## M1 Research (done): Know the field.'))
