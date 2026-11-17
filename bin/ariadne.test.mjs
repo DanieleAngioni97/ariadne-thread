@@ -577,3 +577,12 @@ test('export --always keeps STATE.md in step with every change, until --off', ()
   run(dir, 'add', 'risk', 'Later', '--what', 'Not exported.', '--under', 'a')
   assert.doesNotMatch(readFileSync(join(dir, 'STATE.md'), 'utf8'), /Later/)
 })
+
+test('fill and close warn when what they record lives only in the chat', () => {
+  const dir = project({ graph: GOOD, thread: { current: 'b' } })
+  const bare = run(dir, 'fill', 'b', '--message', 'chat 2026-11-17')
+  assert.equal(bare.status, 0, bare.stderr)
+  assert.match(bare.stderr, /⚠ b rimanda alla chat \(chat 2026-11-17\)/)
+  assert.match(run(dir, 'close', 'b', 'Steps as agreed in chat.', '--file', 'x.md').stderr, /⚠ b rimanda alla chat \(what\)/)
+  assert.doesNotMatch(run(dir, 'fill', 'a', '--message', 'chat 2026-11-17: use GitHub').stderr, /rimanda alla chat/)
+})

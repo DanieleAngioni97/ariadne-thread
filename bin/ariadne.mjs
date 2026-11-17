@@ -21,6 +21,7 @@ import { systemLang, words } from '../src/i18n.mjs'
 import { show, why } from '../src/inspect.mjs'
 import { elsewhere, preview, propose, readLog, readState } from '../src/migrate.mjs'
 import { exportLog, exportState, isGenerated } from '../src/export.mjs'
+import { onlyInChat } from '../src/chat.mjs'
 import { browserCommand, openViewer } from '../src/open.mjs'
 import { keepOut, savePort, viewerPort } from '../src/port.mjs'
 import { brokenRefs } from '../src/refs.mjs'
@@ -66,6 +67,7 @@ const say = words({
     staleMigration: 'ariadne migrate --undo: the graph changed after the migration: undo those changes first, then try again',
     noOld: 'ariadne migrate: no STATE.md or LOG.md in the project root, nothing to migrate',
     badAs: value => `ariadne migrate: --as ${value}: write n=decision, risk, pointer or drop, n being the number in the preview`,
+    chatOnly: (id, what) => `ariadne: ⚠ ${id} points to the chat (${what}): after /clear it is gone; write what was said (--message "chat <date>: …") or put it in a file`,
     noFile: id => `ariadne: ⚠ ${id} closes with no file or commit: where does the result live? ariadne fill ${id} --file <path>[#section]`,
     ready: 'ariadne: project ready in .ariadne/ · ask the agent to keep the thread: the graph starts with the first plan',
     oldState: files => `ariadne: found ${files.join(' and ')}: two sources of state are one too many. ariadne migrate shows how they move into the thread (Next → steps, open decisions and risks → nodes, commands and paths → CLAUDE.md or docs/); --apply moves the files into .ariadne/archive/, --undo goes back. Then ariadne doctor lists the hooks and skills that still use STATE.md or LOG.md.`,
@@ -106,6 +108,7 @@ const say = words({
     undone: 'ariadne migrate: annullata · STATE.md e LOG.md sono tornati dov\'erano, il grafo è com\'era prima',
     noMigration: 'ariadne migrate --undo: nessuna migrazione da annullare',
     staleMigration: 'ariadne migrate --undo: il grafo è cambiato dopo la migrazione: annulla prima quei cambiamenti, poi riprova',
+    chatOnly: (id, what) => `ariadne: ⚠ ${id} rimanda alla chat (${what}): dopo /clear non c'è più; scrivi cosa è stato detto (--message "chat <data>: …") o mettilo in un file`,
     noOld: 'ariadne migrate: nessun STATE.md né LOG.md nella root del progetto, niente da migrare',
     badAs: value => `ariadne migrate: --as ${value}: scrivi n=decision, risk, pointer o drop, con n il numero nell'anteprima`,
     ready: "ariadne: progetto pronto in .ariadne/ · chiedi all'agente di tracciare il lavoro: il grafo nasce con il primo piano",
@@ -328,10 +331,17 @@ function run(ops, by) {
   for (const l of r.log) console.log(`↺ ${l.text}`)
   // The memory lives in files: a result held by the chat alone is lost at the next /clear.
   const closed = r.log.filter(l => l.op === 'close').map(l => parse(r.text).find(n => n.id === l.id))
+  const warned = new Set()
   for (const n of closed) {
     if (!(n.proof ?? []).some(p => p.type === 'file' || p.type === 'commit')) {
       console.error(say('noFile', n.id))
+      warned.add(n.id)
     }
+  }
+  // Only what this command writes: older proofs were warned about when they were written (m6.16).
+  for (const op of ops.filter(o => (o.op === 'fill' || o.op === 'close') && !warned.has(o.id))) {
+    const left = onlyInChat({ what: op.what, detail: op.detail, why: op.why, proof: op.proof })
+    if (left.length) console.error(say('chatOnly', op.id, left.join(', ')))
   }
 }
 
