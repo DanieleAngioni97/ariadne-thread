@@ -1,12 +1,13 @@
 {
   "project": "ariadne-thread",
-  "current": "m7.1",
+  "current": "m7.2",
   "profile": "standard",
   "last_correction": {
     "id": "m7.2",
     "parent": "m7",
     "after": [
       "m7.1"
-    ]
+    ],
+    "stale": true
   }
 }

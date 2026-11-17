@@ -561,3 +561,5 @@
 {"at":"2026-11-17T10:09Z","id":"","op":"confirm","text":"confirmed 1 changes"}
 {"at":"2026-11-17T10:09Z","id":"m8","op":"fill","text":"proof for m8: message chat 2026-11-17: l'utente dice di procedere con m8 prima di m7, e di scrivergli in italiano","proof":[{"type":"message","ref":"chat 2026-11-17: l'utente dice di procedere con m8 prima di m7, e di scrivergli in italiano"}]}
 {"at":"2026-11-17T10:09Z","id":"m7.1","op":"start","text":"started m7.1 Misure di qualità del piano"}
+{"at":"2026-11-17T10:11Z","id":"m7.1","op":"close","text":"closed m7.1 Misure di qualità del piano: docs/m7.1-qualita-piano.md: misure dallo stato dell'arte, numeri del grafo, 5 misure proposte con soglie","proof":[{"type":"commit","ref":"e4b93d3"}]}
+{"at":"2026-11-17T10:11Z","id":"m7.2","op":"start","text":"started m7.2 Passi paralleli necessari"}
