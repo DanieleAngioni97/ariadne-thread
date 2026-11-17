@@ -48,6 +48,42 @@ test('the card puts the open step first, then its milestone in full, the changed
   ].join('\n'))
 })
 
+const OPEN = [
+  n('q', { kind: 'decision', parent: 'm3', status: 'todo', title: 'Where to host?', what: 'GitHub or GitLab.' }),
+  n('k', { kind: 'risk', parent: 'd', status: 'todo', title: 'Keys expire', what: 'Bedrock answers 403.' }),
+  n('k2', { kind: 'risk', parent: 'm3', status: 'todo', title: 'Later risk', what: 'Not this milestone.' }),
+  n('k3', { kind: 'risk', parent: 'c', status: 'done', title: 'Old risk', what: 'It did not happen.' }),
+]
+
+test('the card lists every open decision and the open risks of the milestone, after where you are', () => {
+  const lines = card([...NODES, ...OPEN], { current: 'd' }, FILES).split('\n')
+  const at = lines.indexOf('## Decisioni aperte')
+  assert.deepEqual(lines.slice(at, at + 6), [
+    '## Decisioni aperte',
+    '- q Where to host?: GitHub or GitLab. (M3 Release)',
+    '',
+    '## Rischi aperti',
+    '- k Keys expire: Bedrock answers 403. (su d Title d)',
+    '',
+  ])
+  assert.ok(at < lines.indexOf('## M2 Design (active): Shape the tool.'))
+  assert.ok(!lines.some(l => l.startsWith('- k [')), 'an open risk is not repeated among the steps')
+  assert.ok(lines.includes('- k3 [rischio done] Old risk: It did not happen.'))
+  assert.ok(!lines.some(l => l.includes('Later risk')))
+})
+
+test('an open risk does not keep a finished milestone open', () => {
+  const nodes = NODES.map(x => (x.id === 'm1' ? { ...x, status: 'active' } : x))
+  const lines = card([...nodes, n('k', { kind: 'risk', parent: 'a', status: 'todo', what: 'Watch it.' })], { current: 'd' }, FILES).split('\n')
+  assert.ok(lines.includes('- M1 Research (done): Know the field.'))
+})
+
+test('the view labels decisions and risks on their line, for grep', () => {
+  const lines = view([...NODES, ...OPEN], { current: 'd' }, FILES).split('\n')
+  assert.ok(lines.includes('- q [decisione todo] Where to host?: GitHub or GitLab.'))
+  assert.ok(lines.includes('- k2 [rischio todo] Later risk: Not this milestone.'))
+})
+
 test('the view lists every milestone in full, one greppable line per node', () => {
   const lines = view(NODES, { current: 'd' }, FILES).split('\n')
   assert.ok(lines.includes('## M1 Research (done): Know the field.'))
