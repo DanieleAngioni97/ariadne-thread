@@ -76,7 +76,7 @@ const levelKey = id => byId.get(id)?.parent ?? ''
 /** The words at the right of a node (specifica § Viewer), else its status. */
 function labelText(node) {
   const label = labelOf(data, node.id)
-  if (!label) return node.kind === 'detour' ? t.kind.detour : t.status[node.status]
+  if (!label) return ['detour', 'decision', 'risk'].includes(kindOf(node)) ? t.kind[kindOf(node)] : t.status[node.status]
   if (label.type === 'deferred') return t.label.deferred(label.to)
   if (label.type === 'list') return t.label.list(label.done, label.total)
   return t.label[label.type]
@@ -385,7 +385,7 @@ function Panel({ node, open, expanded, focus, onSelect, onToggle, onFocus, onClo
 }
 
 const LEGEND_KEY = 'ariadne.legend'
-const KINDS = ['active', 'done', 'todo', 'deferred', 'detour', 'dropped']
+const KINDS = ['active', 'done', 'todo', 'deferred', 'detour', 'decision', 'risk', 'dropped']
 
 /**
  * The legend behind a small button: open on the first visit, then as you left it.
@@ -504,7 +504,7 @@ function Timeline({ query, selected, onSelect }) {
     </section>`
 }
 
-const FILTERS = ['all', 'active', 'todo', 'done', 'deferred', 'detour', 'dropped']
+const FILTERS = ['all', 'active', 'todo', 'done', 'deferred', 'detour', 'decision', 'risk', 'dropped']
 
 /** Every node in graph order, one chip per kind with its count. */
 function NodeList({ query, selected, onSelect }) {

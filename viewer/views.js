@@ -1,7 +1,10 @@
 // Pure logic for the views beside the graph: the timeline of the log, the list of nodes, the search.
 
 /** What a node is, at a glance: its look follows this, not the raw status. */
-export const kindOf = node => (node.kind === 'detour' ? 'detour' : node.status === 'replaced' ? 'dropped' : node.status)
+// An open decision or risk shows what it is; once closed it reads like any done node.
+export const kindOf = node => (node.kind === 'detour' ? 'detour'
+  : (node.kind === 'decision' || node.kind === 'risk') && node.status === 'todo' ? node.kind
+  : node.status === 'replaced' ? 'dropped' : node.status)
 
 const GROUPS = {
   start: 'progress', close: 'progress',
@@ -81,7 +84,7 @@ export function listRows(data, { filter = 'all', query = '' }) {
 
 /** How many nodes each filter chip would show. */
 export function listCounts(data) {
-  const counts = { all: data.nodes.length, active: 0, todo: 0, done: 0, deferred: 0, detour: 0, dropped: 0 }
+  const counts = { all: data.nodes.length, active: 0, todo: 0, done: 0, deferred: 0, detour: 0, decision: 0, risk: 0, dropped: 0 }
   for (const n of data.nodes) counts[kindOf(n)] = (counts[kindOf(n)] ?? 0) + 1
   return counts
 }

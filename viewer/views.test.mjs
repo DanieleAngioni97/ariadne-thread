@@ -29,6 +29,15 @@ test('a node reads as one of six kinds: a detour first, a replaced step as dropp
   assert.deepEqual(data.nodes.map(kindOf), ['active', 'done', 'active', 'detour', 'dropped', 'todo', 'deferred'])
 })
 
+test('an open decision and an open risk read as their own kind; closed, they read as done', () => {
+  const nodes = [
+    { id: 'q', kind: 'decision', status: 'todo' }, { id: 'r', kind: 'risk', status: 'todo' },
+    { id: 'q2', kind: 'decision', status: 'done' }, { id: 'r2', kind: 'risk', status: 'done' },
+  ]
+  assert.deepEqual(nodes.map(kindOf), ['decision', 'risk', 'done', 'done'])
+  assert.deepEqual([listCounts({ nodes }).decision, listCounts({ nodes }).risk], [1, 1])
+})
+
 test('each operation falls in progress, structure or detail; an unknown one counts as structure', () => {
   assert.deepEqual(['start', 'close', 'plan', 'add', 'move', 'defer', 'replace', 'confirm', 'reject', 'undo', 'fill', 'relink', 'new'].map(groupOf),
     ['progress', 'progress', 'structure', 'structure', 'structure', 'structure', 'structure', 'structure', 'structure', 'structure', 'detail', 'detail', 'structure'])
@@ -74,7 +83,7 @@ test('the list shows the nodes in graph order with their depth and milestone, fi
 })
 
 test('the list counts every kind for its filter chips', () => {
-  assert.deepEqual(listCounts(data), { all: 7, active: 2, todo: 1, done: 1, deferred: 1, detour: 1, dropped: 1 })
+  assert.deepEqual(listCounts(data), { all: 7, active: 2, todo: 1, done: 1, deferred: 1, detour: 1, decision: 0, risk: 0, dropped: 1 })
 })
 
 test('the last activity of a node is its latest event', () => {

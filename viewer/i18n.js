@@ -5,7 +5,7 @@
 const STRINGS = {
   en: {
     status: { done: 'Done', active: 'In progress', todo: 'To do', deferred: 'Deferred', replaced: 'Replaced' },
-    kind: { detour: 'Detour' },
+    kind: { detour: 'Detour', decision: 'To decide', risk: 'Open risk' },
     here: 'You are here',
     label: {
       confirm: 'to confirm',
@@ -44,7 +44,7 @@ const STRINGS = {
     close: title => `Close ${title}`,
     legendTitle: 'Legend',
     keys: 'Arrows move between steps · / searches · Esc closes the panel',
-    kinds: { active: 'in progress', done: 'done', todo: 'to do', deferred: 'deferred', detour: 'detour', dropped: 'replaced or rejected' },
+    kinds: { active: 'in progress', done: 'done', todo: 'to do', deferred: 'deferred', detour: 'detour', decision: 'decision to make', risk: 'open risk', dropped: 'replaced or rejected' },
     cues: [
       ['current', 'current step'], ['thread', 'where it comes from'], ['review', 'to confirm'], ['uncertain', 'uncertain proof'],
     ],
@@ -91,7 +91,7 @@ const STRINGS = {
   },
   it: {
     status: { done: 'Fatto', active: 'In corso', todo: 'Da fare', deferred: 'Rimandato', replaced: 'Sostituito' },
-    kind: { detour: 'Deviazione' },
+    kind: { detour: 'Deviazione', decision: 'Da decidere', risk: 'Rischio aperto' },
     here: 'Sei qui',
     label: {
       confirm: 'da confermare',
@@ -130,7 +130,7 @@ const STRINGS = {
     close: title => `Chiudi ${title}`,
     legendTitle: 'Legenda',
     keys: 'Frecce: da un passo all’altro · / cerca · Esc chiude il pannello',
-    kinds: { active: 'in corso', done: 'fatto', todo: 'da fare', deferred: 'rimandato', detour: 'deviazione', dropped: 'sostituito o rifiutato' },
+    kinds: { active: 'in corso', done: 'fatto', todo: 'da fare', deferred: 'rimandato', detour: 'deviazione', decision: 'decisione da prendere', risk: 'rischio aperto', dropped: 'sostituito o rifiutato' },
     cues: [
       ['current', 'passo corrente'], ['thread', 'da dove viene'], ['review', 'da confermare'], ['uncertain', 'prova incerta'],
     ],
