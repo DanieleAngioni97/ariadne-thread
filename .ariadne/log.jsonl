@@ -543,3 +543,5 @@
 {"at":"2026-11-17T09:49Z","id":"m6.19.2","op":"start","text":"started m6.19.2 Azioni dal server"}
 {"at":"2026-11-17T09:51Z","id":"m6.19.2","op":"close","text":"closed m6.19.2 Azioni dal server: POST /act sul server del viewer (confirm, confirmAll, reject, comment come utente), con header e Host di guardia","proof":[{"type":"commit","ref":"992ba87"}]}
 {"at":"2026-11-17T09:51Z","id":"m6.19.3","op":"start","text":"started m6.19.3 Coda da confermare nel viewer"}
+{"at":"2026-11-17T09:53Z","id":"m6.19.3","op":"close","text":"closed m6.19.3 Coda da confermare nel viewer: vista Da confermare con Approva, Rifiuta, Approva tutto; nel pannello conferma e commenti con le risposte dell'agente","proof":[{"type":"commit","ref":"34ef58b"}]}
+{"at":"2026-11-17T09:53Z","id":"m6.19.4","op":"start","text":"started m6.19.4 Prova nel browser"}
