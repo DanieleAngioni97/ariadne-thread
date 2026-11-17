@@ -67,6 +67,7 @@ const STRINGS = {
     ops: {
       start: 'started', close: 'closed', plan: 'planned', add: 'added', move: 'moved', defer: 'deferred',
       replace: 'replaced', confirm: 'confirmed', reject: 'rejected', undo: 'undone', fill: 'filled in', relink: 'relinked',
+      comment: 'comment', answer: 'answer',
     },
     days: { today: 'Today', yesterday: 'Yesterday' },
     noEvents: 'No events yet: the log fills up with every operation.',
@@ -164,6 +165,7 @@ const STRINGS = {
     ops: {
       start: 'avviato', close: 'chiuso', plan: 'pianificato', add: 'aggiunto', move: 'spostato', defer: 'rimandato',
       replace: 'sostituito', confirm: 'confermato', reject: 'rifiutato', undo: 'annullato', fill: 'completato', relink: 'ricollegato',
+      comment: 'commento', answer: 'risposta',
     },
     days: { today: 'Oggi', yesterday: 'Ieri' },
     noEvents: 'Nessun evento ancora: il diario si riempie a ogni operazione.',
