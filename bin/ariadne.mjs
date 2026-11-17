@@ -20,6 +20,7 @@ import { parse } from '../src/graph.mjs'
 import { systemLang, words } from '../src/i18n.mjs'
 import { show, why } from '../src/inspect.mjs'
 import { elsewhere, preview, propose, readLog, readState } from '../src/migrate.mjs'
+import { exportLog, exportState, isGenerated } from '../src/export.mjs'
 import { browserCommand, openViewer } from '../src/open.mjs'
 import { keepOut, savePort, viewerPort } from '../src/port.mjs'
 import { brokenRefs } from '../src/refs.mjs'
@@ -47,7 +48,7 @@ const say = words({
   en: {
     usage: `usage: ariadne <command>
   init · card [--hook] · summary [--hook] · show <id> · why <id> · log [n] · validate [file] · doctor
-  migrate [--as n=decision|risk|pointer|drop,…] [--apply] · migrate --undo
+  migrate [--as n=decision|risk|pointer|drop,…] [--apply] · migrate --undo · export [--always | --off]
   plan <parent> "<step>"… [--what "<detail>"]… --ref "<approval>"
   start <id> · pause <id> · close <id> "<outcome>" (--commit sha | --file path | --message text)
   add <kind> "<title>" --what "…" [--under id] [--after a,b] [--why …] [--detail …] [--reentry id] [--id x] [--start | --done]
@@ -57,6 +58,9 @@ const say = words({
   apply <ops.json> · sync [--hook] · view [--port n] · open [id] [--port n] · band [--review i]
   --by user: the action comes from you (move, undo, confirm and reject always do)`,
     migrated: 'ariadne migrate: done · every new node waits for your confirmation (ariadne open) · to go back: ariadne migrate --undo',
+    exported: always => `ariadne export: STATE.md and LOG.md written from the thread${always ? ', and kept in step with every change (export --off to stop)' : ''}`,
+    exportOff: 'ariadne export: STATE.md and LOG.md are no longer updated; delete them when nobody reads them',
+    handWritten: name => `ariadne export: ${name} is written by hand: move it into the thread first (ariadne migrate)`,
     undone: 'ariadne migrate: undone · STATE.md and LOG.md are back where they were, the graph is as before',
     noMigration: 'ariadne migrate --undo: no migration to undo',
     staleMigration: 'ariadne migrate --undo: the graph changed after the migration: undo those changes first, then try again',
@@ -85,7 +89,7 @@ const say = words({
   it: {
     usage: `uso: ariadne <comando>
   init · card [--hook] · summary [--hook] · show <id> · why <id> · log [n] · validate [file] · doctor
-  migrate [--as n=decision|risk|pointer|drop,…] [--apply] · migrate --undo
+  migrate [--as n=decision|risk|pointer|drop,…] [--apply] · migrate --undo · export [--always | --off]
   plan <parent> "<passo>"… [--what "<dettaglio>"]… --ref "<approvazione>"
   start <id> · pause <id> · close <id> "<esito>" (--commit sha | --file path | --message testo)
   add <kind> "<titolo>" --what "…" [--under id] [--after a,b] [--why …] [--detail …] [--reentry id] [--id x] [--start | --done]
@@ -96,6 +100,9 @@ const say = words({
   --by user: l'azione viene da te (move, undo, confirm e reject lo sono sempre)`,
     noFile: id => `ariadne: ⚠ ${id} si chiude senza file né commit: dove sta il risultato? ariadne fill ${id} --file <percorso>[#sezione]`,
     migrated: 'ariadne migrate: fatto · ogni nodo nuovo aspetta la tua conferma (ariadne open) · per tornare indietro: ariadne migrate --undo',
+    exported: always => `ariadne export: STATE.md e LOG.md scritti dal filo${always ? ', e aggiornati a ogni modifica (export --off per smettere)' : ''}`,
+    exportOff: 'ariadne export: STATE.md e LOG.md non vengono più aggiornati; cancellali quando nessuno li legge',
+    handWritten: name => `ariadne export: ${name} è scritto a mano: prima portalo nel filo (ariadne migrate)`,
     undone: 'ariadne migrate: annullata · STATE.md e LOG.md sono tornati dov\'erano, il grafo è com\'era prima',
     noMigration: 'ariadne migrate --undo: nessuna migrazione da annullare',
     staleMigration: 'ariadne migrate --undo: il grafo è cambiato dopo la migrazione: annulla prima quei cambiamenti, poi riprova',
@@ -127,7 +134,7 @@ const FLAGS = {
   title: { type: 'string' }, under: { type: 'string' }, after: { type: 'string' }, reentry: { type: 'string' },
   id: { type: 'string' }, start: { type: 'boolean' }, done: { type: 'boolean' }, all: { type: 'boolean' }, hook: { type: 'boolean' }, port: { type: 'string' }, review: { type: 'string' },
   by: { type: 'string' }, commit: { type: 'string', multiple: true }, file: { type: 'string', multiple: true },
-  message: { type: 'string', multiple: true }, as: { type: 'string', multiple: true }, apply: { type: 'boolean' }, undo: { type: 'boolean' },
+  message: { type: 'string', multiple: true }, as: { type: 'string', multiple: true }, apply: { type: 'boolean' }, undo: { type: 'boolean' }, always: { type: 'boolean' }, off: { type: 'boolean' },
 }
 const USER_OPS = ['move', 'undo', 'confirm', 'reject']
 
@@ -177,6 +184,34 @@ function commitFiles() {
 function writeView(nodes, thread) {
   writeFileSync(VIEW, view(nodes, thread, commitFiles()) + '\n')
   keepOut(process.cwd(), 'STATE.md')
+  if (readConfig().export) writeExport(nodes, thread)
+}
+
+const CONFIG = '.ariadne/config.json'
+function readConfig() {
+  try { return JSON.parse(readFileSync(CONFIG, 'utf8')) } catch { return {} }
+}
+
+/** STATE.md and LOG.md in the project root, generated from the thread (m6.7); false over a hand-written one. */
+function writeExport(nodes, thread) {
+  const mine = ['STATE.md', 'LOG.md'].find(name => existsSync(name) && !isGenerated(readFileSync(name, 'utf8')))
+  if (mine) return mine
+  const log = existsSync(LOG) ? readFileSync(LOG, 'utf8').split('\n').filter(Boolean).map(l => JSON.parse(l)) : []
+  writeFileSync('STATE.md', exportState(nodes, thread, { project: basename(process.cwd()), at: now() }))
+  writeFileSync('LOG.md', exportLog(log))
+  return null
+}
+
+/** `export`: once, or `--always` on every change, or `--off`; never over a hand-written file. */
+function exportCommand(values) {
+  const remember = on => writeFileSync(CONFIG, JSON.stringify({ ...readConfig(), export: on }, null, 2) + '\n')
+  if (values.off) { remember(false); return console.log(say('exportOff')) }
+  const text = existsSync(GRAPH) ? readFileSync(GRAPH, 'utf8') : ''
+  const nodes = parse(text)
+  const mine = writeExport(nodes, readThread(nodes))
+  if (mine) { console.error(say('handWritten', mine)); process.exit(1) }
+  if (values.always) remember(true)
+  console.log(say('exported', values.always))
 }
 
 /** What a hook already told this session, by session id; kept outside the repository. */
@@ -209,7 +244,8 @@ function corrections(values) {
 /** The move of a hand-written STATE.md and LOG.md into the thread (m6.2): the preview, checked by apply. */
 function migrate(values) {
   if (values.undo) return undoMigration()
-  const read = name => (existsSync(name) ? readFileSync(name, 'utf8') : null)
+  // A file ariadne generated (export) is the thread itself, not a state to migrate.
+  const read = name => (existsSync(name) && !isGenerated(readFileSync(name, 'utf8')) ? readFileSync(name, 'utf8') : null)
   const [stateText, logText] = [read('STATE.md'), read('LOG.md')]
   if (stateText === null && logText === null) { console.error(say('noOld')); process.exit(1) }
   const text = existsSync(GRAPH) ? readFileSync(GRAPH, 'utf8') : ''
@@ -314,7 +350,7 @@ function init() {
   for (const name of ['STATE.md', 'local.json']) keepOut(process.cwd(), name)
   console.log(say('ready'))
   // A hand-written state next to the thread splits the truth: propose the move, touch nothing (m6.1).
-  const old = ['STATE.md', 'LOG.md'].filter(name => existsSync(name))
+  const old = ['STATE.md', 'LOG.md'].filter(name => existsSync(name) && !isGenerated(readFileSync(name, 'utf8')))
   if (old.length) console.log(say('oldState', old))
   // Claude Code loads the band only with this flag in its environment, which its Bash inherits.
   if (process.env.CLAUDE_CODE_ENABLE_FUNCTION_HOOKS !== '1') console.log(say('bandOff'))
@@ -557,6 +593,7 @@ else if (command === 'doctor') {
   console.log(report(findConflicts({ project: process.cwd(), configDirs, home: homedir() })))
 }
 else if (command === 'migrate') migrate(values)
+else if (command === 'export') exportCommand(values)
 else if (command === 'log') showLog(Number(args[0]) || undefined)
 else if (command === 'view') {
   const root = process.cwd()
