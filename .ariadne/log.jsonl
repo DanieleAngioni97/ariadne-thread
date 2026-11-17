@@ -519,3 +519,5 @@
 {"at":"2026-11-17T09:38Z","id":"m6.2.4","op":"close","text":"closed m6.2.4 Undo della migrazione: migrate --undo rimette file, grafo, thread e diario; init, skill e README spiegano migrate; provato su una copia reale","proof":[{"type":"commit","ref":"3f793c5"}]}
 {"at":"2026-11-17T09:38Z","id":"m6.2","op":"close","text":"closed m6.2 Migrazione guidata con undo: ariadne migrate: anteprima, --as, --apply con archivio in .ariadne/archive/, --undo; nodi migrati da confermare","proof":[{"type":"file","ref":"docs/m6.2-migrazione.md"}]}
 {"at":"2026-11-17T09:38Z","id":"m6.4","op":"start","text":"started m6.4 Pointers in CLAUDE.md o docs/"}
+{"at":"2026-11-17T09:39Z","id":"m6.4","op":"close","text":"closed m6.4 Pointers in CLAUDE.md o docs/: migrate elenca per intero, in anteprima e dopo --apply, le voci da portare in CLAUDE.md o docs/ (Pointers, altre sezioni, voci pointer)","proof":[{"type":"commit","ref":"4dc88c7"}]}
+{"at":"2026-11-17T09:39Z","id":"m6.7","op":"start","text":"started m6.7 Rigenerare STATE.md e LOG.md"}
