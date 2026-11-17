@@ -51,6 +51,11 @@ test('readState takes Next as bullets too, and missing sections as empty', () =>
   assert.deepEqual(readState('just prose\n'), { milestone: null, next: [], open: [], other: [], sections: none })
 })
 
+test('the milestone is the first paragraph of its section, without tables', () => {
+  const text = '## Milestone\nShip P5: ready,\nnot launched.\n\n| Area | State |\n|---|---|\n| CI | red |\n\nMore prose.\n'
+  assert.equal(readState(text).milestone, 'Ship P5: ready, not launched.')
+})
+
 test('a section with prose and no bullets keeps its text as one item', () => {
   assert.deepEqual(readState('## How builds are made\nRun make,\nthen ship.\n').other, [{ title: 'How builds are made', items: ['Run make, then ship.'] }])
 })

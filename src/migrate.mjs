@@ -47,25 +47,28 @@ function sections(text) {
   const out = []
   let current = null
   let item = null
-  const end = () => { item = null }
+  const end = () => { item = null; if (current?.prose.at(-1)?.length) current.prose.push([]) }
   for (const raw of text.split('\n')) {
     const heading = raw.match(/^##\s+(.*?)\s*$/)
     if (heading) {
-      current = { title: heading[1], items: [], prose: [] }
+      current = { title: heading[1], items: [], prose: [[]] }
       out.push(current)
       end()
       continue
     }
     if (!current) continue
-    if (raw.trim() === '') { end(); continue }
+    if (raw.trim() === '' || /^\s*\|/.test(raw)) { end(); continue }
     const bullet = raw.match(ITEM)
     if (bullet) {
       item = [bullet[1].trim()]
       current.items.push(item)
     } else if (item) item.push(raw.trim())
-    else current.prose.push(raw.trim())
+    else current.prose.at(-1).push(raw.trim())
   }
-  return out.map(s => ({ title: s.title, items: s.items.length ? s.items.map(i => i.join(' ')) : s.prose.length ? [s.prose.join(' ')] : [] }))
+  return out.map(s => {
+    const paragraphs = s.prose.filter(p => p.length).map(p => p.join(' '))
+    return { title: s.title, items: s.items.length ? s.items.map(i => i.join(' ')) : paragraphs.length ? [paragraphs.join(' ')] : [], first: paragraphs[0] ?? null }
+  })
 }
 
 const IS = {
@@ -78,7 +81,9 @@ const IS = {
 export function readState(text) {
   const found = sections(text)
   const pick = is => found.filter(s => is(s.title)).flatMap(s => s.items)
-  const milestone = pick(IS.milestone).join(' ') || null
+  // The first paragraph says where the work stands; tables and the rest stay in the archive.
+  const ms = found.find(s => IS.milestone(s.title))
+  const milestone = ms ? ms.first ?? (ms.items.join(' ') || null) : null
   const other = found.filter(s => !Object.values(IS).some(is => is(s.title))).map(({ title, items }) => ({ title, items }))
   const title = is => found.find(s => is(s.title))?.title ?? null
   const titles = { milestone: title(IS.milestone), next: title(IS.next), open: title(IS.open) }
