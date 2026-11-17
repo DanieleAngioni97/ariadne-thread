@@ -485,3 +485,4 @@
 {"at":"2026-11-16T16:36Z","id":"m6.3","op":"start","text":"started m6.3 Rischi e decisioni aperte nel grafo"}
 {"at":"2026-11-16T16:52Z","id":"m6.3","op":"fill","text":"proof for m6.3: message chat 2026-11-16: decisioni aperte e rischi non sono la stessa cosa; le decisioni vanno come task di decisione non fatti; prima un'analisi più approfondita","proof":[{"type":"message","ref":"chat 2026-11-16: decisioni aperte e rischi non sono la stessa cosa; le decisioni vanno come task di decisione non fatti; prima un'analisi più approfondita"}]}
 {"at":"2026-11-17T08:35Z","id":"m6","op":"fill","text":"proof for m6: message chat 2026-11-17: procedere in autonomia su M6, fermarsi solo per decisioni fondamentali","proof":[{"type":"message","ref":"chat 2026-11-17: procedere in autonomia su M6, fermarsi solo per decisioni fondamentali"}]}
+{"at":"2026-11-17T08:37Z","id":"m6.3","op":"fill","text":"proof for m6.3: commit 0fb98a5","proof":[{"type":"commit","ref":"0fb98a5"}]}
