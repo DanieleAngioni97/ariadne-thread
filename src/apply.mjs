@@ -2,7 +2,7 @@
 // Rules: docs/implementazione.md § m3.6 and specifica.md § Operazioni. Pure: text in, text out.
 // Untouched nodes keep their line byte for byte and new nodes go at the end, so diffs stay small (R19).
 
-import { isWork, makeGraph } from './graph.mjs'
+import { isWork, makeGraph, parse } from './graph.mjs'
 import { words } from './i18n.mjs'
 import { TITLE_LIMIT, validate } from './validate.mjs'
 
@@ -104,6 +104,8 @@ export function apply({ text, thread, ops, at, by = 'agent' }) {
   if (broken) return { ok: false, errors: [say('invalid', broken.line)] }
   const lines = text.split('\n').filter(raw => raw.trim() !== '')
   const nodes = lines.map(raw => JSON.parse(raw))
+  // Titles written before the limit existed stay as they are: only a new or changed title must be short.
+  const titleBefore = new Map(nodes.map(n => [n.id, n.title]))
   const touched = new Set()
   const state = { thread: { ...thread }, log: [] }
 
@@ -363,7 +365,8 @@ export function apply({ text, thread, ops, at, by = 'agent' }) {
 
   const out = nodes.map((n, i) => (i < lines.length && !touched.has(n.id) ? lines[i] : JSON.stringify(n)))
   const newText = out.join('\n') + '\n'
-  const errors = validate(newText)
+  const titles = new Map(parse(newText).map(n => [n.id, n.title]))
+  const errors = validate(newText).filter(e => !(e.rule === 'title' && titleBefore.has(e.id) && titleBefore.get(e.id) === titles.get(e.id)))
   if (errors.length) return { ok: false, errors: errors.map(e => say('lineError', e.line, e.id ?? '', e.rule, e.message)) }
   return { ok: true, text: touched.size ? newText : text, thread: state.thread, log: state.log }
 }

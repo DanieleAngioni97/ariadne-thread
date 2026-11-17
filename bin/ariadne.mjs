@@ -256,7 +256,7 @@ function migrate(values) {
   const text = existsSync(GRAPH) ? readFileSync(GRAPH, 'utf8') : ''
   const nodes = parse(text)
   const at = now()
-  const plan = propose({ state: stateText && readState(stateText), log: logText && readLog(logText), nodes, at, as: corrections(values.as) })
+  const plan = propose({ state: stateText && readState(stateText), log: logText && readLog(logText), nodes, thread: readThread(nodes), at, as: corrections(values.as) })
   const r = apply({ text, thread: readThread(nodes), ops: plan.ops, at })
   if (!r.ok) {
     for (const e of r.errors) console.error(`ariadne: ${e}`)

@@ -125,7 +125,7 @@ export function classify(text) {
  * enters `review: confirm`: the agent chose, the user confirms later (chat 2026-11-17). `state` and `log`
  * are null when the file is missing; `as` maps an open item's number to decision, risk, pointer or drop.
  */
-export function propose({ state, log, nodes, at, as = {} }) {
+export function propose({ state, log, nodes, thread = {}, at, as = {} }) {
   const day = at.slice(0, 10)
   const archive = [state && { from: 'STATE.md', to: `.ariadne/archive/STATE-${day}.md` }, log && { from: 'LOG.md', to: `.ariadne/archive/LOG-${day}.md` }].filter(Boolean)
   const proof = (file, section) => [{ type: 'file', ref: section ? `${file}#${section}` : file }]
@@ -135,9 +135,12 @@ export function propose({ state, log, nodes, at, as = {} }) {
   const ops = []
   const add = node => ops.push({ op: 'add', node: { review: 'confirm', ...node } })
 
-  // The open milestone keeps the work; else the one STATE.md describes.
+  // The work goes where you are: the milestone of the current step, else the active one, else the first
+  // still to do; with none, the milestone STATE.md describes.
   const g = makeGraph(nodes)
-  const open = nodes.find(n => n.kind === 'milestone' && (n.status === 'active' || n.status === 'todo'))
+  const isOpen = n => n?.kind === 'milestone' && (n.status === 'active' || n.status === 'todo')
+  const here = thread.current && [thread.current, ...g.containers(thread.current)].map(g.get).find(isOpen)
+  const open = here ?? nodes.find(n => isOpen(n) && n.status === 'active') ?? nodes.find(isOpen)
   let milestone
   if (open) milestone = { id: open.id, title: open.title, new: false }
   else {

@@ -574,3 +574,5 @@
 {"at":"2026-11-17T10:21Z","id":"m7.2.3","op":"close","text":"closed m7.2.3 Prova nel browser: provato nel browser su un grafo sintetico: tre rami nella barra 1/4, close del contenitore rifiutato, chiusura automatica con barra verde 4/4","proof":[{"type":"commit","ref":"a523526"}]}
 {"at":"2026-11-17T10:21Z","id":"m7.2","op":"close","text":"closed m7.2 Passi paralleli necessari: contenitore chiuso con l'ultimo sotto-passo e mai prima; contatore k/N e barra di ricongiungimento nel viewer","proof":[{"type":"commit","ref":"a523526"}]}
 {"at":"2026-11-17T10:21Z","id":"m8.1","op":"start","text":"started m8.1 Avvisi sulla salute del piano"}
+{"at":"2026-11-17T10:26Z","id":"m8","op":"fill","text":"proof for m8: message chat 2026-11-17: obiettivo dell'utente: arrivare a migrare il repo Atlas per provare ariadne sul lavoro vero e farne fix o nuove funzioni","proof":[{"type":"message","ref":"chat 2026-11-17: obiettivo dell'utente: arrivare a migrare il repo Atlas per provare ariadne sul lavoro vero e farne fix o nuove funzioni"}]}
+{"at":"2026-11-17T10:26Z","id":"m8.2","op":"add","text":"detour m8.2 Sblocchi per migrare Atlas, returns to m8.1"}

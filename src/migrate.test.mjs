@@ -146,3 +146,16 @@ test('the preview says what would happen, numbers the open items and how to corr
     'STATE.md → .ariadne/archive/STATE-2026-11-17.md',
   ]) assert.ok(text.split('\n').includes(line), `${line}\n---\n${text}`)
 })
+
+test('propose works in the milestone of the current step, not in the first open one', () => {
+  const OK = { at: '2026-11-01', ref: 'chat' }
+  const base = { proof: [{ type: 'message', ref: 'chat' }], by: 'user', at: '2026-11-01', what: 'x' }
+  const nodes = [
+    { ...base, id: 'm1', kind: 'milestone', title: 'Later', status: 'todo', confirmed: OK },
+    { ...base, id: 'm2', kind: 'milestone', title: 'Now', status: 'active', confirmed: OK },
+    { ...base, id: 'm2.1', kind: 'step', title: 'A', status: 'active', parent: 'm2' },
+  ]
+  const plan = propose({ state: readState('## Next\n1. Two\n'), log: null, nodes, thread: { current: 'm2.1' }, at: AT })
+  assert.equal(plan.milestone.id, 'm2')
+  assert.equal(propose({ state: readState('## Next\n1. Two\n'), log: null, nodes, thread: {}, at: AT }).milestone.id, 'm2')
+})

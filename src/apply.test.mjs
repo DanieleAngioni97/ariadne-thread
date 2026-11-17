@@ -356,3 +356,11 @@ test('closing up stops at the milestone: its state comes from its steps', () => 
   const r = ok([{ op: 'close', id: 'p.1.1', what: 'Leaf.', proof: PLAN }], { text: nested, thread: { current: 'p.1.1' } })
   assert.deepEqual(['p.1.1', 'p.1', 'p', 'm1'].map(id => r.get(id).status), ['done', 'done', 'done', 'active'])
 })
+
+test('a long title written before the limit does not block changes to other nodes; a new one is still refused', () => {
+  const legacy = ctext([...NODES.slice(0, 2), { ...NODES[1], id: 'old', title: 'x'.repeat(120) }, ...NODES.slice(2)])
+  const r = ok([{ op: 'fill', id: 'b', why: 'still works' }], { text: legacy })
+  assert.equal(r.get('old').title.length, 120)
+  assert.equal(ok([{ op: 'fill', id: 'old', why: 'touching it is fine too' }], { text: legacy }).get('old').why, 'touching it is fine too')
+  assert.equal(run([{ op: 'add', node: { kind: 'step', title: 'y'.repeat(120), what: 'long' } }], { text: legacy }).ok, false)
+})
