@@ -510,3 +510,5 @@
 {"at":"2026-11-17T09:28Z","id":"m6.2.2","op":"start","text":"started m6.2.2 Anteprima delle operazioni"}
 {"at":"2026-11-17T09:32Z","id":"m6.2.2","op":"close","text":"closed m6.2.2 Anteprima delle operazioni: ariadne migrate stampa l'anteprima verificata da apply, con --as per correggere la classificazione; provato su una copia di benchmark-repo","proof":[{"type":"commit","ref":"fab9515"}]}
 {"at":"2026-11-17T09:32Z","id":"m6.2.3","op":"start","text":"started m6.2.3 Apply con archivio"}
+{"at":"2026-11-17T09:33Z","id":"m6.2.3","op":"close","text":"closed m6.2.3 Apply con archivio: migrate --apply scrive i nodi, sposta i file in .ariadne/archive/ con git mv e salva migration.json per l'undo","proof":[{"type":"commit","ref":"427fb2f"}]}
+{"at":"2026-11-17T09:33Z","id":"m6.2.4","op":"start","text":"started m6.2.4 Undo della migrazione"}
