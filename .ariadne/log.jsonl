@@ -629,3 +629,4 @@
 {"at":"2026-11-18T11:41Z","id":"m5.6.3","op":"close","text":"closed m5.6.3 Controllo dei secrets: all 4 sub-steps done","proof":[{"type":"file","ref":"~/ariadne-report/ariadne-thread-before-cleanup-3.bundle"}]}
 {"at":"2026-11-18T11:41Z","id":"m5.6.4","op":"start","text":"started m5.6.4 Documentazione del codice"}
 {"at":"2026-11-18T11:41Z","id":"m5.6.7","op":"add","text":"detour m5.6.7 Rilascio 0.2.1 del plugin, returns to m5.6.4"}
+{"at":"2026-11-18T11:41Z","id":"m5.6.7","op":"close","text":"closed m5.6.7 Rilascio 0.2.1 del plugin: plugin 0.2.1 con la correzione di «mostra» nel viewer","proof":[{"type":"commit","ref":"d4243a5"}]}
