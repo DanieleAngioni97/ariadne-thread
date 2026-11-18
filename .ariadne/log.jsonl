@@ -642,3 +642,4 @@
 {"at":"2026-11-18T12:03Z","id":"m7","op":"plan","text":"plan for Un viewer per tutti i progetti: Viewer curato stile Jira → Tema scuro rifinito"}
 {"at":"2026-11-18T12:03Z","id":"m5.6.9","op":"add","text":"detour m5.6.9 Rilascio 0.2.2 del plugin, returns to m5.6.4"}
 {"at":"2026-11-18T12:03Z","id":"m5.6.9","op":"close","text":"closed m5.6.9 Rilascio 0.2.2 del plugin: plugin 0.2.2 con ritocchi del viewer e impostazioni","proof":[{"type":"commit","ref":"245ccfb"}]}
+{"at":"2026-11-18T12:07Z","id":"m5.6.4","op":"fill","text":"proof for m5.6.4: commit 0fc3258","proof":[{"type":"commit","ref":"0fc3258"}]}
