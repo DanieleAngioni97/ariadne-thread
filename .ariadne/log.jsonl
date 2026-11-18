@@ -595,3 +595,4 @@
 {"at":"2026-11-18T10:07Z","id":"m9.6","op":"close","text":"closed m9.6 Chi sono i colleghi?: Tecnici che usano già Claude Code: demo dal terminale e viewer, numeri della valutazione in una frase","proof":[{"type":"message","ref":"chat 2026-11-18: pubblico = tecnici con Claude Code"}]}
 {"at":"2026-11-18T10:07Z","id":"m9.4","op":"fill","text":"proof for m9.4: message chat 2026-11-18: demo sul progetto sintetico; Atlas solo citato a voce come prova reale","proof":[{"type":"message","ref":"chat 2026-11-18: demo sul progetto sintetico; Atlas solo citato a voce come prova reale"}]}
 {"at":"2026-11-18T10:07Z","id":"m9.6","op":"fill","text":"proof for m9.6: file docs/presentazione/scaletta.md","proof":[{"type":"file","ref":"docs/presentazione/scaletta.md"}]}
+{"at":"2026-11-18T10:07Z","id":"m9.1","op":"fill","text":"proof for m9.1: commit 3bf888b","proof":[{"type":"commit","ref":"3bf888b"}]}
