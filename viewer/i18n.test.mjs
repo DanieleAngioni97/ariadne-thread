@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 
-import { pickLang } from './i18n.js'
+import { STRINGS, pickLang } from './i18n.js'
 
 test('the map speaks ?lang=, else the project config, else the browser language, if it has it; English otherwise', () => {
   assert.equal(pickLang(null, undefined, undefined), 'en')
@@ -12,4 +12,12 @@ test('the map speaks ?lang=, else the project config, else the browser language,
   assert.equal(pickLang('it-IT', undefined, undefined), 'it')
   assert.equal(pickLang(null, undefined, 'de-DE'), 'en')
   assert.equal(pickLang('fr', 'de', 'es'), 'en')
+})
+
+test('every language names each status, for the panel row and the node labels', () => {
+  for (const [lang, words] of Object.entries(STRINGS)) {
+    for (const status of ['done', 'active', 'todo', 'deferred', 'replaced']) {
+      assert.equal(typeof words.status?.[status], 'string', `${lang}: status.${status}`)
+    }
+  }
 })

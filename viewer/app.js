@@ -657,7 +657,7 @@ function NodeList({ query, selected, onSelect, onMenu }) {
   return html`
     <section class="sheet" aria-label=${t.views.list}>
       <div class="filters" role="group" aria-label=${t.filters}>
-        <span class="filter-label">${t.status}</span>
+        <span class="filter-label">${t.statusFilter}</span>
         ${FILTERS.filter(key => key !== 'all' && counts[key] > 0).map(key => html`
           <button key=${key} class=${`filter k-${key}`} aria-pressed=${kinds.has(key)} onClick=${() => flip(key)}>
             <${StatusIcon} kind=${key} size=${14} />

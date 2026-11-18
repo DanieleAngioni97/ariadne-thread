@@ -4,7 +4,7 @@
 
 import { readSettings } from './settings.js'
 
-const STRINGS = {
+export const STRINGS = {
   en: {
     status: { done: 'Done', active: 'In progress', todo: 'To do', deferred: 'Deferred', replaced: 'Replaced' },
     kind: { detour: 'Detour', decision: 'To decide', risk: 'Open risk' },
@@ -69,7 +69,7 @@ const STRINGS = {
     filters: 'Filters',
     all: 'All',
     settings: { title: 'Settings', theme: 'Theme', lang: 'Language', level: 'The graph opens on', auto: 'Automatic', light: 'Light', dark: 'Dark', it: 'Italiano', en: 'English' },
-    status: 'Status', anyMilestone: 'All milestones', clearFilters: 'Clear filters',
+    statusFilter: 'Status', anyMilestone: 'All milestones', clearFilters: 'Clear filters',
     menu: { only: 'Show only this', open: 'Expand', close: 'Collapse', back: 'Back', all: 'Show all', graph: 'Open in Graph', timeline: 'Open in Timeline', list: 'Open in List' },
     groups: { progress: 'Progress', structure: 'Structure', detail: 'Details' },
     ops: {
@@ -173,7 +173,7 @@ const STRINGS = {
     filters: 'Filtri',
     all: 'Tutti',
     settings: { title: 'Impostazioni', theme: 'Tema', lang: 'Lingua', level: 'Il grafo si apre su', auto: 'Automatico', light: 'Chiaro', dark: 'Scuro', it: 'Italiano', en: 'English' },
-    status: 'Stato', anyMilestone: 'Tutte le milestone', clearFilters: 'Azzera filtri',
+    statusFilter: 'Stato', anyMilestone: 'Tutte le milestone', clearFilters: 'Azzera filtri',
     menu: { only: 'Mostra solo questo', open: 'Espandi', close: 'Comprimi', back: 'Indietro', all: 'Mostra tutto', graph: 'Apri nel Grafo', timeline: 'Apri in Cronologia', list: 'Apri in Elenco' },
     groups: { progress: 'Avanzamento', structure: 'Struttura', detail: 'Dettagli' },
     ops: {
