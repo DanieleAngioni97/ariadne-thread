@@ -620,3 +620,4 @@
 {"at":"2026-11-18T11:19Z","id":"m5.6.3.2","op":"start","text":"started m5.6.3.2 Nomi generici nell'albero"}
 {"at":"2026-11-18T11:23Z","id":"m5.6.3","op":"start","text":"reopened m5.6.3 Controllo dei secrets"}
 {"at":"2026-11-18T11:23Z","id":"m5.6.3.2","op":"start","text":"started m5.6.3.2 Nomi generici nell'albero"}
+{"at":"2026-11-18T11:23Z","id":"m5.6.3.3","op":"close","text":"closed m5.6.3.3 Riscrittura della storia: Storia di tutti i 6 branch riscritta: 0 tracce aziendali e 0 email personali in contenuti e messaggi, autore noreply, gitleaks pulito, 358 test verdi; backup completo in bundle","proof":[{"type":"file","ref":"~/ariadne-report/ariadne-thread-before-cleanup-3.bundle"}]}
