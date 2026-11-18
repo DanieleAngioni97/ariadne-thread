@@ -582,3 +582,7 @@
 {"at":"2026-11-17T14:39Z","id":"m8.1","op":"pause","text":"back among the todo steps m8.1 Avvisi sulla salute del piano"}
 {"at":"2026-11-17T14:39Z","id":"m7","op":"plan","text":"plan for Un viewer per tutti i progetti: Registro dei progetti → Pagina indice dei progetti → Nome e cambio progetto nel viewer → ariadne open sul server unico → Prova nel browser con due progetti"}
 {"at":"2026-11-17T14:39Z","id":"m7","op":"start","text":"started m7 Un viewer per tutti i progetti"}
+{"at":"2026-11-18T10:01Z","id":"m9","op":"add","text":"added milestone m9 Presentazione ai colleghi"}
+{"at":"2026-11-18T10:01Z","id":"m7","op":"pause","text":"back among the todo steps m7 Un viewer per tutti i progetti"}
+{"at":"2026-11-18T10:01Z","id":"m9","op":"start","text":"started m9 Presentazione ai colleghi"}
+{"at":"2026-11-18T10:01Z","id":"m9","op":"fill","text":"proof for m9: message chat 2026-11-18: slide e rapporto di M4 (~/ariadne-report/slide-v2.html, rapporto.html) sono sul Mac, non su questa macchina Linux: copiarli qui o nel repo prima di riusarli","proof":[{"type":"message","ref":"chat 2026-11-18: slide e rapporto di M4 (~/ariadne-report/slide-v2.html, rapporto.html) sono sul Mac, non su questa macchina Linux: copiarli qui o nel repo prima di riusarli"}]}

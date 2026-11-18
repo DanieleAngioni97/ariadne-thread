@@ -1,6 +1,5 @@
 {
   "project": "ariadne-thread",
-  "current": "m7",
   "profile": "standard",
   "last_correction": {
     "id": "m7.2",
@@ -9,5 +8,6 @@
       "m7.1"
     ],
     "stale": true
-  }
+  },
+  "current": "m9"
 }
