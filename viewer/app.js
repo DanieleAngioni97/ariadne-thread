@@ -11,7 +11,7 @@ import { fileRef, showRef } from '../src/refs.mjs'
 import { summarize } from '../src/summary.mjs'
 import { validate } from '../src/validate.mjs'
 import { StatusIcon } from './icons.js'
-import { fitTarget, nearest, offscreen, viewportFor } from './nav.js'
+import { absoluteOf, fitTarget, keepAt, nearest, offscreen, viewportFor } from './nav.js'
 import { dayOffset, groupOf, kindOf, lastActivity, listCounts, listRows, openComments, parseLog, reviewQueue, searchNodes, timeline } from './views.js'
 import { lang, t } from './i18n.js'
 import {
@@ -321,7 +321,7 @@ function More({ data: { node } }) {
     <div class="more">
       <${Handle} type="target" position=${Position.Left} />
       <span>${t.more[node.more](node.count)} · </span>
-      <button onClick=${e => { e.stopPropagation(); reveal([key]) }}>${t.more.show}</button>
+      <button onClick=${e => { e.stopPropagation(); reveal([key], node.id) }}>${t.more.show}</button>
       <${Handle} type="source" position=${Position.Right} />
     </div>`
 }
@@ -793,6 +793,16 @@ function App() {
   }, [panelOpen])
   useEffect(() => { const timer = setTimeout(placePill, 320); return () => clearTimeout(timer) }, [graph, panelOpen, placePill])
 
+  // «mostra» and +/− change the graph where you clicked: that spot stays still on screen, at the same zoom.
+  const anchor = useRef(null)
+  const pin = id => {
+    const node = id && flow.getInternalNode(id)
+    if (!node) return void (anchor.current = { id: null })
+    const { x, y, zoom } = flow.getViewport()
+    const at = node.internals.positionAbsolute
+    anchor.current = { id, screen: { x: at.x * zoom + x, y: at.y * zoom + y } }
+  }
+
   // A reload keeps the viewport: only a change you made refits the view.
   const drawn = useRef(version)
   useEffect(() => {
@@ -803,8 +813,12 @@ function App() {
       if (!alive) return
       // A fly waiting on this layout may go now: the node sits where it will stay.
       waitLayout.current = false
+      const held = anchor.current
+      anchor.current = null
       setGraph(next)
-      if (!flyTo && !reloaded) whenDrawn(next.nodes.map(n => n.id), readableFit)
+      const at = held?.id && absoluteOf(next.nodes, held.id)
+      if (at) flow.setViewport(keepAt(held.screen, at, flow.getViewport().zoom), { duration: 240 })
+      else if (!held && !flyTo && !reloaded) whenDrawn(next.nodes.map(n => n.id), readableFit)
     })
     return () => { alive = false }
   }, [expanded, focus, revealed, version])
@@ -843,6 +857,7 @@ function App() {
   }, [])
 
   const toggle = useCallback(id => {
+    pin(id)
     setLevel('custom')
     setExpanded(prev => {
       const next = new Set(prev)
@@ -851,8 +866,16 @@ function App() {
     })
   }, [])
 
-  /** Opens levels in full; a new set only if something opens. */
-  const reveal = useCallback(keys => {
+  /**
+   * Opens levels in full; a new set only if something opens. From a «mostra» marker, what stays still is
+   * the container of that level, else a step the marker is linked to: the marker itself goes away.
+   */
+  const reveal = useCallback((keys, from) => {
+    if (from && !keys.every(k => now.current.revealed.has(k))) {
+      const level = keys[0].replace(/^replaced:/, '')
+      const linked = flow.getEdges().filter(e => e.source === from || e.target === from).map(e => (e.source === from ? e.target : e.source))
+      pin([level, ...linked].find(id => id && flow.getInternalNode(id)))
+    }
     setRevealed(prev => (keys.every(k => prev.has(k)) ? prev : new Set([...prev, ...keys])))
   }, [])
 

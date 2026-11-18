@@ -64,3 +64,19 @@ export function viewportFor(bounds, view, { pad = 0, minZoom = 0, maxZoom = Infi
     zoom,
   }
 }
+
+/** Where a laid-out node sits in the flow: its offset plus those of the open containers around it. */
+export function absoluteOf(nodes, id) {
+  const byId = new Map(nodes.map(n => [n.id, n]))
+  if (!byId.has(id)) return null
+  let x = 0
+  let y = 0
+  for (let n = byId.get(id); n; n = n.parentId ? byId.get(n.parentId) : null) {
+    x += n.position.x
+    y += n.position.y
+  }
+  return { x, y }
+}
+
+/** The viewport that shows flow point `at` on screen point `screen`, at `zoom`: what you clicked stays put. */
+export const keepAt = (screen, at, zoom) => ({ x: screen.x - at.x * zoom, y: screen.y - at.y * zoom, zoom })
