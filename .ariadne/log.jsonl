@@ -624,3 +624,8 @@
 {"at":"2026-11-18T11:23Z","id":"m5.6.3.2","op":"close","text":"closed m5.6.3.2 Nomi generici nell'albero: Nomi generici in albero, grafo e storia (Acme, Atlas, benchmark-repo, research-repo, internship-repo); prove di commit rimappate","proof":[{"type":"message","ref":"commit 88ea962 (solo .ariadne/, non vale come prova)"}]}
 {"at":"2026-11-18T11:23Z","id":"m5.6.3.4","op":"start","text":"started m5.6.3.4 Force push dopo ok"}
 {"at":"2026-11-18T11:23Z","id":"m5.6.3.4","op":"start","text":"started m5.6.3.4 Force push dopo ok"}
+{"at":"2026-11-18T11:26Z","id":"m5.6.3.4","op":"fill","text":"proof for m5.6.3.4: message chat 2026-11-18: l'utente autorizza il force push dei 5 branch riscritti","proof":[{"type":"message","ref":"chat 2026-11-18: l'utente autorizza il force push dei 5 branch riscritti"}]}
+{"at":"2026-11-18T11:41Z","id":"m5.6.3.4","op":"close","text":"closed m5.6.3.4 Force push dopo ok: Force push di main, feat/m6-doctor, feat/m6-state-migration; ci/first-run e fix/first-run-linux non esistevano più sul remoto e non sono stati ricreati","proof":[{"type":"message","ref":"chat 2026-11-18: force push autorizzato dall'utente"}]}
+{"at":"2026-11-18T11:41Z","id":"m5.6.3","op":"close","text":"closed m5.6.3 Controllo dei secrets: all 4 sub-steps done","proof":[{"type":"file","ref":"~/ariadne-report/ariadne-thread-before-cleanup-3.bundle"}]}
+{"at":"2026-11-18T11:41Z","id":"m5.6.4","op":"start","text":"started m5.6.4 Documentazione del codice"}
+{"at":"2026-11-18T11:41Z","id":"m5.6.7","op":"add","text":"detour m5.6.7 Rilascio 0.2.1 del plugin, returns to m5.6.4"}
