@@ -645,3 +645,4 @@
 {"at":"2026-11-18T12:07Z","id":"m5.6.4","op":"fill","text":"proof for m5.6.4: commit 0fc3258","proof":[{"type":"commit","ref":"0fc3258"}]}
 {"at":"2026-11-18T12:19Z","id":"","op":"confirm","text":"confirmed 1 changes"}
 {"at":"2026-11-18T15:10Z","id":"m5.6","op":"fill","text":"proof for m5.6: message chat 2026-11-18: l'utente ha reso pubblico il repo (gh repo edit --visibility public); verificato PUBLIC","proof":[{"type":"message","ref":"chat 2026-11-18: l'utente ha reso pubblico il repo (gh repo edit --visibility public); verificato PUBLIC"}]}
+{"at":"2026-11-18T15:12Z","id":"m5.6.10","op":"add","text":"detour m5.6.10 Logo nel viewer, returns to m5.6.4"}

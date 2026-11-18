@@ -1058,7 +1058,13 @@ function App() {
     <${Ctx.Provider} value=${ctx}>
       <div class=${`shell ${panelOpen && node ? 'panel-open' : ''}`}>
         <header class="bar">
-          <div class="brand">ariadne<span>·</span></div>
+          <div class="brand">
+            <svg class="brand-mark" viewBox="0 0 64 64" aria-hidden="true">
+              <mask id="brand-m"><rect width="64" height="64" fill="#fff" /><g fill="none" stroke="#000" strokeWidth="6" strokeLinecap="round" transform="rotate(-30 32 32)"><path d="M0 24 Q32 8 64 24" /><path d="M0 46 Q32 30 64 46" /></g></mask>
+              <circle cx="32" cy="32" r="29" fill="var(--thread)" mask="url(#brand-m)" />
+            </svg>
+            ariadne
+          </div>
           <nav class="views" aria-label=${t.views.label}>
             ${['graph', 'timeline', 'list'].map(key => html`
               <button key=${key} aria-current=${view === key ? 'page' : undefined} onClick=${() => goView(key)}>${t.views[key]}</button>`)}
