@@ -604,3 +604,12 @@
 {"at":"2026-11-18T10:56Z","id":"m9.7","op":"add","text":"detour m9.7 Mostra senza riposizionare, returns to m9.1"}
 {"at":"2026-11-18T10:58Z","id":"","op":"confirm","text":"confirmed 1 changes"}
 {"at":"2026-11-18T11:00Z","id":"m9.7","op":"close","text":"closed m9.7 Mostra senza riposizionare: «mostra» e +/− espandono senza riposizionare la vista","proof":[{"type":"commit","ref":"dcd8e4b"}]}
+{"at":"2026-11-18T11:14Z","id":"m9.1","op":"close","text":"closed m9.1 Scaletta dei 10 minuti: Scaletta superata dalla struttura delle slide v3 e dalla demo sul viewer","proof":[{"type":"file","ref":"docs/presentazione/scaletta.md"}]}
+{"at":"2026-11-18T11:14Z","id":"m9.2","op":"start","text":"started m9.2 Slide d'appoggio"}
+{"at":"2026-11-18T11:14Z","id":"m9.2","op":"close","text":"closed m9.2 Slide d'appoggio: Sei slide: grafo contro file di note, contesto iniettato dagli hook, viewer, prova, come si inizia; badge agente/codice verificati sul codice","proof":[{"type":"file","ref":"~/ariadne-report/slide-v3.html"}]}
+{"at":"2026-11-18T11:14Z","id":"m9.3","op":"start","text":"started m9.3 Tutorial minimale"}
+{"at":"2026-11-18T11:14Z","id":"m9.4","op":"reject","text":"rejected m9.4 Demo pronta: kept on record, outside the plan"}
+{"at":"2026-11-18T11:14Z","id":"m9.5","op":"reject","text":"rejected m9.5 Prova a tempo: kept on record, outside the plan"}
+{"at":"2026-11-18T11:14Z","id":"m5.6","op":"plan","text":"plan for Rendere pubblico il repo: Controllo dei secrets → Documentazione del codice → Guida d'uso completa → README come porta d'ingresso"}
+{"at":"2026-11-18T11:14Z","id":"m9.3","op":"reject","text":"rejected m9.3 Tutorial minimale: kept on record, outside the plan"}
+{"at":"2026-11-18T11:14Z","id":"m5.6.3","op":"start","text":"started m5.6.3 Controllo dei secrets"}
