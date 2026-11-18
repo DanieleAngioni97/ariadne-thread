@@ -393,37 +393,37 @@
 {"at":"2026-11-15T21:30Z","id":"m5.6","op":"start","text":"iniziato m5.6 Rendere pubblico il repo"}
 {"at":"2026-11-16T09:29Z","id":"m5","op":"plan","text":"plan for M5 Pubblicazione: ariadne open su Linux e Windows → Test dell'hook di fine turno su Linux → Salvare .ariadne/ dopo ogni passo chiuso → Banda: segnalare il flag early access → Comando dei test e descrizione del marketplace → Prova da utente nuovo"}
 {"at":"2026-11-16T09:29Z","id":"m5.7","op":"start","text":"started m5.7 ariadne open su Linux e Windows"}
-{"at":"2026-11-16T09:31Z","id":"m5.7","op":"close","text":"closed m5.7 ariadne open su Linux e Windows: ariadne open usa open, start o xdg-open e, se il browser non parte, dice di aprire l'indirizzo a mano","proof":[{"type":"commit","ref":"abd5371"}]}
+{"at":"2026-11-16T09:31Z","id":"m5.7","op":"close","text":"closed m5.7 ariadne open su Linux e Windows: ariadne open usa open, start o xdg-open e, se il browser non parte, dice di aprire l'indirizzo a mano","proof":[{"type":"commit","ref":"7311e66"}]}
 {"at":"2026-11-16T09:31Z","id":"m5.8","op":"start","text":"started m5.8 Test dell'hook di fine turno su Linux"}
-{"at":"2026-11-16T09:31Z","id":"m5.8","op":"close","text":"closed m5.8 Test dell'hook di fine turno su Linux: il test dell'hook di fine turno passa anche su Linux, suite verde con TMPDIR=/tmp","proof":[{"type":"commit","ref":"59d7ecb"}]}
+{"at":"2026-11-16T09:31Z","id":"m5.8","op":"close","text":"closed m5.8 Test dell'hook di fine turno su Linux: il test dell'hook di fine turno passa anche su Linux, suite verde con TMPDIR=/tmp","proof":[{"type":"commit","ref":"ac36cf8"}]}
 {"at":"2026-11-16T09:31Z","id":"m5.9","op":"start","text":"started m5.9 Salvare .ariadne/ dopo ogni passo chiuso"}
-{"at":"2026-11-16T09:33Z","id":"m5.9","op":"close","text":"closed m5.9 Salvare .ariadne/ dopo ogni passo chiuso: dopo ogni commit registrato l'hook chiede di committare subito .ariadne/ (chore(ariadne)), e la skill lo spiega","proof":[{"type":"commit","ref":"409199c"}]}
+{"at":"2026-11-16T09:33Z","id":"m5.9","op":"close","text":"closed m5.9 Salvare .ariadne/ dopo ogni passo chiuso: dopo ogni commit registrato l'hook chiede di committare subito .ariadne/ (chore(ariadne)), e la skill lo spiega","proof":[{"type":"commit","ref":"c1f3acb"}]}
 {"at":"2026-11-16T09:33Z","id":"m5.10","op":"start","text":"started m5.10 Banda: segnalare il flag early access"}
-{"at":"2026-11-16T09:35Z","id":"m5.10","op":"close","text":"closed m5.10 Banda: segnalare il flag early access: init e README spiegano come accendere la banda (env CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 in settings.json), verificato col log di debug","proof":[{"type":"commit","ref":"299dbb1"}]}
+{"at":"2026-11-16T09:35Z","id":"m5.10","op":"close","text":"closed m5.10 Banda: segnalare il flag early access: init e README spiegano come accendere la banda (env CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1 in settings.json), verificato col log di debug","proof":[{"type":"commit","ref":"903c935"}]}
 {"at":"2026-11-16T09:35Z","id":"m5.11","op":"start","text":"started m5.11 Comando dei test e descrizione del marketplace"}
-{"at":"2026-11-16T09:36Z","id":"m5.11","op":"fill","text":"proof for m5.11: commit dd49f07","proof":[{"type":"commit","ref":"dd49f07"}]}
-{"at":"2026-11-16T09:36Z","id":"m5.11","op":"close","text":"closed m5.11 Comando dei test e descrizione del marketplace: comando dei test con i glob (Node 20–26) e marketplace con descrizione, validazione senza warning","proof":[{"type":"commit","ref":"ebdb289"}]}
+{"at":"2026-11-16T09:36Z","id":"m5.11","op":"fill","text":"proof for m5.11: commit dd49f07","proof":[{"type":"commit","ref":"688965d"}]}
+{"at":"2026-11-16T09:36Z","id":"m5.11","op":"close","text":"closed m5.11 Comando dei test e descrizione del marketplace: comando dei test con i glob (Node 20–26) e marketplace con descrizione, validazione senza warning","proof":[{"type":"commit","ref":"6f67d98"}]}
 {"at":"2026-11-16T09:36Z","id":"m5.12","op":"start","text":"started m5.12 Prova da utente nuovo"}
-{"at":"2026-11-16T09:39Z","id":"m5.12","op":"close","text":"closed m5.12 Prova da utente nuovo: prova da utente nuovo su Linux verde: init segnala il flag, piano e commit con .ariadne/ committato da Claude e tree pulito, ripresa corretta, open usa xdg-open; versione 0.1.1","proof":[{"type":"commit","ref":"387b81f"}]}
+{"at":"2026-11-16T09:39Z","id":"m5.12","op":"close","text":"closed m5.12 Prova da utente nuovo: prova da utente nuovo su Linux verde: init segnala il flag, piano e commit con .ariadne/ committato da Claude e tree pulito, ripresa corretta, open usa xdg-open; versione 0.1.1","proof":[{"type":"commit","ref":"e2d76d2"}]}
 {"at":"2026-11-16T09:39Z","id":"m5.1","op":"start","text":"started m5.1 Segnalibri nella chat"}
 {"at":"2026-11-16T09:39Z","id":"m5.1","op":"pause","text":"back among the todo steps m5.1 Segnalibri nella chat"}
 {"at":"2026-11-16T09:39Z","id":"m5.6","op":"start","text":"started m5.6 Rendere pubblico il repo"}
 {"at":"2026-11-16T10:26Z","id":"m5.6","op":"plan","text":"plan for Rendere pubblico il repo: Test di primo uso dagli hook dichiarati → CI su Linux e macOS con installazione da zero"}
 {"at":"2026-11-16T10:26Z","id":"m5.6.1","op":"start","text":"started m5.6.1 Test di primo uso dagli hook dichiarati"}
-{"at":"2026-11-16T10:27Z","id":"m5.6.1","op":"close","text":"closed m5.6.1 Test di primo uso dagli hook dichiarati: test del primo uso dagli hook di hooks.json; fallisce sulla versione precedente alle correzioni, passa ora","proof":[{"type":"commit","ref":"731803c"}]}
+{"at":"2026-11-16T10:27Z","id":"m5.6.1","op":"close","text":"closed m5.6.1 Test di primo uso dagli hook dichiarati: test del primo uso dagli hook di hooks.json; fallisce sulla versione precedente alle correzioni, passa ora","proof":[{"type":"commit","ref":"2d505a1"}]}
 {"at":"2026-11-16T10:27Z","id":"m5.6.2","op":"start","text":"started m5.6.2 CI su Linux e macOS con installazione da zero"}
-{"at":"2026-11-16T10:53Z","id":"m5.6.2","op":"close","text":"closed m5.6.2 CI su Linux e macOS con installazione da zero: CI verde su Linux: test su Node 20 e latest, installazione da zero senza account, primo uso dalla copia installata, banda su Claude Code 2.1.325; corretti Node 20, eval legata a ~/.claude e banda 2.1.325; versione 0.1.2","proof":[{"type":"commit","ref":"5cadae8"}]}
-{"at":"2026-11-16T14:33Z","id":"m5.6.2","op":"fill","text":"proof for m5.6.2: commit 3c163b9","proof":[{"type":"commit","ref":"3c163b9"}]}
-{"at":"2026-11-16T14:33Z","id":"m5.6.2","op":"fill","text":"proof for m5.6.2: commit c852fce","proof":[{"type":"commit","ref":"c852fce"}]}
-{"at":"2026-11-16T14:33Z","id":"m5.6.2","op":"fill","text":"proof for m5.6.2: commit f0fb62c","proof":[{"type":"commit","ref":"f0fb62c"}]}
-{"at":"2026-11-16T14:33Z","id":"m5.6.2","op":"fill","text":"proof for m5.6.2: commit 7242b5b","proof":[{"type":"commit","ref":"7242b5b"}]}
-{"at":"2026-11-16T14:33Z","id":"m5.6.2","op":"fill","text":"proof for m5.6.2: commit 6598768","proof":[{"type":"commit","ref":"6598768"}]}
+{"at":"2026-11-16T10:53Z","id":"m5.6.2","op":"close","text":"closed m5.6.2 CI su Linux e macOS con installazione da zero: CI verde su Linux: test su Node 20 e latest, installazione da zero senza account, primo uso dalla copia installata, banda su Claude Code 2.1.325; corretti Node 20, eval legata a ~/.claude e banda 2.1.325; versione 0.1.2","proof":[{"type":"commit","ref":"4a4bfdc"}]}
+{"at":"2026-11-16T14:33Z","id":"m5.6.2","op":"fill","text":"proof for m5.6.2: commit 3c163b9","proof":[{"type":"commit","ref":"ee28a38"}]}
+{"at":"2026-11-16T14:33Z","id":"m5.6.2","op":"fill","text":"proof for m5.6.2: commit c852fce","proof":[{"type":"commit","ref":"418d588"}]}
+{"at":"2026-11-16T14:33Z","id":"m5.6.2","op":"fill","text":"proof for m5.6.2: commit f0fb62c","proof":[{"type":"commit","ref":"12f3c79"}]}
+{"at":"2026-11-16T14:33Z","id":"m5.6.2","op":"fill","text":"proof for m5.6.2: commit 7242b5b","proof":[{"type":"commit","ref":"1066dfe"}]}
+{"at":"2026-11-16T14:33Z","id":"m5.6.2","op":"fill","text":"proof for m5.6.2: commit 6598768","proof":[{"type":"commit","ref":"fe82e48"}]}
 {"at":"2026-11-16T15:34Z","id":"m6","op":"add","text":"added milestone m6 Sostituire STATE.md e LOG.md in sicurezza"}
 {"at":"2026-11-16T15:34Z","id":"m6","op":"plan","text":"plan for Sostituire STATE.md e LOG.md in sicurezza: ariadne init rileva STATE.md e LOG.md nella root e propone la migrazione invece di affiancarli → Migrazione guidata: Next e passi aperti diventano nodi, la storia resta leggibile, i file vanno in un archivio con git mv; anteprima prima di scrivere e undo → Un posto nel grafo per rischi e decisioni aperte (oggi la sezione Open decisions di STATE.md), mostrato nella scheda di avvio → I Pointers di STATE.md (comandi, test, percorsi) vanno in CLAUDE.md o docs/: la migrazione li propone lì, non nel grafo → ariadne doctor: elenca le fonti in conflitto (hook che iniettano STATE.md, skill e regole che lo scrivono, AGENTS.md che lo cita) e il testo da cambiare, senza modificare la configurazione dell'utente → Integrazione con l'harness: git-guard non inietta STATE.md, handoff e commit-checkpoint non lo scrivono quando c'è .ariadne/; riga nelle regole globali; test per ognuno → Opt-in per repo e ritorno indietro: rigenerare STATE.md e LOG.md dal grafo per chi non usa ariadne (collaboratori) o per uscire → Scheda dopo init: niente 'You are in: undefined' quando nessun nodo è attivo → Avviso 'N commit senza Thread': non contare i commit precedenti a ariadne init"}
 {"at":"2026-11-16T15:40Z","id":"m6","op":"plan","text":"plan for Sostituire STATE.md e LOG.md in sicurezza: Lingua del grafo: la skill scrive nella lingua della chat, ma un repo può imporre una lingua (es. solo inglese); decidere chi vince e leggerlo dalle regole del progetto"}
 {"at":"2026-11-16T15:41Z","id":"m6","op":"plan","text":"plan for Sostituire STATE.md e LOG.md in sicurezza: Lanciato da una sottocartella del progetto, ariadne risponde 'node not found': cercare .ariadne/ risalendo fino alla root del repo"}
 {"at":"2026-11-16T15:51Z","id":"","op":"confirm","text":"confirmed 1 changes"}
-{"at":"2026-11-16T15:51Z","id":"m5.6.2","op":"fill","text":"proof for m5.6.2: commit ea2c7bc","proof":[{"type":"commit","ref":"ea2c7bc"}]}
+{"at":"2026-11-16T15:51Z","id":"m5.6.2","op":"fill","text":"proof for m5.6.2: commit ea2c7bc","proof":[{"type":"commit","ref":"977fd78"}]}
 {"at":"2026-11-16T15:52Z","id":"m6.8","op":"move","text":"moved m6.8 under m5 (your correction)"}
 {"at":"2026-11-16T15:52Z","id":"m6.8","op":"move","text":"moved m6.8 under m6 (your correction)"}
 {"at":"2026-11-16T15:52Z","id":"m6.11","op":"move","text":"moved m6.11 under m6 (your correction)"}
@@ -437,7 +437,7 @@
 {"at":"2026-11-16T15:52Z","id":"m6.9","op":"fill","text":"filled m6.9: title"}
 {"at":"2026-11-16T15:52Z","id":"m6.12","op":"add","text":"added step m6.12 Prova della migrazione su un repo di lavoro under m6, from m6.6"}
 {"at":"2026-11-16T15:52Z","id":"m6.8","op":"start","text":"started m6.8 Scheda dopo init: niente 'You are in: undefined' quando nessun nodo è attivo"}
-{"at":"2026-11-16T15:56Z","id":"m6.8","op":"close","text":"closed m6.8 Scheda dopo init: niente 'You are in: undefined' quando nessun nodo è attivo: la scheda dice che nessun passo è avviato e indica il primo pronto","proof":[{"type":"commit","ref":"5e42859"}]}
+{"at":"2026-11-16T15:56Z","id":"m6.8","op":"close","text":"closed m6.8 Scheda dopo init: niente 'You are in: undefined' quando nessun nodo è attivo: la scheda dice che nessun passo è avviato e indica il primo pronto","proof":[{"type":"commit","ref":"66bf53f"}]}
 {"at":"2026-11-16T15:56Z","id":"m6.9","op":"start","text":"started m6.9 Avviso 'N commit senza Thread': non contare merge, commit già registrati come prova e commit precedenti a init"}
 {"at":"2026-11-16T15:56Z","id":"m6.1","op":"fill","text":"filled m6.1: title"}
 {"at":"2026-11-16T15:56Z","id":"m6.2","op":"fill","text":"filled m6.2: title"}
@@ -454,99 +454,99 @@
 {"at":"2026-11-16T15:56Z","id":"m6.9","op":"pause","text":"back among the todo steps m6.9 Conteggio dei commit senza Thread"}
 {"at":"2026-11-16T15:56Z","id":"m6.13","op":"add","text":"added step m6.13 Titoli brevi under m6, from m6.8"}
 {"at":"2026-11-16T15:56Z","id":"m6.9","op":"move","text":"moved m6.9 under m6 (your correction)"}
-{"at":"2026-11-16T15:59Z","id":"m6.13","op":"fill","text":"proof for m6.13: commit ef4c73b","proof":[{"type":"commit","ref":"ef4c73b"}]}
-{"at":"2026-11-16T16:00Z","id":"m6.13","op":"close","text":"closed m6.13 Titoli brevi: titoli di poche parole: plan con un --what per passo, titoli oltre 80 caratteri rifiutati, validate li segnala, skill e README lo dicono","proof":[{"type":"commit","ref":"bdcec75"}]}
+{"at":"2026-11-16T15:59Z","id":"m6.13","op":"fill","text":"proof for m6.13: commit ef4c73b","proof":[{"type":"commit","ref":"119bb20"}]}
+{"at":"2026-11-16T16:00Z","id":"m6.13","op":"close","text":"closed m6.13 Titoli brevi: titoli di poche parole: plan con un --what per passo, titoli oltre 80 caratteri rifiutati, validate li segnala, skill e README lo dicono","proof":[{"type":"commit","ref":"566d7a2"}]}
 {"at":"2026-11-16T16:00Z","id":"m6.9","op":"start","text":"started m6.9 Conteggio dei commit senza Thread"}
-{"at":"2026-11-16T16:05Z","id":"m6.9","op":"close","text":"closed m6.9 Conteggio dei commit senza Thread: l'avviso ignora merge, commit già registrati come prova e commit precedenti all'inizio del filo","proof":[{"type":"commit","ref":"4cbd434"}]}
+{"at":"2026-11-16T16:05Z","id":"m6.9","op":"close","text":"closed m6.9 Conteggio dei commit senza Thread: l'avviso ignora merge, commit già registrati come prova e commit precedenti all'inizio del filo","proof":[{"type":"commit","ref":"73e021a"}]}
 {"at":"2026-11-16T16:05Z","id":"m6.11","op":"start","text":"started m6.11 Lancio da una sottocartella"}
-{"at":"2026-11-16T16:06Z","id":"m6.11","op":"close","text":"closed m6.11 Lancio da una sottocartella: da una sottocartella ariadne trova .ariadne/ risalendo fino alla root del repo git, senza uscirne","proof":[{"type":"commit","ref":"4043b8f"}]}
+{"at":"2026-11-16T16:06Z","id":"m6.11","op":"close","text":"closed m6.11 Lancio da una sottocartella: da una sottocartella ariadne trova .ariadne/ risalendo fino alla root del repo git, senza uscirne","proof":[{"type":"commit","ref":"c4d69db"}]}
 {"at":"2026-11-16T16:06Z","id":"m6.10","op":"start","text":"started m6.10 Lingua del grafo"}
 {"at":"2026-11-16T16:08Z","id":"m6.10","op":"fill","text":"proof for m6.10: message chat 2026-11-16: vince la lingua che il repo dichiara in CLAUDE.md o AGENTS.md; altrimenti la lingua della chat","proof":[{"type":"message","ref":"chat 2026-11-16: vince la lingua che il repo dichiara in CLAUDE.md o AGENTS.md; altrimenti la lingua della chat"}]}
 {"at":"2026-11-16T16:08Z","id":"m6.6","op":"fill","text":"proof for m6.6: message chat 2026-11-16: dopo i tre difetti piccoli, versione 0.1.3 e PR subito","proof":[{"type":"message","ref":"chat 2026-11-16: dopo i tre difetti piccoli, versione 0.1.3 e PR subito"}]}
 {"at":"2026-11-16T16:08Z","id":"m6","op":"fill","text":"proof for m6: message chat 2026-11-16: dopo i tre difetti piccoli, versione 0.1.3 e PR subito","proof":[{"type":"message","ref":"chat 2026-11-16: dopo i tre difetti piccoli, versione 0.1.3 e PR subito"}]}
-{"at":"2026-11-16T16:09Z","id":"m6.10","op":"close","text":"closed m6.10 Lingua del grafo: la lingua del grafo è quella che il progetto dichiara in CLAUDE.md o AGENTS.md, altrimenti quella della chat","proof":[{"type":"commit","ref":"91403ce"}]}
+{"at":"2026-11-16T16:09Z","id":"m6.10","op":"close","text":"closed m6.10 Lingua del grafo: la lingua del grafo è quella che il progetto dichiara in CLAUDE.md o AGENTS.md, altrimenti quella della chat","proof":[{"type":"commit","ref":"9366d66"}]}
 {"at":"2026-11-16T16:09Z","id":"m6.5","op":"start","text":"started m6.5 ariadne doctor"}
-{"at":"2026-11-16T16:09Z","id":"m6","op":"fill","text":"proof for m6: commit 3211ed2","proof":[{"type":"commit","ref":"3211ed2"}]}
-{"at":"2026-11-16T16:11Z","id":"m6.9","op":"fill","text":"proof for m6.9: commit 7d49ab4","proof":[{"type":"commit","ref":"7d49ab4"}]}
+{"at":"2026-11-16T16:09Z","id":"m6","op":"fill","text":"proof for m6: commit 3211ed2","proof":[{"type":"commit","ref":"28f52cb"}]}
+{"at":"2026-11-16T16:11Z","id":"m6.9","op":"fill","text":"proof for m6.9: commit 7d49ab4","proof":[{"type":"commit","ref":"93b9081"}]}
 {"at":"2026-11-16T16:24Z","id":"m6.14","op":"add","text":"detour m6.14 Finestra del viewer in ordine di piano, returns to m6.5"}
 {"at":"2026-11-16T16:25Z","id":"m6.14","op":"confirm","text":"confirmed m6.14 Finestra del viewer in ordine di piano"}
-{"at":"2026-11-16T16:25Z","id":"m6.14","op":"close","text":"closed m6.14 Finestra del viewer in ordine di piano: la finestra della vista compatta segue l'ordine del piano: dopo un move mostra i vicini del passo corrente","proof":[{"type":"commit","ref":"6d4d57a"}]}
+{"at":"2026-11-16T16:25Z","id":"m6.14","op":"close","text":"closed m6.14 Finestra del viewer in ordine di piano: la finestra della vista compatta segue l'ordine del piano: dopo un move mostra i vicini del passo corrente","proof":[{"type":"commit","ref":"4d9be04"}]}
 {"at":"2026-11-16T16:27Z","id":"m6.15","op":"add","text":"added step m6.15 Riavvio del viewer dopo un aggiornamento under m6, from m6.5"}
 {"at":"2026-11-16T16:27Z","id":"m6.3","op":"move","text":"moved m6.3 under m6 (your correction)"}
 {"at":"2026-11-16T16:29Z","id":"m7","op":"add","text":"added milestone m7 Un viewer per tutti i progetti, from m6"}
-{"at":"2026-11-16T16:33Z","id":"m6.5","op":"close","text":"closed m6.5 ariadne doctor: ariadne doctor elenca hook, skill, regole e note del progetto che parlano ancora di STATE.md o LOG.md, con cosa cambiare, senza modificare niente","proof":[{"type":"commit","ref":"752f1ca"}]}
+{"at":"2026-11-16T16:33Z","id":"m6.5","op":"close","text":"closed m6.5 ariadne doctor: ariadne doctor elenca hook, skill, regole e note del progetto che parlano ancora di STATE.md o LOG.md, con cosa cambiare, senza modificare niente","proof":[{"type":"commit","ref":"63ef6a5"}]}
 {"at":"2026-11-16T16:33Z","id":"m6.15","op":"start","text":"started m6.15 Riavvio del viewer dopo un aggiornamento"}
-{"at":"2026-11-16T16:33Z","id":"m6.15","op":"fill","text":"proof for m6.15: commit 32b336d","proof":[{"type":"commit","ref":"32b336d"}]}
+{"at":"2026-11-16T16:33Z","id":"m6.15","op":"fill","text":"proof for m6.15: commit 32b336d","proof":[{"type":"commit","ref":"2bc63af"}]}
 {"at":"2026-11-16T16:35Z","id":"m6.16","op":"add","text":"added step m6.16 Riferimenti 'in chat' come non registrati under m6"}
 {"at":"2026-11-16T16:35Z","id":"m6.17","op":"add","text":"added step m6.17 Controllo prima del clear under m6"}
 {"at":"2026-11-16T16:35Z","id":"m6.18","op":"add","text":"added step m6.18 handoff nei repo con .ariadne/ under m6"}
 {"at":"2026-11-16T16:36Z","id":"m7","op":"confirm","text":"confirmed m7 Un viewer per tutti i progetti"}
-{"at":"2026-11-16T16:36Z","id":"m6.15","op":"close","text":"closed m6.15 Riavvio del viewer dopo un aggiornamento: ariadne open chiude il viewer di un'altra copia installata e ne avvia uno nuovo; uno di una versione vecchia, che non sa chiudersi, viene scavalcato su un'altra porta","proof":[{"type":"commit","ref":"9d638c6"}]}
+{"at":"2026-11-16T16:36Z","id":"m6.15","op":"close","text":"closed m6.15 Riavvio del viewer dopo un aggiornamento: ariadne open chiude il viewer di un'altra copia installata e ne avvia uno nuovo; uno di una versione vecchia, che non sa chiudersi, viene scavalcato su un'altra porta","proof":[{"type":"commit","ref":"03ff940"}]}
 {"at":"2026-11-16T16:36Z","id":"m6.3","op":"start","text":"started m6.3 Rischi e decisioni aperte nel grafo"}
 {"at":"2026-11-16T16:52Z","id":"m6.3","op":"fill","text":"proof for m6.3: message chat 2026-11-16: decisioni aperte e rischi non sono la stessa cosa; le decisioni vanno come task di decisione non fatti; prima un'analisi più approfondita","proof":[{"type":"message","ref":"chat 2026-11-16: decisioni aperte e rischi non sono la stessa cosa; le decisioni vanno come task di decisione non fatti; prima un'analisi più approfondita"}]}
 {"at":"2026-11-17T08:35Z","id":"m6","op":"fill","text":"proof for m6: message chat 2026-11-17: procedere in autonomia su M6, fermarsi solo per decisioni fondamentali","proof":[{"type":"message","ref":"chat 2026-11-17: procedere in autonomia su M6, fermarsi solo per decisioni fondamentali"}]}
-{"at":"2026-11-17T08:37Z","id":"m6.3","op":"fill","text":"proof for m6.3: commit 0fb98a5","proof":[{"type":"commit","ref":"0fb98a5"}]}
+{"at":"2026-11-17T08:37Z","id":"m6.3","op":"fill","text":"proof for m6.3: commit 0fb98a5","proof":[{"type":"commit","ref":"23d0ba6"}]}
 {"at":"2026-11-17T09:13Z","id":"m6.3","op":"fill","text":"proof for m6.3: message chat 2026-11-17: approvati due tipi nuovi, decision (task bloccante chiuso solo dalla scelta dell'utente) e risk (figlio del nodo che minaccia, non blocca), come in docs/m6.3-decisioni-e-rischi.md","proof":[{"type":"message","ref":"chat 2026-11-17: approvati due tipi nuovi, decision (task bloccante chiuso solo dalla scelta dell'utente) e risk (figlio del nodo che minaccia, non blocca), come in docs/m6.3-decisioni-e-rischi.md"}]}
 {"at":"2026-11-17T09:13Z","id":"m6.3","op":"plan","text":"plan for Rischi e decisioni aperte nel grafo: Tipi decision e risk nello schema → Regole di start, close e next → Sezioni nella scheda → Viewer, skill e README"}
 {"at":"2026-11-17T09:13Z","id":"m6.3.1","op":"start","text":"started m6.3.1 Tipi decision e risk nello schema"}
-{"at":"2026-11-17T09:14Z","id":"m6.3.1","op":"close","text":"closed m6.3.1 Tipi decision e risk nello schema: validate accetta decision (mai active) e risk (mai active, sempre con parent)","proof":[{"type":"commit","ref":"421707a"}]}
+{"at":"2026-11-17T09:14Z","id":"m6.3.1","op":"close","text":"closed m6.3.1 Tipi decision e risk nello schema: validate accetta decision (mai active) e risk (mai active, sempre con parent)","proof":[{"type":"commit","ref":"5eb957a"}]}
 {"at":"2026-11-17T09:14Z","id":"m6.3.2","op":"start","text":"started m6.3.2 Regole di start, close e next"}
 {"at":"2026-11-17T09:15Z","id":"m6.3.2","op":"start","text":"started m6.3.2 Regole di start, close e next"}
-{"at":"2026-11-17T09:15Z","id":"m6.3.2","op":"close","text":"closed m6.3.2 Regole di start, close e next: start rifiuta decision e risk, next e first li saltano, close di una decision vuole un messaggio","proof":[{"type":"commit","ref":"b5570fd"}]}
+{"at":"2026-11-17T09:15Z","id":"m6.3.2","op":"close","text":"closed m6.3.2 Regole di start, close e next: start rifiuta decision e risk, next e first li saltano, close di una decision vuole un messaggio","proof":[{"type":"commit","ref":"2f27a15"}]}
 {"at":"2026-11-17T09:15Z","id":"m6.3.3","op":"start","text":"started m6.3.3 Sezioni nella scheda"}
-{"at":"2026-11-17T09:16Z","id":"m6.3.3","op":"close","text":"closed m6.3.3 Sezioni nella scheda: la scheda mostra Decisioni aperte (tutte) e Rischi aperti (milestone corrente); STATE.md etichetta il tipo","proof":[{"type":"commit","ref":"310edf6"}]}
+{"at":"2026-11-17T09:16Z","id":"m6.3.3","op":"close","text":"closed m6.3.3 Sezioni nella scheda: la scheda mostra Decisioni aperte (tutte) e Rischi aperti (milestone corrente); STATE.md etichetta il tipo","proof":[{"type":"commit","ref":"ff2be7e"}]}
 {"at":"2026-11-17T09:16Z","id":"m6.3.4","op":"start","text":"started m6.3.4 Viewer, skill e README"}
-{"at":"2026-11-17T09:19Z","id":"m6.3.4","op":"fill","text":"proof for m6.3.4: commit ad82a2c","proof":[{"type":"commit","ref":"ad82a2c"}]}
-{"at":"2026-11-17T09:19Z","id":"m6.3.4","op":"close","text":"closed m6.3.4 Viewer, skill e README: viewer con icona e colore per decisioni e rischi aperti; skill e README spiegano quando usarli","proof":[{"type":"commit","ref":"0e641e2"}]}
+{"at":"2026-11-17T09:19Z","id":"m6.3.4","op":"fill","text":"proof for m6.3.4: commit ad82a2c","proof":[{"type":"commit","ref":"0e3f239"}]}
+{"at":"2026-11-17T09:19Z","id":"m6.3.4","op":"close","text":"closed m6.3.4 Viewer, skill e README: viewer con icona e colore per decisioni e rischi aperti; skill e README spiegano quando usarli","proof":[{"type":"commit","ref":"c80c477"}]}
 {"at":"2026-11-17T09:20Z","id":"m6.3","op":"close","text":"closed m6.3 Rischi e decisioni aperte nel grafo: decision e risk nel grafo: schema, regole, scheda, viewer, skill e README","proof":[{"type":"file","ref":"docs/m6.3-decisioni-e-rischi.md"}]}
 {"at":"2026-11-17T09:20Z","id":"m6.1","op":"start","text":"started m6.1 Init rileva STATE.md e LOG.md"}
-{"at":"2026-11-17T09:21Z","id":"m6.1","op":"close","text":"closed m6.1 Init rileva STATE.md e LOG.md: init rileva STATE.md e LOG.md e propone dove portare ogni parte, senza toccarli","proof":[{"type":"commit","ref":"e5a1142"}]}
+{"at":"2026-11-17T09:21Z","id":"m6.1","op":"close","text":"closed m6.1 Init rileva STATE.md e LOG.md: init rileva STATE.md e LOG.md e propone dove portare ogni parte, senza toccarli","proof":[{"type":"commit","ref":"e80861f"}]}
 {"at":"2026-11-17T09:21Z","id":"m6.2","op":"start","text":"started m6.2 Migrazione guidata con undo"}
 {"at":"2026-11-17T09:27Z","id":"m6.2","op":"fill","text":"proof for m6.2: message chat 2026-11-17: archivio in .ariadne/archive/; l'agente classifica liberamente le voci e i nodi migrati restano da confermare; undo con ariadne migrate --undo","proof":[{"type":"message","ref":"chat 2026-11-17: archivio in .ariadne/archive/; l'agente classifica liberamente le voci e i nodi migrati restano da confermare; undo con ariadne migrate --undo"}]}
 {"at":"2026-11-17T09:27Z","id":"m6","op":"plan","text":"plan for Sostituire STATE.md e LOG.md in sicurezza: Approvare dal viewer"}
 {"at":"2026-11-17T09:27Z","id":"m6.2","op":"plan","text":"plan for Migrazione guidata con undo: Lettura di STATE.md e LOG.md → Anteprima delle operazioni → Apply con archivio → Undo della migrazione"}
 {"at":"2026-11-17T09:27Z","id":"m6.2.1","op":"start","text":"started m6.2.1 Lettura di STATE.md e LOG.md"}
-{"at":"2026-11-17T09:28Z","id":"m6.2.1","op":"close","text":"closed m6.2.1 Lettura di STATE.md e LOG.md: src/migrate.mjs legge sezioni di STATE.md e righe di LOG.md; provato sugli 8 repo reali, nessuna riga persa","proof":[{"type":"commit","ref":"2e65ee7"}]}
+{"at":"2026-11-17T09:28Z","id":"m6.2.1","op":"close","text":"closed m6.2.1 Lettura di STATE.md e LOG.md: src/migrate.mjs legge sezioni di STATE.md e righe di LOG.md; provato sugli 8 repo reali, nessuna riga persa","proof":[{"type":"commit","ref":"77bde73"}]}
 {"at":"2026-11-17T09:28Z","id":"m6.2.2","op":"start","text":"started m6.2.2 Anteprima delle operazioni"}
-{"at":"2026-11-17T09:32Z","id":"m6.2.2","op":"close","text":"closed m6.2.2 Anteprima delle operazioni: ariadne migrate stampa l'anteprima verificata da apply, con --as per correggere la classificazione; provato su una copia di benchmark-repo","proof":[{"type":"commit","ref":"fab9515"}]}
+{"at":"2026-11-17T09:32Z","id":"m6.2.2","op":"close","text":"closed m6.2.2 Anteprima delle operazioni: ariadne migrate stampa l'anteprima verificata da apply, con --as per correggere la classificazione; provato su una copia di benchmark-repo","proof":[{"type":"commit","ref":"ee78121"}]}
 {"at":"2026-11-17T09:32Z","id":"m6.2.3","op":"start","text":"started m6.2.3 Apply con archivio"}
-{"at":"2026-11-17T09:33Z","id":"m6.2.3","op":"close","text":"closed m6.2.3 Apply con archivio: migrate --apply scrive i nodi, sposta i file in .ariadne/archive/ con git mv e salva migration.json per l'undo","proof":[{"type":"commit","ref":"427fb2f"}]}
+{"at":"2026-11-17T09:33Z","id":"m6.2.3","op":"close","text":"closed m6.2.3 Apply con archivio: migrate --apply scrive i nodi, sposta i file in .ariadne/archive/ con git mv e salva migration.json per l'undo","proof":[{"type":"commit","ref":"d871b16"}]}
 {"at":"2026-11-17T09:33Z","id":"m6.2.4","op":"start","text":"started m6.2.4 Undo della migrazione"}
-{"at":"2026-11-17T09:36Z","id":"m6.2.4","op":"fill","text":"proof for m6.2.4: commit ba5901a","proof":[{"type":"commit","ref":"ba5901a"}]}
-{"at":"2026-11-17T09:36Z","id":"m6.2.4","op":"fill","text":"proof for m6.2.4: commit 70b0440","proof":[{"type":"commit","ref":"70b0440"}]}
-{"at":"2026-11-17T09:37Z","id":"m6.2.4","op":"fill","text":"proof for m6.2.4: commit 1a34243","proof":[{"type":"commit","ref":"1a34243"}]}
-{"at":"2026-11-17T09:38Z","id":"m6.2.4","op":"fill","text":"proof for m6.2.4: commit b31ba66","proof":[{"type":"commit","ref":"b31ba66"}]}
-{"at":"2026-11-17T09:38Z","id":"m6.2.4","op":"close","text":"closed m6.2.4 Undo della migrazione: migrate --undo rimette file, grafo, thread e diario; init, skill e README spiegano migrate; provato su una copia reale","proof":[{"type":"commit","ref":"3f793c5"}]}
+{"at":"2026-11-17T09:36Z","id":"m6.2.4","op":"fill","text":"proof for m6.2.4: commit ba5901a","proof":[{"type":"commit","ref":"e2c9c04"}]}
+{"at":"2026-11-17T09:36Z","id":"m6.2.4","op":"fill","text":"proof for m6.2.4: commit 70b0440","proof":[{"type":"commit","ref":"a463221"}]}
+{"at":"2026-11-17T09:37Z","id":"m6.2.4","op":"fill","text":"proof for m6.2.4: commit 1a34243","proof":[{"type":"commit","ref":"b17c089"}]}
+{"at":"2026-11-17T09:38Z","id":"m6.2.4","op":"fill","text":"proof for m6.2.4: commit b31ba66","proof":[{"type":"commit","ref":"a596048"}]}
+{"at":"2026-11-17T09:38Z","id":"m6.2.4","op":"close","text":"closed m6.2.4 Undo della migrazione: migrate --undo rimette file, grafo, thread e diario; init, skill e README spiegano migrate; provato su una copia reale","proof":[{"type":"commit","ref":"3e4e462"}]}
 {"at":"2026-11-17T09:38Z","id":"m6.2","op":"close","text":"closed m6.2 Migrazione guidata con undo: ariadne migrate: anteprima, --as, --apply con archivio in .ariadne/archive/, --undo; nodi migrati da confermare","proof":[{"type":"file","ref":"docs/m6.2-migrazione.md"}]}
 {"at":"2026-11-17T09:38Z","id":"m6.4","op":"start","text":"started m6.4 Pointers in CLAUDE.md o docs/"}
-{"at":"2026-11-17T09:39Z","id":"m6.4","op":"close","text":"closed m6.4 Pointers in CLAUDE.md o docs/: migrate elenca per intero, in anteprima e dopo --apply, le voci da portare in CLAUDE.md o docs/ (Pointers, altre sezioni, voci pointer)","proof":[{"type":"commit","ref":"4dc88c7"}]}
+{"at":"2026-11-17T09:39Z","id":"m6.4","op":"close","text":"closed m6.4 Pointers in CLAUDE.md o docs/: migrate elenca per intero, in anteprima e dopo --apply, le voci da portare in CLAUDE.md o docs/ (Pointers, altre sezioni, voci pointer)","proof":[{"type":"commit","ref":"1b0a927"}]}
 {"at":"2026-11-17T09:39Z","id":"m6.7","op":"start","text":"started m6.7 Rigenerare STATE.md e LOG.md"}
-{"at":"2026-11-17T09:41Z","id":"m6.7","op":"fill","text":"proof for m6.7: commit b657ed5","proof":[{"type":"commit","ref":"b657ed5"}]}
-{"at":"2026-11-17T09:41Z","id":"m6.7","op":"close","text":"closed m6.7 Rigenerare STATE.md e LOG.md: ariadne export (una volta, --always, --off) rigenera STATE.md e LOG.md marcati come generati; init e migrate li ignorano","proof":[{"type":"commit","ref":"4c38e3f"}]}
+{"at":"2026-11-17T09:41Z","id":"m6.7","op":"fill","text":"proof for m6.7: commit b657ed5","proof":[{"type":"commit","ref":"05f2157"}]}
+{"at":"2026-11-17T09:41Z","id":"m6.7","op":"close","text":"closed m6.7 Rigenerare STATE.md e LOG.md: ariadne export (una volta, --always, --off) rigenera STATE.md e LOG.md marcati come generati; init e migrate li ignorano","proof":[{"type":"commit","ref":"4bc41e8"}]}
 {"at":"2026-11-17T09:41Z","id":"m6.6","op":"start","text":"started m6.6 Integrazione con l'harness"}
 {"at":"2026-11-17T09:41Z","id":"m6.6","op":"pause","text":"back among the todo steps m6.6 Integrazione con l'harness"}
 {"at":"2026-11-17T09:44Z","id":"m6.19","op":"fill","text":"proof for m6.19: message chat 2026-11-17: approvato che il viewer scriva nel grafo; l'utente vuole anche commentare i nodi dal viewer, così l'agente legge i commenti e modifica o spiega","proof":[{"type":"message","ref":"chat 2026-11-17: approvato che il viewer scriva nel grafo; l'utente vuole anche commentare i nodi dal viewer, così l'agente legge i commenti e modifica o spiega"}]}
 {"at":"2026-11-17T09:44Z","id":"m6.12","op":"fill","text":"proof for m6.12: message chat 2026-11-17: niente repo veri (l'utente ci sta lavorando): prova su un repo sintetico con STATE.md, LOG.md e git-guard finti","proof":[{"type":"message","ref":"chat 2026-11-17: niente repo veri (l'utente ci sta lavorando): prova su un repo sintetico con STATE.md, LOG.md e git-guard finti"}]}
 {"at":"2026-11-17T09:45Z","id":"m6.16","op":"start","text":"started m6.16 Riferimenti 'in chat' come non registrati"}
-{"at":"2026-11-17T09:45Z","id":"m6.16","op":"close","text":"closed m6.16 Riferimenti 'in chat' come non registrati: fill e close avvisano quando una prova è solo \"chat <data>\" o un campo rimanda alla chat","proof":[{"type":"commit","ref":"8137865"}]}
+{"at":"2026-11-17T09:45Z","id":"m6.16","op":"close","text":"closed m6.16 Riferimenti 'in chat' come non registrati: fill e close avvisano quando una prova è solo \"chat <data>\" o un campo rimanda alla chat","proof":[{"type":"commit","ref":"338b0b3"}]}
 {"at":"2026-11-17T09:45Z","id":"m6.6","op":"start","text":"started m6.6 Integrazione con l'harness"}
 {"at":"2026-11-17T09:45Z","id":"m6.6","op":"pause","text":"back among the todo steps m6.6 Integrazione con l'harness"}
 {"at":"2026-11-17T09:45Z","id":"m6.17","op":"start","text":"started m6.17 Controllo prima del clear"}
-{"at":"2026-11-17T09:47Z","id":"m6.17","op":"fill","text":"proof for m6.17: commit fbc9041","proof":[{"type":"commit","ref":"fbc9041"}]}
-{"at":"2026-11-17T09:47Z","id":"m6.17","op":"close","text":"closed m6.17 Controllo prima del clear: ariadne check --clear dice cosa perderebbe /clear (non committato, solo in chat, fuori dal repo) o che è sicuro","proof":[{"type":"commit","ref":"118e7e4"}]}
+{"at":"2026-11-17T09:47Z","id":"m6.17","op":"fill","text":"proof for m6.17: commit fbc9041","proof":[{"type":"commit","ref":"a616890"}]}
+{"at":"2026-11-17T09:47Z","id":"m6.17","op":"close","text":"closed m6.17 Controllo prima del clear: ariadne check --clear dice cosa perderebbe /clear (non committato, solo in chat, fuori dal repo) o che è sicuro","proof":[{"type":"commit","ref":"cee20a0"}]}
 {"at":"2026-11-17T09:47Z","id":"m6.6","op":"start","text":"started m6.6 Integrazione con l'harness"}
 {"at":"2026-11-17T09:48Z","id":"m6.6","op":"pause","text":"back among the todo steps m6.6 Integrazione con l'harness"}
 {"at":"2026-11-17T09:48Z","id":"m6.19","op":"start","text":"started m6.19 Approvare dal viewer"}
 {"at":"2026-11-17T09:48Z","id":"m6.19","op":"plan","text":"plan for Approvare dal viewer: Commenti nel grafo → Azioni dal server → Coda da confermare nel viewer → Prova nel browser"}
 {"at":"2026-11-17T09:48Z","id":"m6.19.1","op":"start","text":"started m6.19.1 Commenti nel grafo"}
-{"at":"2026-11-17T09:49Z","id":"m6.19.1","op":"close","text":"closed m6.19.1 Commenti nel grafo: comment (tuo) e answer (agente) sui nodi; scheda e riassunto mostrano i commenti aperti","proof":[{"type":"commit","ref":"651221e"}]}
+{"at":"2026-11-17T09:49Z","id":"m6.19.1","op":"close","text":"closed m6.19.1 Commenti nel grafo: comment (tuo) e answer (agente) sui nodi; scheda e riassunto mostrano i commenti aperti","proof":[{"type":"commit","ref":"7878c5f"}]}
 {"at":"2026-11-17T09:49Z","id":"m6.19.2","op":"start","text":"started m6.19.2 Azioni dal server"}
-{"at":"2026-11-17T09:51Z","id":"m6.19.2","op":"close","text":"closed m6.19.2 Azioni dal server: POST /act sul server del viewer (confirm, confirmAll, reject, comment come utente), con header e Host di guardia","proof":[{"type":"commit","ref":"992ba87"}]}
+{"at":"2026-11-17T09:51Z","id":"m6.19.2","op":"close","text":"closed m6.19.2 Azioni dal server: POST /act sul server del viewer (confirm, confirmAll, reject, comment come utente), con header e Host di guardia","proof":[{"type":"commit","ref":"1bc5eb0"}]}
 {"at":"2026-11-17T09:51Z","id":"m6.19.3","op":"start","text":"started m6.19.3 Coda da confermare nel viewer"}
-{"at":"2026-11-17T09:53Z","id":"m6.19.3","op":"close","text":"closed m6.19.3 Coda da confermare nel viewer: vista Da confermare con Approva, Rifiuta, Approva tutto; nel pannello conferma e commenti con le risposte dell'agente","proof":[{"type":"commit","ref":"34ef58b"}]}
+{"at":"2026-11-17T09:53Z","id":"m6.19.3","op":"close","text":"closed m6.19.3 Coda da confermare nel viewer: vista Da confermare con Approva, Rifiuta, Approva tutto; nel pannello conferma e commenti con le risposte dell'agente","proof":[{"type":"commit","ref":"7c163fa"}]}
 {"at":"2026-11-17T09:53Z","id":"m6.19.4","op":"start","text":"started m6.19.4 Prova nel browser"}
-{"at":"2026-11-17T09:55Z","id":"m6.19","op":"close","text":"closed m6.19 Approvare dal viewer: vista Da confermare e commenti nel viewer, via POST /act come utente; provato nel browser","proof":[{"type":"commit","ref":"d69e3c2"}]}
-{"at":"2026-11-17T09:55Z","id":"m6.19.4","op":"close","text":"closed m6.19.4 Prova nel browser: provato con Playwright su un repo sintetico migrato: approva, rifiuta, commento letto dalla scheda, risposta nel pannello","proof":[{"type":"commit","ref":"d69e3c2"}]}
+{"at":"2026-11-17T09:55Z","id":"m6.19","op":"close","text":"closed m6.19 Approvare dal viewer: vista Da confermare e commenti nel viewer, via POST /act come utente; provato nel browser","proof":[{"type":"commit","ref":"2177394"}]}
+{"at":"2026-11-17T09:55Z","id":"m6.19.4","op":"close","text":"closed m6.19.4 Prova nel browser: provato con Playwright su un repo sintetico migrato: approva, rifiuta, commento letto dalla scheda, risposta nel pannello","proof":[{"type":"commit","ref":"2177394"}]}
 {"at":"2026-11-17T10:01Z","id":"m6.6","op":"fill","text":"proof for m6.6: message chat 2026-11-17: approvate le modifiche a git_guard.py, handoff, commit-checkpoint, CLAUDE.md globale ed explainer-html; transizione fluida e senza traumi: i repo senza .ariadne/ non cambiano","proof":[{"type":"message","ref":"chat 2026-11-17: approvate le modifiche a git_guard.py, handoff, commit-checkpoint, CLAUDE.md globale ed explainer-html; transizione fluida e senza traumi: i repo senza .ariadne/ non cambiano"}]}
 {"at":"2026-11-17T10:01Z","id":"m6.18","op":"fill","text":"proof for m6.18: message chat 2026-11-17: approvato, handoff in un repo con .ariadne/ non scrive STATE.md né LOG.md","proof":[{"type":"message","ref":"chat 2026-11-17: approvato, handoff in un repo con .ariadne/ non scrive STATE.md né LOG.md"}]}
 {"at":"2026-11-17T10:01Z","id":"m8","op":"add","text":"added milestone m8 Qualità del piano e del grafo"}
@@ -554,31 +554,31 @@
 {"at":"2026-11-17T10:01Z","id":"m7.1","op":"move","text":"moved m7.1 under m8 (your correction)"}
 {"at":"2026-11-17T10:01Z","id":"m7.2","op":"move","text":"moved m7.2 under m8 (your correction)"}
 {"at":"2026-11-17T10:01Z","id":"m6.6","op":"start","text":"started m6.6 Integrazione con l'harness"}
-{"at":"2026-11-17T10:05Z","id":"m6.6","op":"close","text":"closed m6.6 Integrazione con l'harness: git_guard, handoff, commit-checkpoint, explainer-html e CLAUDE.md globale riconoscono .ariadne/ (test git_guard 67/67, handoff provato contro la versione vecchia); doctor li conta come pronti","proof":[{"type":"commit","ref":"321b39e"}]}
+{"at":"2026-11-17T10:05Z","id":"m6.6","op":"close","text":"closed m6.6 Integrazione con l'harness: git_guard, handoff, commit-checkpoint, explainer-html e CLAUDE.md globale riconoscono .ariadne/ (test git_guard 67/67, handoff provato contro la versione vecchia); doctor li conta come pronti","proof":[{"type":"commit","ref":"4d29250"}]}
 {"at":"2026-11-17T10:05Z","id":"m6.12","op":"start","text":"started m6.12 Prova su un repo di lavoro"}
 {"at":"2026-11-17T10:05Z","id":"m6.18","op":"close","text":"closed m6.18 handoff nei repo con .ariadne/: in un repo con .ariadne/ handoff non scrive STATE.md né LOG.md: lancia ariadne check --clear e registra quello che manca; provato contro la versione vecchia su un repo sintetico","proof":[{"type":"file","ref":"~/.claude/skills/handoff/SKILL.md"}]}
 {"at":"2026-11-17T10:05Z","id":"m6.12","op":"close","text":"closed m6.12 Prova su un repo di lavoro: repo sintetico con git_guard vero: prima inietta STATE.md, dopo init inietta e suggerisce migrate, dopo migrate --apply non inietta e c'è la scheda (doctor pulito), dopo --undo torna come prima","proof":[{"type":"message","ref":"chat 2026-11-17: prova m6.12 su repo sintetico, quattro fasi tutte corrette"}]}
 {"at":"2026-11-17T10:09Z","id":"","op":"confirm","text":"confirmed 1 changes"}
 {"at":"2026-11-17T10:09Z","id":"m8","op":"fill","text":"proof for m8: message chat 2026-11-17: l'utente dice di procedere con m8 prima di m7, e di scrivergli in italiano","proof":[{"type":"message","ref":"chat 2026-11-17: l'utente dice di procedere con m8 prima di m7, e di scrivergli in italiano"}]}
 {"at":"2026-11-17T10:09Z","id":"m7.1","op":"start","text":"started m7.1 Misure di qualità del piano"}
-{"at":"2026-11-17T10:11Z","id":"m7.1","op":"close","text":"closed m7.1 Misure di qualità del piano: docs/m7.1-qualita-piano.md: misure dallo stato dell'arte, numeri del grafo, 5 misure proposte con soglie","proof":[{"type":"commit","ref":"e4b93d3"}]}
+{"at":"2026-11-17T10:11Z","id":"m7.1","op":"close","text":"closed m7.1 Misure di qualità del piano: docs/m7.1-qualita-piano.md: misure dallo stato dell'arte, numeri del grafo, 5 misure proposte con soglie","proof":[{"type":"commit","ref":"230ab4e"}]}
 {"at":"2026-11-17T10:11Z","id":"m7.2","op":"start","text":"started m7.2 Passi paralleli necessari"}
 {"at":"2026-11-17T10:17Z","id":"m7.2","op":"fill","text":"proof for m7.2: message chat 2026-11-17: parallelo dedotto dai figli senza after tra loro, niente campo nuovo; deve essere chiaro che il contenitore è chiuso quando sono chiusi tutti i suoi sotto-passi","proof":[{"type":"message","ref":"chat 2026-11-17: parallelo dedotto dai figli senza after tra loro, niente campo nuovo; deve essere chiaro che il contenitore è chiuso quando sono chiusi tutti i suoi sotto-passi"}]}
 {"at":"2026-11-17T10:17Z","id":"m7.2","op":"plan","text":"plan for Passi paralleli necessari: Regola di chiusura dei contenitori → Disegno dei sotto-passi paralleli → Prova nel browser"}
 {"at":"2026-11-17T10:17Z","id":"m7.2.1","op":"start","text":"started m7.2.1 Regola di chiusura dei contenitori"}
 {"at":"2026-11-17T10:17Z","id":"m8","op":"plan","text":"plan for Qualità del piano e del grafo: Avvisi sulla salute del piano"}
-{"at":"2026-11-17T10:18Z","id":"m7.2.1","op":"close","text":"closed m7.2.1 Regola di chiusura dei contenitori: un contenitore si chiude da solo con l'ultimo sotto-passo e non prima; nel grafo reale m4.3 e m5.6 risultano aperti con tutti i figli chiusi","proof":[{"type":"commit","ref":"1867c02"}]}
+{"at":"2026-11-17T10:18Z","id":"m7.2.1","op":"close","text":"closed m7.2.1 Regola di chiusura dei contenitori: un contenitore si chiude da solo con l'ultimo sotto-passo e non prima; nel grafo reale m4.3 e m5.6 risultano aperti con tutti i figli chiusi","proof":[{"type":"commit","ref":"0a381e0"}]}
 {"at":"2026-11-17T10:18Z","id":"m7.2.2","op":"start","text":"started m7.2.2 Disegno dei sotto-passi paralleli"}
-{"at":"2026-11-17T10:19Z","id":"m7.2.2","op":"close","text":"closed m7.2.2 Disegno dei sotto-passi paralleli: contatore k/N sui contenitori, \"si chiude con l'ultimo\", barra di ricongiungimento quando i rami sono due o più","proof":[{"type":"commit","ref":"08266eb"}]}
+{"at":"2026-11-17T10:19Z","id":"m7.2.2","op":"close","text":"closed m7.2.2 Disegno dei sotto-passi paralleli: contatore k/N sui contenitori, \"si chiude con l'ultimo\", barra di ricongiungimento quando i rami sono due o più","proof":[{"type":"commit","ref":"5c01efc"}]}
 {"at":"2026-11-17T10:19Z","id":"m7.2.3","op":"start","text":"started m7.2.3 Prova nel browser"}
-{"at":"2026-11-17T10:21Z","id":"m7.2.3","op":"close","text":"closed m7.2.3 Prova nel browser: provato nel browser su un grafo sintetico: tre rami nella barra 1/4, close del contenitore rifiutato, chiusura automatica con barra verde 4/4","proof":[{"type":"commit","ref":"a523526"}]}
-{"at":"2026-11-17T10:21Z","id":"m7.2","op":"close","text":"closed m7.2 Passi paralleli necessari: contenitore chiuso con l'ultimo sotto-passo e mai prima; contatore k/N e barra di ricongiungimento nel viewer","proof":[{"type":"commit","ref":"a523526"}]}
+{"at":"2026-11-17T10:21Z","id":"m7.2.3","op":"close","text":"closed m7.2.3 Prova nel browser: provato nel browser su un grafo sintetico: tre rami nella barra 1/4, close del contenitore rifiutato, chiusura automatica con barra verde 4/4","proof":[{"type":"commit","ref":"40c63e1"}]}
+{"at":"2026-11-17T10:21Z","id":"m7.2","op":"close","text":"closed m7.2 Passi paralleli necessari: contenitore chiuso con l'ultimo sotto-passo e mai prima; contatore k/N e barra di ricongiungimento nel viewer","proof":[{"type":"commit","ref":"40c63e1"}]}
 {"at":"2026-11-17T10:21Z","id":"m8.1","op":"start","text":"started m8.1 Avvisi sulla salute del piano"}
 {"at":"2026-11-17T10:26Z","id":"m8","op":"fill","text":"proof for m8: message chat 2026-11-17: obiettivo dell'utente: arrivare a migrare il repo Atlas per provare ariadne sul lavoro vero e farne fix o nuove funzioni","proof":[{"type":"message","ref":"chat 2026-11-17: obiettivo dell'utente: arrivare a migrare il repo Atlas per provare ariadne sul lavoro vero e farne fix o nuove funzioni"}]}
 {"at":"2026-11-17T10:26Z","id":"m8.2","op":"add","text":"detour m8.2 Sblocchi per migrare Atlas, returns to m8.1"}
-{"at":"2026-11-17T10:27Z","id":"m8.2","op":"close","text":"closed m8.2 Sblocchi per migrare Atlas: titoli storici lunghi non bloccano più le scritture; migrate sceglie la milestone del passo corrente; anteprima su una copia di Atlas corretta","proof":[{"type":"commit","ref":"a5d8970"}]}
+{"at":"2026-11-17T10:27Z","id":"m8.2","op":"close","text":"closed m8.2 Sblocchi per migrare Atlas: titoli storici lunghi non bloccano più le scritture; migrate sceglie la milestone del passo corrente; anteprima su una copia di Atlas corretta","proof":[{"type":"commit","ref":"237e992"}]}
 {"at":"2026-11-17T10:29Z","id":"","op":"confirm","text":"confirmed 1 changes"}
-{"at":"2026-11-17T10:47Z","id":"m8.1","op":"fill","text":"proof for m8.1: commit 30d3408","proof":[{"type":"commit","ref":"30d3408"}]}
+{"at":"2026-11-17T10:47Z","id":"m8.1","op":"fill","text":"proof for m8.1: commit 30d3408","proof":[{"type":"commit","ref":"1991e71"}]}
 {"at":"2026-11-17T14:39Z","id":"m8.1","op":"pause","text":"back among the todo steps m8.1 Avvisi sulla salute del piano"}
 {"at":"2026-11-17T14:39Z","id":"m7","op":"plan","text":"plan for Un viewer per tutti i progetti: Registro dei progetti → Pagina indice dei progetti → Nome e cambio progetto nel viewer → ariadne open sul server unico → Prova nel browser con due progetti"}
 {"at":"2026-11-17T14:39Z","id":"m7","op":"start","text":"started m7 Un viewer per tutti i progetti"}
@@ -595,15 +595,15 @@
 {"at":"2026-11-18T10:07Z","id":"m9.6","op":"close","text":"closed m9.6 Chi sono i colleghi?: Tecnici che usano già Claude Code: demo dal terminale e viewer, numeri della valutazione in una frase","proof":[{"type":"message","ref":"chat 2026-11-18: pubblico = tecnici con Claude Code"}]}
 {"at":"2026-11-18T10:07Z","id":"m9.4","op":"fill","text":"proof for m9.4: message chat 2026-11-18: demo sul progetto sintetico; Atlas solo citato a voce come prova reale","proof":[{"type":"message","ref":"chat 2026-11-18: demo sul progetto sintetico; Atlas solo citato a voce come prova reale"}]}
 {"at":"2026-11-18T10:07Z","id":"m9.6","op":"fill","text":"proof for m9.6: file docs/presentazione/scaletta.md","proof":[{"type":"file","ref":"docs/presentazione/scaletta.md"}]}
-{"at":"2026-11-18T10:07Z","id":"m9.1","op":"fill","text":"proof for m9.1: commit 3bf888b","proof":[{"type":"commit","ref":"3bf888b"}]}
+{"at":"2026-11-18T10:07Z","id":"m9.1","op":"fill","text":"proof for m9.1: commit 3bf888b","proof":[{"type":"commit","ref":"c655792"}]}
 {"at":"2026-11-18T10:10Z","id":"m9.1","op":"fill","text":"proof for m9.1: message chat 2026-11-18: poche slide ad alto livello + piccola demo della UI; messaggio: il grafo lo gestisce Claude come contesto, gli esperimenti mostrano che è corretto ed efficiente, per l'utente è facile; riusare il più possibile slide-v2","proof":[{"type":"message","ref":"chat 2026-11-18: poche slide ad alto livello + piccola demo della UI; messaggio: il grafo lo gestisce Claude come contesto, gli esperimenti mostrano che è corretto ed efficiente, per l'utente è facile; riusare il più possibile slide-v2"}]}
-{"at":"2026-11-18T10:10Z","id":"m9.1","op":"fill","text":"proof for m9.1: commit 95979a9","proof":[{"type":"commit","ref":"95979a9"}]}
+{"at":"2026-11-18T10:10Z","id":"m9.1","op":"fill","text":"proof for m9.1: commit 95979a9","proof":[{"type":"commit","ref":"1b5bc0d"}]}
 {"at":"2026-11-18T10:20Z","id":"m9.1","op":"fill","text":"proof for m9.1: message chat 2026-11-18: narrativa = vantaggi tecnici (grafo invece di file, STATE/LOG/Next sul grafo, contesto iniettato in automatico) + UI (grafo, elenco, stati e categorie, deviazioni, traccia dell'attività); meno slide, più puntuali; demo forse su questo progetto o Atlas invece del sintetico","proof":[{"type":"message","ref":"chat 2026-11-18: narrativa = vantaggi tecnici (grafo invece di file, STATE/LOG/Next sul grafo, contesto iniettato in automatico) + UI (grafo, elenco, stati e categorie, deviazioni, traccia dell'attività); meno slide, più puntuali; demo forse su questo progetto o Atlas invece del sintetico"}]}
 {"at":"2026-11-18T10:20Z","id":"m9.2","op":"fill","text":"proof for m9.2: file ~/ariadne-report/slide-v3.html","proof":[{"type":"file","ref":"~/ariadne-report/slide-v3.html"}]}
 {"at":"2026-11-18T10:42Z","id":"m9.2","op":"fill","text":"proof for m9.2: message chat 2026-11-18: titoli brevi con una frase di contesto sotto; badge agente/codice su ogni affermazione; icone dei due file contro il grafo; frasi verificate sul codice (Prossimo = passo dopo nel piano con prerequisiti fatti, src/graph.mjs)","proof":[{"type":"message","ref":"chat 2026-11-18: titoli brevi con una frase di contesto sotto; badge agente/codice su ogni affermazione; icone dei due file contro il grafo; frasi verificate sul codice (Prossimo = passo dopo nel piano con prerequisiti fatti, src/graph.mjs)"}]}
 {"at":"2026-11-18T10:56Z","id":"m9.7","op":"add","text":"detour m9.7 Mostra senza riposizionare, returns to m9.1"}
 {"at":"2026-11-18T10:58Z","id":"","op":"confirm","text":"confirmed 1 changes"}
-{"at":"2026-11-18T11:00Z","id":"m9.7","op":"close","text":"closed m9.7 Mostra senza riposizionare: «mostra» e +/− espandono senza riposizionare la vista","proof":[{"type":"commit","ref":"dcd8e4b"}]}
+{"at":"2026-11-18T11:00Z","id":"m9.7","op":"close","text":"closed m9.7 Mostra senza riposizionare: «mostra» e +/− espandono senza riposizionare la vista","proof":[{"type":"commit","ref":"836bf0e"}]}
 {"at":"2026-11-18T11:14Z","id":"m9.1","op":"close","text":"closed m9.1 Scaletta dei 10 minuti: Scaletta superata dalla struttura delle slide v3 e dalla demo sul viewer","proof":[{"type":"file","ref":"docs/presentazione/scaletta.md"}]}
 {"at":"2026-11-18T11:14Z","id":"m9.2","op":"start","text":"started m9.2 Slide d'appoggio"}
 {"at":"2026-11-18T11:14Z","id":"m9.2","op":"close","text":"closed m9.2 Slide d'appoggio: Sei slide: grafo contro file di note, contesto iniettato dagli hook, viewer, prova, come si inizia; badge agente/codice verificati sul codice","proof":[{"type":"file","ref":"~/ariadne-report/slide-v3.html"}]}
@@ -613,3 +613,10 @@
 {"at":"2026-11-18T11:14Z","id":"m5.6","op":"plan","text":"plan for Rendere pubblico il repo: Controllo dei secrets → Documentazione del codice → Guida d'uso completa → README come porta d'ingresso"}
 {"at":"2026-11-18T11:14Z","id":"m9.3","op":"reject","text":"rejected m9.3 Tutorial minimale: kept on record, outside the plan"}
 {"at":"2026-11-18T11:14Z","id":"m5.6.3","op":"start","text":"started m5.6.3 Controllo dei secrets"}
+{"at":"2026-11-18T11:15Z","id":"m5.6.3.1","op":"add","text":"added decision m5.6.3.1 Tracce aziendali prima di rendere pubblico under m5.6.3"}
+{"at":"2026-11-18T11:19Z","id":"m5.6.3.1","op":"close","text":"closed m5.6.3.1 Tracce aziendali prima di rendere pubblico: Albero e storia: nomi generici al posto delle tracce aziendali, storia riscritta con bundle di backup, autore uniformato a noreply; force push solo dopo ok esplicito","proof":[{"type":"message","ref":"chat 2026-11-18: scelta dell'utente"}]}
+{"at":"2026-11-18T11:19Z","id":"m5.6.3","op":"close","text":"closed m5.6.3 Controllo dei secrets: all 1 sub-steps done","proof":[{"type":"message","ref":"sotto-passi m5.6.3.1"}]}
+{"at":"2026-11-18T11:19Z","id":"m5.6.3","op":"plan","text":"plan for Controllo dei secrets: Nomi generici nell'albero → Riscrittura della storia → Force push dopo ok"}
+{"at":"2026-11-18T11:19Z","id":"m5.6.3.2","op":"start","text":"started m5.6.3.2 Nomi generici nell'albero"}
+{"at":"2026-11-18T11:23Z","id":"m5.6.3","op":"start","text":"reopened m5.6.3 Controllo dei secrets"}
+{"at":"2026-11-18T11:23Z","id":"m5.6.3.2","op":"start","text":"started m5.6.3.2 Nomi generici nell'albero"}
