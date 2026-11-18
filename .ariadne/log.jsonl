@@ -638,3 +638,6 @@
 {"at":"2026-11-18T11:53Z","id":"m5.6.8","op":"fill","text":"proof for m5.6.8: message chat 2026-11-18: l'utente nota che stiamo tornando a progettazione e implementazione: ciclo continuo tipo DevOps, non un percorso lineare","proof":[{"type":"message","ref":"chat 2026-11-18: l'utente nota che stiamo tornando a progettazione e implementazione: ciclo continuo tipo DevOps, non un percorso lineare"}]}
 {"at":"2026-11-18T11:55Z","id":"m5.6.8","op":"fill","text":"proof for m5.6.8: commit dcbc18b","proof":[{"type":"commit","ref":"dcbc18b"}]}
 {"at":"2026-11-18T11:57Z","id":"m5.6.8","op":"close","text":"closed m5.6.8 Ritocchi del viewer: menu col tasto destro, stesso nodo tra le viste, filtri combinabili, testo dentro i gruppi, impostazioni con tema scuro","proof":[{"type":"commit","ref":"ddadca0"}]}
+{"at":"2026-11-18T12:03Z","id":"m8","op":"plan","text":"plan for Qualità del piano e del grafo: Cicli di lavoro espliciti → Chiusura del padre con una decisione"}
+{"at":"2026-11-18T12:03Z","id":"m7","op":"plan","text":"plan for Un viewer per tutti i progetti: Viewer curato stile Jira → Tema scuro rifinito"}
+{"at":"2026-11-18T12:03Z","id":"m5.6.9","op":"add","text":"detour m5.6.9 Rilascio 0.2.2 del plugin, returns to m5.6.4"}
