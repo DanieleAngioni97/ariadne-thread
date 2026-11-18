@@ -115,3 +115,11 @@ test('the open comments of a node are those the agent has not answered yet', () 
   assert.deepEqual(openComments(node).map(c => c.text), ['two'])
   assert.deepEqual(openComments({}), [])
 })
+
+test('the list combines several kinds and one milestone; a milestone keeps its own row', () => {
+  const ids = opts => listRows(data, opts).map(r => r.node.id)
+  assert.deepEqual(ids({ filter: new Set(['active', 'detour']) }), ['m1', 'm1.2', 'm1.3'])
+  assert.deepEqual(ids({ filter: new Set() }), ids({}), 'no kind chosen is every kind')
+  assert.deepEqual(ids({ milestone: 'm2' }), ['m2', 'm2.1'])
+  assert.deepEqual(ids({ filter: new Set(['active']), milestone: 'm1' }), ['m1', 'm1.2'])
+})

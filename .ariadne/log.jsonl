@@ -631,3 +631,8 @@
 {"at":"2026-11-18T11:41Z","id":"m5.6.7","op":"add","text":"detour m5.6.7 Rilascio 0.2.1 del plugin, returns to m5.6.4"}
 {"at":"2026-11-18T11:41Z","id":"m5.6.7","op":"close","text":"closed m5.6.7 Rilascio 0.2.1 del plugin: plugin 0.2.1 con la correzione di «mostra» nel viewer","proof":[{"type":"commit","ref":"d4243a5"}]}
 {"at":"2026-11-18T11:42Z","id":"m5.6.7","op":"confirm","text":"confirmed m5.6.7 Rilascio 0.2.1 del plugin"}
+{"at":"2026-11-18T11:49Z","id":"m5.6.8","op":"add","text":"detour m5.6.8 Ritocchi del viewer, returns to m5.6.4"}
+{"at":"2026-11-18T11:50Z","id":"","op":"confirm","text":"confirmed 1 changes"}
+{"at":"2026-11-18T11:50Z","id":"m5.6.8","op":"fill","text":"proof for m5.6.8: message chat 2026-11-18: ispirarsi a Jira per nomenclatura e filtri, versione rapida; la cura fine più avanti","proof":[{"type":"message","ref":"chat 2026-11-18: ispirarsi a Jira per nomenclatura e filtri, versione rapida; la cura fine più avanti"}]}
+{"at":"2026-11-18T11:52Z","id":"m5.6.8","op":"fill","text":"proof for m5.6.8: message chat 2026-11-18: aggiungere un menu impostazioni (tema chiaro/scuro e altre preferenze utili)","proof":[{"type":"message","ref":"chat 2026-11-18: aggiungere un menu impostazioni (tema chiaro/scuro e altre preferenze utili)"}]}
+{"at":"2026-11-18T11:53Z","id":"m5.6.8","op":"fill","text":"proof for m5.6.8: message chat 2026-11-18: l'utente nota che stiamo tornando a progettazione e implementazione: ciclo continuo tipo DevOps, non un percorso lineare","proof":[{"type":"message","ref":"chat 2026-11-18: l'utente nota che stiamo tornando a progettazione e implementazione: ciclo continuo tipo DevOps, non un percorso lineare"}]}

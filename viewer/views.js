@@ -76,10 +76,17 @@ function inOrder(data) {
 }
 
 /** The list rows, filtered by kind (`all` or one of kindOf's) and by id or title. */
-export function listRows(data, { filter = 'all', query = '' }) {
+/**
+ * The rows the list shows. `filter` is one kind, 'all', or a set of kinds (empty = every kind);
+ * `milestone` keeps that milestone and what it holds.
+ */
+export function listRows(data, { filter = 'all', query = '', milestone = null }) {
   const q = query.trim().toLowerCase()
-  return inOrder(data).filter(({ node }) =>
-    (filter === 'all' || kindOf(node) === filter) && (!q || matches(q, node.id, node.title)))
+  const kinds = filter instanceof Set ? filter : new Set(filter === 'all' ? [] : [filter])
+  return inOrder(data).filter(({ node, milestone: m }) =>
+    (kinds.size === 0 || kinds.has(kindOf(node))) &&
+    (!milestone || node.id === milestone || m?.id === milestone) &&
+    (!q || matches(q, node.id, node.title)))
 }
 
 /** How many nodes each filter chip would show. */

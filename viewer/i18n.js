@@ -66,6 +66,8 @@ const STRINGS = {
     search: { label: 'Search steps', placeholder: 'Search' },
     filters: 'Filters',
     all: 'All',
+    status: 'Status', anyMilestone: 'All milestones', clearFilters: 'Clear filters',
+    menu: { only: 'Show only this', open: 'Expand', close: 'Collapse', back: 'Back', all: 'Show all', graph: 'Open in Graph', timeline: 'Open in Timeline', list: 'Open in List' },
     groups: { progress: 'Progress', structure: 'Structure', detail: 'Details' },
     ops: {
       start: 'started', close: 'closed', plan: 'planned', add: 'added', move: 'moved', defer: 'deferred',
@@ -167,6 +169,8 @@ const STRINGS = {
     search: { label: 'Cerca un passo', placeholder: 'Cerca' },
     filters: 'Filtri',
     all: 'Tutti',
+    status: 'Stato', anyMilestone: 'Tutte le milestone', clearFilters: 'Azzera filtri',
+    menu: { only: 'Mostra solo questo', open: 'Espandi', close: 'Comprimi', back: 'Indietro', all: 'Mostra tutto', graph: 'Apri nel Grafo', timeline: 'Apri in Cronologia', list: 'Apri in Elenco' },
     groups: { progress: 'Avanzamento', structure: 'Struttura', detail: 'Dettagli' },
     ops: {
       start: 'avviato', close: 'chiuso', plan: 'pianificato', add: 'aggiunto', move: 'spostato', defer: 'rimandato',

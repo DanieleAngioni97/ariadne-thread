@@ -287,7 +287,7 @@ function Step({ data: { node } }) {
       <${Badge} node=${node} size=${20} />
       <div class="txt">
         <div class="title"><span class="nid">${node.id}</span> ${node.title}${node.uncertain && html` <span class="unsure" title=${node.uncertain} aria-label=${t.uncertain}>?</span>`}</div>
-        <div class="meta">${labelText(node)}${progressOf(data, node.id) ? ` · ${t.progress(progressOf(data, node.id))}` : ''}</div>
+        <div class="meta">${[labelText(node), progressOf(data, node.id) && t.progress(progressOf(data, node.id))].filter(Boolean).join(' · ')}</div>
       </div>
       ${inside > 0 && html`
         <button class="expand" aria-label=${t.open(inside, node.title)}
@@ -304,8 +304,10 @@ function Group({ data: { node } }) {
       <${Handle} type="target" position=${Position.Left} />
       <div class="group-head" onMouseEnter=${e => hover(node, e.currentTarget)} onMouseLeave=${() => hover(null)}>
         <${Badge} node=${node} size=${20} />
-        <div class="title"><span class="nid">${node.id}</span> ${node.title}</div>
-        <div class="meta">${labelText(node)}${progressOf(data, node.id) ? ` · ${t.progress(progressOf(data, node.id))} · ${t.closesWith}` : ''}</div>
+        <div class="txt">
+          <div class="title"><span class="nid">${node.id}</span> ${node.title}</div>
+          <div class="meta">${[labelText(node), progressOf(data, node.id) && `${t.progress(progressOf(data, node.id))} · ${t.closesWith}`].filter(Boolean).join(' · ')}</div>
+        </div>
         <button class="expand" aria-label=${t.close(node.title)}
           onClick=${e => { e.stopPropagation(); toggle(node.id) }}>−</button>
       </div>
@@ -536,7 +538,13 @@ const TIMELINE_SHOWN = 60
 const GROUP_KEYS = ['progress', 'structure', 'detail']
 
 /** What happened, newest first, by day; chips choose which kinds of event show. */
-function Timeline({ query, selected, onSelect }) {
+/** On opening a sheet, the chosen node's row comes into sight: the same node across the views. */
+const useSelectedInSight = () => useEffect(() => {
+  requestAnimationFrame(() => document.querySelector('.sheet .is-selected')?.scrollIntoView({ block: 'center' }))
+}, [])
+
+function Timeline({ query, selected, onSelect, onMenu }) {
+  useSelectedInSight()
   const [groups, setGroups] = useState(() => new Set(['progress', 'structure']))
   const [all, setAll] = useState(false)
   const flip = key => setGroups(prev => {
@@ -573,7 +581,7 @@ function Timeline({ query, selected, onSelect }) {
               return html`
                 <li key=${`${e.at}${i}`}>
                   <button class=${`event ${node && node.id === selected ? 'is-selected' : ''}`} disabled=${!node}
-                    title=${e.text} onClick=${() => node && onSelect(node.id)}>
+                    title=${e.text} onClick=${() => node && onSelect(node.id)} onContextMenu=${ev => node && onMenu(ev, node.id)}>
                     <span class="time">${timeOf(e.at)}</span>
                     <span class=${`badge k-${node ? kindOf(node) : 'todo'}`}>${node ? html`<${StatusIcon} kind=${kindOf(node)} />` : ''}</span>
                     <span class="op">${t.ops[e.op] ?? e.op}</span>
@@ -622,34 +630,55 @@ function ReviewQueue({ selected, onSelect }) {
 
 const FILTERS = ['all', 'active', 'todo', 'done', 'deferred', 'detour', 'decision', 'risk', 'dropped']
 
-/** Every node in graph order, one chip per kind with its count. */
-function NodeList({ query, selected, onSelect }) {
-  const [filter, setFilter] = useState('all')
+/**
+ * Every node in graph order. Like an issue list: status chips that combine (none = all), a milestone
+ * filter, the shared search, and a reset.
+ */
+function NodeList({ query, selected, onSelect, onMenu }) {
+  useSelectedInSight()
+  const [kinds, setKinds] = useState(() => new Set())
+  const [milestone, setMilestone] = useState('')
   const counts = listCounts(data)
-  const rows = listRows(data, { filter, query })
+  const rows = listRows(data, { filter: kinds, query, milestone: milestone || null })
+  const flat = kinds.size > 0 || query || milestone
+  const flip = key => setKinds(prev => {
+    const next = new Set(prev)
+    next.has(key) ? next.delete(key) : next.add(key)
+    return next
+  })
+  const milestones = data.nodes.filter(n => n.kind === 'milestone')
   return html`
     <section class="sheet" aria-label=${t.views.list}>
-      <div class="filters" role="radiogroup" aria-label=${t.filters}>
-        ${FILTERS.filter(key => key === 'all' || counts[key] > 0).map(key => html`
-          <button key=${key} role="radio" class=${`filter k-${key}`} aria-checked=${filter === key} onClick=${() => setFilter(key)}>
-            ${key !== 'all' && html`<${StatusIcon} kind=${key} size=${14} />`}
-            ${key === 'all' ? t.all : t.kinds[key]} <span class="count">${counts[key]}</span>
+      <div class="filters" role="group" aria-label=${t.filters}>
+        <span class="filter-label">${t.status}</span>
+        ${FILTERS.filter(key => key !== 'all' && counts[key] > 0).map(key => html`
+          <button key=${key} class=${`filter k-${key}`} aria-pressed=${kinds.has(key)} onClick=${() => flip(key)}>
+            <${StatusIcon} kind=${key} size=${14} />
+            ${t.kinds[key]} <span class="count">${counts[key]}</span>
           </button>`)}
+        <select class="filter-select" aria-label=${t.cols.milestone} value=${milestone} onChange=${e => setMilestone(e.target.value)}>
+          <option value="">${t.anyMilestone}</option>
+          ${milestones.map(m => html`<option key=${m.id} value=${m.id}>${m.title}</option>`)}
+        </select>
+        ${(kinds.size > 0 || milestone) && html`
+          <button class="link" onClick=${() => { setKinds(new Set()); setMilestone('') }}>${t.clearFilters}</button>`}
+        <span class="count filter-total">${rows.length} / ${counts.all}</span>
       </div>
       ${rows.length === 0 && html`<p class="empty">${t.noNodes(query)}</p>`}
       ${rows.length > 0 && html`
         <table class="nodes">
           <thead><tr><th>${t.cols.title}</th><th>${t.cols.milestone}</th><th>${t.cols.last}</th></tr></thead>
           <tbody>
-            ${rows.map(({ node, depth, milestone }) => html`
+            ${rows.map(({ node, depth, milestone: m }) => html`
               <tr key=${node.id} class=${`k-${kindOf(node)} ${node.id === selected ? 'is-selected' : ''} ${node.id === data.current ? 'is-current' : ''}`}>
                 <td>
-                  <button class="row-title" style=${{ paddingLeft: `${8 + (filter === 'all' && !query ? depth * 18 : 0)}px` }} onClick=${() => onSelect(node.id)}>
+                  <button class="row-title" style=${{ paddingLeft: `${8 + (flat ? 0 : depth * 18)}px` }}
+                    onClick=${() => onSelect(node.id)} onContextMenu=${e => onMenu(e, node.id)}>
                     <span class="badge"><${StatusIcon} kind=${kindOf(node)} /></span>
                     <span><span class="nid">${node.id}</span> ${node.title}</span>
                   </button>
                 </td>
-                <td class="muted">${milestone?.title ?? ''}</td>
+                <td class="muted">${m?.title ?? ''}</td>
                 <td class="muted nowrap">${lastAt.has(node.id) ? shortDate(lastAt.get(node.id)) : ''}</td>
               </tr>`)}
           </tbody>
@@ -945,6 +974,28 @@ function App() {
     return () => removeEventListener('keydown', onKey)
   }, [view, selected, panelOpen, toggle])
 
+  // Right click: what you can do with this node, or with the view; «Back» undoes «Show only this».
+  const [menu, setMenu] = useState(null)
+  const [trail, setTrail] = useState([])
+  const openMenu = (e, id) => { e.preventDefault(); if (id) select(id); setMenu({ x: e.clientX, y: e.clientY, id }) }
+  const focusOn = id => { setTrail(prev => [...prev, focus]); setFocus(id); setExpanded(prev => new Set([...prev, id])) }
+  const back = () => { setFocus(trail.at(-1) ?? null); setTrail(prev => prev.slice(0, -1)) }
+  const showAll = () => { setFocus(null); setTrail([]) }
+  useEffect(() => {
+    if (!menu) return
+    const close = () => setMenu(null)
+    const onKey = e => e.key === 'Escape' && close()
+    addEventListener('click', close)
+    addEventListener('keydown', onKey)
+    addEventListener('wheel', close)
+    return () => { removeEventListener('click', close); removeEventListener('keydown', onKey); removeEventListener('wheel', close) }
+  }, [menu])
+  /** The same node in another view: the graph flies to it, the sheets bring its row into sight. */
+  const goView = (key, id = selected) => {
+    setView(key)
+    if (key === 'graph' && id) choose(id)
+  }
+
   const showInGraph = id => {
     setView('graph')
     choose(id)
@@ -967,7 +1018,7 @@ function App() {
           <div class="brand">ariadne<span>·</span></div>
           <nav class="views" aria-label=${t.views.label}>
             ${['graph', 'timeline', 'list'].map(key => html`
-              <button key=${key} aria-current=${view === key ? 'page' : undefined} onClick=${() => setView(key)}>${t.views[key]}</button>`)}
+              <button key=${key} aria-current=${view === key ? 'page' : undefined} onClick=${() => goView(key)}>${t.views[key]}</button>`)}
             <button key="review" class=${reviewQueue(data).length ? 'has-review' : ''} aria-current=${view === 'review' ? 'page' : undefined} onClick=${() => setView('review')}>${t.views.review(reviewQueue(data).length)}</button>
           </nav>
           <nav class="where" aria-label=${t.here}>
@@ -981,15 +1032,15 @@ function App() {
         <main class="stage" ref=${stageRef}>
           ${missing && html`<p class="no-graph">${t.noGraph}</p>`}
           <div class="overlays"><${Invalid} /></div>
-          ${view === 'timeline' && html`<${Timeline} query=${query} selected=${selected} onSelect=${select} />`}
-          ${view === 'list' && html`<${NodeList} query=${query} selected=${selected} onSelect=${select} />`}
+          ${view === 'timeline' && html`<${Timeline} query=${query} selected=${selected} onSelect=${select} onMenu=${openMenu} />`}
+          ${view === 'list' && html`<${NodeList} query=${query} selected=${selected} onSelect=${select} onMenu=${openMenu} />`}
           ${view === 'review' && html`<${ReviewQueue} selected=${selected} onSelect=${select} />`}
           <div class="canvas-tools" hidden=${view !== 'graph'}>
             <div class="seg" role="group" aria-label=${t.detail}>
               ${['milestones', 'path', 'all'].map(key => html`
                 <button key=${key} aria-pressed=${level === key} onClick=${() => showLevel(key)}>${t.levels[key]}</button>`)}
             </div>
-            ${focus && html`<div class="focus-note">${t.only(byId.get(focus).title)} <button class="link" onClick=${() => setFocus(null)}>${t.showAll}</button></div>`}
+            ${focus && html`<div class="focus-note">${t.only(byId.get(focus).title)} ${trail.length > 0 && html`<button class="link" onClick=${back}>${t.menu.back}</button>`} <button class="link" onClick=${showAll}>${t.showAll}</button></div>`}
           </div>
           <${ReactFlow}
             nodes=${graph.nodes}
@@ -1002,6 +1053,8 @@ function App() {
               if (n.type === 'group' && !e.target.closest('.group-head')) return
               select(n.id)
             }}
+            onNodeContextMenu=${(e, n) => (n.type === 'more' || n.type === 'join' ? e.preventDefault() : openMenu(e, n.id))}
+            onPaneContextMenu=${e => openMenu(e, null)}
             onMoveStart=${() => { hover(null); setPill(null) }}
             onMoveEnd=${placePill}
             nodesDraggable=${false}
@@ -1023,7 +1076,17 @@ function App() {
           ${node && html`<${Panel} node=${node} open=${panelOpen} expanded=${expanded} focus=${focus}
             onShowInGraph=${view === 'graph' ? null : showInGraph}
             onSelect=${view === 'graph' ? choose : select} onToggle=${toggle} onClose=${() => setPanelOpen(false)}
-            onFocus=${id => { setFocus(id); setExpanded(prev => new Set([...prev, id])) }} />`}
+            onFocus=${focusOn} />`}
+          ${menu && html`
+            <div class="menu" role="menu" style=${{ left: `${menu.x}px`, top: `${menu.y}px` }} onContextMenu=${e => e.preventDefault()}>
+              ${menu.id && view === 'graph' && hasChildren(data, menu.id) && html`
+                <button role="menuitem" onClick=${() => focusOn(menu.id)}>${t.menu.only}</button>
+                <button role="menuitem" onClick=${() => toggle(menu.id)}>${expanded.has(menu.id) ? t.menu.close : t.menu.open}</button>`}
+              ${view === 'graph' && trail.length > 0 && html`<button role="menuitem" onClick=${back}>${t.menu.back}</button>`}
+              ${view === 'graph' && focus && html`<button role="menuitem" onClick=${showAll}>${t.menu.all}</button>`}
+              ${menu.id && ['graph', 'timeline', 'list'].filter(k => k !== view).map(k => html`
+                <button key=${k} role="menuitem" onClick=${() => goView(k, menu.id)}>${t.menu[k]}</button>`)}
+            </div>`}
         </main>
       </div>
       <${Tip} tip=${tip} />
