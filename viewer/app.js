@@ -14,6 +14,7 @@ import { StatusIcon } from './icons.js'
 import { absoluteOf, fitTarget, keepAt, nearest, offscreen, viewportFor } from './nav.js'
 import { dayOffset, groupOf, kindOf, lastActivity, listCounts, listRows, openComments, parseLog, reviewQueue, searchNodes, timeline } from './views.js'
 import { lang, t } from './i18n.js'
+import { CHOICES, readSettings, writeSetting } from './settings.js'
 import {
   anomalies, cameFrom, defaultExpanded, emptyNote, fromGraph, hasChildren, holdsCurrent, labelOf, ledTo, panelRows, pathTo, threadSet,
   limitOf, visibleEdges, visibleNodes, progressOf } from './model.js'
@@ -66,6 +67,12 @@ const [files, ROOT] = await Promise.all([readFiles(), read('root')])
 load(files)
 
 document.documentElement.lang = lang
+/** Light or dark on the page; «auto» follows the system. */
+const applyTheme = theme => {
+  if (theme === 'auto') delete document.documentElement.dataset.theme
+  else document.documentElement.dataset.theme = theme
+}
+applyTheme(readSettings(localStorage).theme)
 // The summary from src/ speaks the interface's language.
 globalThis.ARIADNE_LANG = lang
 
@@ -686,6 +693,42 @@ function NodeList({ query, selected, onSelect, onMenu }) {
     </section>`
 }
 
+/** The settings: theme, language (it reloads the page) and the level the graph opens on. */
+function Settings() {
+  const [open, setOpen] = useState(false)
+  const [now, setNow] = useState(() => readSettings(localStorage))
+  useEffect(() => {
+    if (!open) return
+    const close = () => setOpen(false)
+    const onKey = e => e.key === 'Escape' && close()
+    addEventListener('click', close)
+    addEventListener('keydown', onKey)
+    return () => { removeEventListener('click', close); removeEventListener('keydown', onKey) }
+  }, [open])
+  const set = (key, value) => {
+    setNow(writeSetting(localStorage, key, value))
+    if (key === 'theme') applyTheme(value)
+    if (key === 'lang') location.reload()
+  }
+  const label = (key, value) => (key === 'level' ? t.levels[value] : t.settings[value])
+  return html`
+    <div class="settings" onClick=${e => e.stopPropagation()}>
+      <button class="gear" aria-label=${t.settings.title} title=${t.settings.title} aria-expanded=${open} onClick=${() => setOpen(o => !o)}>
+        <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Zm8.4 4.6-.1-2.2 2-1.6-2-3.4-2.4.8a8 8 0 0 0-1.9-1.1L15.5 3h-4l-.5 2.6a8 8 0 0 0-1.9 1.1l-2.4-.8-2 3.4 2 1.6a8 8 0 0 0 0 2.2l-2 1.6 2 3.4 2.4-.8a8 8 0 0 0 1.9 1.1l.5 2.6h4l.5-2.6a8 8 0 0 0 1.9-1.1l2.4.8 2-3.4Z"/></svg>
+      </button>
+      ${open && html`
+        <div class="settings-pop" role="dialog" aria-label=${t.settings.title}>
+          ${Object.keys(CHOICES).map(key => html`
+            <div class="setting" key=${key}>
+              <span class="filter-label">${t.settings[key]}</span>
+              <div class="seg" role="group" aria-label=${t.settings[key]}>
+                ${CHOICES[key].map(v => html`<button key=${v} aria-pressed=${now[key] === v} onClick=${() => set(key, v)}>${label(key, v)}</button>`)}
+              </div>
+            </div>`)}
+        </div>`}
+    </div>`
+}
+
 /** One field for every view: in the graph it lists nodes to go to, elsewhere it filters the rows. */
 function Search({ view, query, setQuery, onGo, inputRef }) {
   const [at, setAt] = useState(0)
@@ -738,7 +781,7 @@ function ZoomTools({ onFit }) {
 function App() {
   // ?level=milestones|path|all, ?select=<id> and ?lang=xx open the page in a given state.
   const params = new URLSearchParams(location.search)
-  const [level, setLevel] = useState(() => params.get('level') ?? 'path')
+  const [level, setLevel] = useState(() => params.get('level') ?? readSettings(localStorage).level)
   const [expanded, setExpanded] = useState(() =>
     level === 'milestones' ? new Set() : level === 'all' ? allContainers() : defaultExpanded(data))
   const [focus, setFocus] = useState(null)
@@ -1028,6 +1071,7 @@ function App() {
               <button key=${n.id} class=${`crumb ${i === path.length - 1 ? 'is-here' : ''}`} title=${n.title} onClick=${() => choose(n.id)}>${n.title}</button>`)}
           </nav>
           <${Search} view=${view} query=${query} setQuery=${setQuery} onGo=${choose} inputRef=${searchRef} />
+          <${Settings} />
         </header>
         <main class="stage" ref=${stageRef}>
           ${missing && html`<p class="no-graph">${t.noGraph}</p>`}
@@ -1062,7 +1106,7 @@ function App() {
             minZoom=${0.05}
             proOptions=${{ hideAttribution: true }}
           >
-            <${Background} gap=${24} size=${1} color="#cfd5dc" />
+            <${Background} gap=${24} size=${1} color="var(--dots)" />
           <//>
           ${view === 'graph' && pill && html`
             <button class=${`here-pill to-${pill.side}`} style=${{ left: `${pill.x}px`, top: `${pill.y}px` }} onClick=${() => choose(data.current)}>

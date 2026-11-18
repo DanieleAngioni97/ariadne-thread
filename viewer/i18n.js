@@ -2,6 +2,8 @@
 // Node content is not translated here: the agent writes it in the language of the chat.
 // Italian follows specifica.md § Testi word for word.
 
+import { readSettings } from './settings.js'
+
 const STRINGS = {
   en: {
     status: { done: 'Done', active: 'In progress', todo: 'To do', deferred: 'Deferred', replaced: 'Replaced' },
@@ -66,6 +68,7 @@ const STRINGS = {
     search: { label: 'Search steps', placeholder: 'Search' },
     filters: 'Filters',
     all: 'All',
+    settings: { title: 'Settings', theme: 'Theme', lang: 'Language', level: 'The graph opens on', auto: 'Automatic', light: 'Light', dark: 'Dark', it: 'Italiano', en: 'English' },
     status: 'Status', anyMilestone: 'All milestones', clearFilters: 'Clear filters',
     menu: { only: 'Show only this', open: 'Expand', close: 'Collapse', back: 'Back', all: 'Show all', graph: 'Open in Graph', timeline: 'Open in Timeline', list: 'Open in List' },
     groups: { progress: 'Progress', structure: 'Structure', detail: 'Details' },
@@ -169,6 +172,7 @@ const STRINGS = {
     search: { label: 'Cerca un passo', placeholder: 'Cerca' },
     filters: 'Filtri',
     all: 'Tutti',
+    settings: { title: 'Impostazioni', theme: 'Tema', lang: 'Lingua', level: 'Il grafo si apre su', auto: 'Automatico', light: 'Chiaro', dark: 'Scuro', it: 'Italiano', en: 'English' },
     status: 'Stato', anyMilestone: 'Tutte le milestone', clearFilters: 'Azzera filtri',
     menu: { only: 'Mostra solo questo', open: 'Espandi', close: 'Comprimi', back: 'Indietro', all: 'Mostra tutto', graph: 'Apri nel Grafo', timeline: 'Apri in Cronologia', list: 'Apri in Elenco' },
     groups: { progress: 'Avanzamento', structure: 'Struttura', detail: 'Dettagli' },
@@ -211,7 +215,7 @@ const STRINGS = {
   },
 }
 
-/** ?lang= first, then `lang` in the project's .ariadne/config.json, then the browser's language, else English. */
+/** ?lang= (or the language chosen in the settings) first, then `lang` in .ariadne/config.json, then the browser's, else English. */
 export function pickLang(param, configured, browser) {
   const wanted = (param || configured || browser || 'en').slice(0, 2).toLowerCase()
   return STRINGS[wanted] ? wanted : 'en'
@@ -221,5 +225,6 @@ export function pickLang(param, configured, browser) {
 const configured = globalThis.location
   ? await fetch('/.ariadne/config.json').then(r => (r.ok ? r.json() : {}), () => ({})).then(c => c.lang, () => undefined)
   : undefined
-export const lang = pickLang(new URLSearchParams(globalThis.location?.search ?? '').get('lang'), configured, globalThis.navigator?.language)
+const chosen = readSettings(globalThis.localStorage ?? null).lang
+export const lang = pickLang(new URLSearchParams(globalThis.location?.search ?? '').get('lang') ?? (chosen === 'auto' ? null : chosen), configured, globalThis.navigator?.language)
 export const t = STRINGS[lang]

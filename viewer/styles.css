@@ -19,10 +19,43 @@
   --risk: #b4441c;       --risk-soft: #f8e5dc;
   --dropped: #9aa3ae;    --dropped-soft: transparent;
 
+  --dots: #cfd5dc;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   font-family: 'Atkinson Hyperlegible Next', 'Atkinson Hyperlegible', system-ui, sans-serif;
   color: var(--ink);
   background: var(--ground);
+}
+
+/* Dark: chosen in the settings, or the system's when the setting is «auto». */
+:root[data-theme='dark'] {
+  --ground: #11161d; --surface: #1a212b; --ink: #e6eaef; --muted: #9aa4b0;
+  --line: #323c48; --line-strong: #4d5866; --dots: #2a333e;
+  --thread: #e0535c; --thread-soft: rgba(224, 83, 92, 0.22);
+  --done: #4fae74;     --done-soft: #1d3427;
+  --active: #6b98f0;   --active-soft: #1d2a45;
+  --todo: #8f99a5;
+  --deferred: #a582e0; --deferred-soft: #2c2340;
+  --detour: #d49a3a;   --detour-soft: #3a2d17;
+  --decision: #3fb5ae; --decision-soft: #163734;
+  --risk: #e2774d;     --risk-soft: #3d2219;
+  --dropped: #6d7682;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+  --ground: #11161d; --surface: #1a212b; --ink: #e6eaef; --muted: #9aa4b0;
+  --line: #323c48; --line-strong: #4d5866; --dots: #2a333e;
+  --thread: #e0535c; --thread-soft: rgba(224, 83, 92, 0.22);
+  --done: #4fae74;     --done-soft: #1d3427;
+  --active: #6b98f0;   --active-soft: #1d2a45;
+  --todo: #8f99a5;
+  --deferred: #a582e0; --deferred-soft: #2c2340;
+  --detour: #d49a3a;   --detour-soft: #3a2d17;
+  --decision: #3fb5ae; --decision-soft: #163734;
+  --risk: #e2774d;     --risk-soft: #3d2219;
+  --dropped: #6d7682;
+  color-scheme: dark;
+  }
 }
 
 * { box-sizing: border-box; }
@@ -144,7 +177,7 @@ button { font: inherit; color: inherit; }
 .unsure-why { margin: 6px 0 0; color: var(--muted); }
 .meta { font-size: 12px; color: var(--k, var(--muted)); margin-top: 2px; font-weight: 500; }
 
-.step.k-todo { border-style: dashed; border-left-style: solid; background: rgba(247, 248, 250, 0.6); }
+.step.k-todo { border-style: dashed; border-left-style: solid; background: color-mix(in srgb, var(--surface) 60%, transparent); }
 .step.k-todo .title { color: var(--muted); font-weight: 500; }
 .k-dropped { opacity: 0.55; }
 .k-dropped .title { text-decoration: line-through; }
@@ -200,7 +233,7 @@ button { font: inherit; color: inherit; }
   position: relative;
   width: 100%; height: 100%;
   border: 1px solid var(--line); border-top: 5px solid var(--k); border-radius: 14px;
-  background: rgba(247, 248, 250, 0.55);
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
 }
 .group.holds-current { box-shadow: 0 0 0 1.5px var(--thread); }
 .group-head {
@@ -233,7 +266,7 @@ button { font: inherit; color: inherit; }
 /* A marker for hidden children: quiet, but its «show» is a real button. */
 .more {
   width: 100%; height: 100%; display: flex; align-items: center; padding: 0 12px;
-  border: 1px dashed var(--line-strong); border-radius: 10px; background: rgba(247, 248, 250, 0.6);
+  border: 1px dashed var(--line-strong); border-radius: 10px; background: color-mix(in srgb, var(--surface) 60%, transparent);
   font-size: 13px; color: var(--muted);
 }
 .more button {
@@ -516,3 +549,15 @@ button { font: inherit; color: inherit; }
 .join.is-done .join-line { background: var(--done); }
 .join .count { font-size: 11px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
 .join.is-done .count { color: var(--done); }
+
+/* Settings */
+.settings { position: relative; flex: none; }
+.gear { display: grid; place-items: center; width: 32px; height: 32px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--muted); cursor: pointer; }
+.gear:hover, .gear[aria-expanded='true'] { color: var(--ink); border-color: var(--ink); }
+.settings-pop {
+  position: absolute; right: 0; top: calc(100% + 8px); z-index: 130; padding: 14px; width: max-content;
+  display: flex; flex-direction: column; gap: 12px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+}
+.setting { display: flex; flex-direction: column; gap: 6px; }
